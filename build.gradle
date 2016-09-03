@@ -1,11 +1,22 @@
+buildscript {
+    repositories {
+        maven { url 'https://dl.bintray.com/kotlin/kotlin-eap-1.1' }
+        mavenCentral()
+    }
+    dependencies {
+        classpath "com.netflix.nebula:nebula-kotlin-plugin:1.1.0-M01-3"
+    }
+}
+
 plugins {
-    id 'nebula.kotlin' version '1.0.3'
     id 'me.champeau.gradle.antlr4' version '0.1'
     id 'com.gradle.plugin-publish' version '0.9.4'
     id 'java-gradle-plugin'
     id 'com.github.johnrengelman.shadow' version '1.2.3'
     id 'nebula.plugin-plugin' version '4.24.0'
 }
+
+apply plugin: 'nebula.kotlin'
 
 group = 'com.netflix.devinsight'
 

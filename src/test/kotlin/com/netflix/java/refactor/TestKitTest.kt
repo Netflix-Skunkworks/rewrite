@@ -9,9 +9,7 @@ import java.io.File
 /**
  * Things that really belong in the unfinished Gradle Testkit
  */
-abstract class TestKitTest {
-    @JvmField @Rule
-    val temp = TemporaryFolder()
+abstract class TestKitTest: AbstractRefactorTest() {
     lateinit var projectDir: File
     lateinit var buildFile: File
     lateinit var settingsFile: File

@@ -1,6 +1,7 @@
 package com.netflix.java.refactor.ast
 
 import com.netflix.java.refactor.AbstractRefactorTest
+import com.netflix.java.refactor.ast.MethodMatcher
 import org.junit.Assert.*
 import org.junit.Test
 

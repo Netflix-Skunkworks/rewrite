@@ -7,13 +7,13 @@ class TypeUtilsTest {
     
     @Test
     fun packageOwner() {
-        assertEquals("com.foo", packageOwner("com.foo.Foo"))
-        assertEquals("com.foo", packageOwner("com.foo.Foo.Bar"))
+        assertEquals("com.foo", com.netflix.java.refactor.ast.packageOwner("com.foo.Foo"))
+        assertEquals("com.foo", com.netflix.java.refactor.ast.packageOwner("com.foo.Foo.Bar"))
     }
 
     @Test
     fun className() {
-        assertEquals("Foo", className("com.foo.Foo"))
-        assertEquals("Foo.Bar", className("com.foo.Foo.Bar"))
+        assertEquals("Foo", com.netflix.java.refactor.ast.className("com.foo.Foo"))
+        assertEquals("Foo.Bar", com.netflix.java.refactor.ast.className("com.foo.Foo.Bar"))
     }
 }

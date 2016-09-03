@@ -2,6 +2,7 @@ package com.netflix.java.refactor.fix
 
 import com.netflix.java.refactor.*
 import com.netflix.java.refactor.ast.*
+import com.netflix.java.refactor.ast.*
 import com.sun.source.tree.ImportTree
 import com.sun.tools.javac.tree.JCTree
 import com.sun.tools.javac.util.Context

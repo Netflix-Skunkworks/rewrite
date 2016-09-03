@@ -3,6 +3,7 @@ package com.netflix.java.refactor.fix
 import com.netflix.java.refactor.RefactorFix
 import com.netflix.java.refactor.RefactorTransaction
 import com.netflix.java.refactor.ast.*
+import com.netflix.java.refactor.ast.*
 import com.sun.source.tree.LiteralTree
 import com.sun.source.tree.MethodInvocationTree
 import com.sun.source.util.TreePath

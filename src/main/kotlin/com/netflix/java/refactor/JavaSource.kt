@@ -50,7 +50,7 @@ class JavaSource(internal val cu: CompilationUnit) {
     fun findFieldsIncludingInherited(clazz: String): List<Field> = FindFields(clazz, true).scanner().scan(cu)
     
     fun findMethodCalls(signature: String): List<Method> = FindMethods(signature).scanner().scan(cu)
-    
+
     fun diff(body: JavaSource.() -> Unit): String {
         val before = text()
         this.body()
