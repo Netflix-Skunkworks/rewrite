@@ -12,7 +12,7 @@ data class JRBinary(val operator: Operator,
         Addition, Subtraction, Multiplication, Division, Modulo,
         
         // Relational
-        LessThan, GreaterThan, LessThanOrEqual, GreaterThanOrEqual, Equal,
+        LessThan, GreaterThan, LessThanOrEqual, GreaterThanOrEqual, Equal, NotEqual,
         
         // Bitwise
         BitAnd, BitOr, BitXor, LeftShift, RightShift, UnsignedRightShift,

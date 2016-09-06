@@ -57,9 +57,7 @@ open class JRTreeVisitor<R>(val default: R) {
 
 //        var r = scan(node.getPackageAnnotations(), p)
 //        r = scanAndReduce(node.getPackageName(), p)
-    open fun visitCompilationUnit(cu: JRCompilationUnit): R =
-        scan(cu.imports)
-                .andThen(cu.classDecls)
+    open fun visitCompilationUnit(cu: JRCompilationUnit): R = scan(cu.imports).andThen(cu.classDecls)
     
     open fun visitIdentifier(ident: JRIdent): R = default
     
@@ -87,8 +85,7 @@ open class JRTreeVisitor<R>(val default: R) {
     
     open fun visitLiteral(literal: JRLiteral): R = default
     
-    open fun visitBinary(binary: JRBinary): R =
-            scan(binary.left).andThen(binary.right)
+    open fun visitBinary(binary: JRBinary): R = scan(binary.left).andThen(binary.right)
     
     open fun visitUnary(unary: JRUnary): R = scan(unary.expr)
     
@@ -129,9 +126,7 @@ open class JRTreeVisitor<R>(val default: R) {
     
     open fun visitReturn(retrn: JRReturn): R = scan(retrn.expr)
     
-    open fun visitCase(case: JRCase): R = 
-            scan(case.pattern)
-                .andThen(case.statements)
+    open fun visitCase(case: JRCase): R = scan(case.pattern).andThen(case.statements)
     
     open fun visitSwitch(switch: JRSwitch): R = scan(switch.selector).andThen(switch.cases)
     
@@ -154,4 +149,6 @@ open class JRTreeVisitor<R>(val default: R) {
     open fun visitEmpty(empty: JREmpty): R = default
     
     open fun visitParentheses(parens: JRParentheses): R = scan(parens.expr)
+    
+    open fun visitInstanceOf(instanceOf: JRInstanceOf): R = scan(instanceOf.expr).andThen(instanceOf.clazz)
 }

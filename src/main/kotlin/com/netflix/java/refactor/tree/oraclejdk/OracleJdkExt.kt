@@ -180,6 +180,7 @@ fun JCTree.JCCompilationUnit.toAst(): JRCompilationUnit =
                                 JCTree.Tag.LE -> JRBinary.Operator.LessThanOrEqual
                                 JCTree.Tag.GE -> JRBinary.Operator.GreaterThanOrEqual
                                 JCTree.Tag.EQ -> JRBinary.Operator.Equal
+                                JCTree.Tag.NE -> JRBinary.Operator.NotEqual
                                 else -> throw IllegalArgumentException("Unexpected binary tag ${node.tag}")
                             },
                             node.leftOperand.convert(),
@@ -359,7 +360,19 @@ fun JCTree.JCCompilationUnit.toAst(): JRCompilationUnit =
                     JREmpty(node.posRange())
 
             override fun visitParenthesized(node: ParenthesizedTree, p: Unit?): JRTree =
-                    JRParentheses(node.expression.convert(), node.posRange(), node.source())
+                    JRParentheses(
+                            node.expression.convert(),
+                            node.posRange(),
+                            node.source()
+                    )
+
+            override fun visitInstanceOf(node: InstanceOfTree, p: Unit?): JRTree =
+                    JRInstanceOf(
+                            node.expression.convert(), 
+                            node.type.convert(), 
+                            node.posRange(), 
+                            node.source()
+                    )
             
             private fun Symbol?.jrType(): JRType? {
                 val owner = { this?.owner?.jrType() }
