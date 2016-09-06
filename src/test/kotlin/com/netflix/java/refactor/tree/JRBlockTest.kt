@@ -10,7 +10,7 @@ abstract class JRBlockTest(parser: Parser): AstTest(parser) {
         val a = parse("""
             public class A {
                 public void foo() {
-                    return p;
+                    System.out.println("foo");
                 }
             }
         """)

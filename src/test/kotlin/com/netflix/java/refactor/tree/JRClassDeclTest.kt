@@ -19,6 +19,7 @@ abstract class JRClassDeclTest(parser: Parser): AstTest(parser) {
     @Test
     fun fields() {
         val a = parse("""
+            import java.util.*;
             public class A {
                 List l;
             }
