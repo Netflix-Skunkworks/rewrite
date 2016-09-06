@@ -126,4 +126,6 @@ open class JRTreeVisitor<R>(val default: R) {
     open fun visitContinue(continueStatement: JRContinue): R = default
     
     open fun visitLabel(label: JRLabel): R = scan(label.statement)
+    
+    open fun visitReturn(retrn: JRReturn): R = scan(retrn.expr)
 }
