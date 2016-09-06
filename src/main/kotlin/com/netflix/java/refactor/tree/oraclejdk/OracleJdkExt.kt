@@ -102,13 +102,13 @@ fun JCTree.JCCompilationUnit.toAst(): JRCompilationUnit =
             override fun visitBlock(node: BlockTree, p: Unit?): JRTree =
                     JRBlock(node.statements.convert(), node.posRange())
 
-            override fun visitLiteral(node: LiteralTree, p: Unit?): JRTree {
-                val literal = node as JCTree.JCLiteral
-                return JRLiteral(literal.typetag.tag(),
-                        node.value,
-                        node.posRange(),
-                        node.source())
-            }
+            override fun visitLiteral(node: LiteralTree, p: Unit?): JRTree =
+                    JRLiteral(
+                            (node as JCTree.JCLiteral).typetag.tag(),
+                            node.value,
+                            node.posRange(),
+                            node.source()
+                    )
 
             override fun visitPrimitiveType(node: PrimitiveTypeTree, p: Unit?): JRTree =
                     JRPrimitive(when (node.primitiveTypeKind) {
@@ -140,16 +140,14 @@ fun JCTree.JCCompilationUnit.toAst(): JRCompilationUnit =
             override fun visitImport(node: ImportTree, p: Unit?): JRTree =
                     JRImport(scan(node.qualifiedIdentifier, null) as JRFieldAccess, node.posRange())
 
-            override fun visitMemberSelect(node: MemberSelectTree, p: Unit?): JRTree {
-                val fa = node as JCTree.JCFieldAccess
-                return JRFieldAccess(
-                        fa.name.toString(),
-                        fa.selected.convert(),
-                        fa.type.jrType(),
-                        fa.posRange(),
-                        fa.source()
-                )
-            }
+            override fun visitMemberSelect(node: MemberSelectTree, p: Unit?): JRTree =
+                    JRFieldAccess(
+                            (node as JCTree.JCFieldAccess).name.toString(),
+                            node.selected.convert(),
+                            node.type.jrType(),
+                            node.posRange(),
+                            node.source()
+                    )
 
             override fun visitIdentifier(node: IdentifierTree, p: Unit?): JRTree =
                     JRIdent(
@@ -159,6 +157,55 @@ fun JCTree.JCCompilationUnit.toAst(): JRCompilationUnit =
                             node.source()
                     )
 
+            override fun visitBinary(node: BinaryTree, p: Unit?): JRTree =
+                    JRBinary(
+                            when((node as JCTree.JCBinary).tag) {
+                                JCTree.Tag.PLUS -> JRBinary.Operator.Addition
+                                JCTree.Tag.MINUS -> JRBinary.Operator.Subtraction
+                                JCTree.Tag.DIV -> JRBinary.Operator.Division
+                                JCTree.Tag.MUL -> JRBinary.Operator.Multiplication
+                                JCTree.Tag.MOD -> JRBinary.Operator.Modulo
+                                JCTree.Tag.AND -> JRBinary.Operator.And
+                                JCTree.Tag.OR -> JRBinary.Operator.Or
+                                JCTree.Tag.BITAND -> JRBinary.Operator.BitAnd
+                                JCTree.Tag.BITOR -> JRBinary.Operator.BitOr
+                                JCTree.Tag.BITXOR -> JRBinary.Operator.BitXor
+                                JCTree.Tag.SL -> JRBinary.Operator.LeftShift
+                                JCTree.Tag.SR -> JRBinary.Operator.RightShift
+                                JCTree.Tag.USR -> JRBinary.Operator.UnsignedRightShift
+                                JCTree.Tag.LT -> JRBinary.Operator.LessThan
+                                JCTree.Tag.GT -> JRBinary.Operator.GreaterThan
+                                JCTree.Tag.LE -> JRBinary.Operator.LessThanOrEqual
+                                JCTree.Tag.GE -> JRBinary.Operator.GreaterThanOrEqual
+                                JCTree.Tag.EQ -> JRBinary.Operator.Equal
+                                else -> throw IllegalArgumentException("Unexpected binary tag ${node.tag}")
+                            },
+                            node.leftOperand.convert(),
+                            node.rightOperand.convert(),
+                            node.type.jrType(),
+                            node.posRange(),
+                            node.source()
+                    )
+
+            override fun visitUnary(node: UnaryTree, p: Unit?): JRTree =
+                    JRUnary(
+                            when((node as JCTree.JCUnary).tag) {
+                                JCTree.Tag.POS -> JRUnary.Operator.Positive
+                                JCTree.Tag.NEG -> JRUnary.Operator.Negative
+                                JCTree.Tag.PREDEC -> JRUnary.Operator.PreDecrement
+                                JCTree.Tag.PREINC -> JRUnary.Operator.PreIncrement
+                                JCTree.Tag.POSTDEC -> JRUnary.Operator.PostDecrement
+                                JCTree.Tag.POSTINC -> JRUnary.Operator.PostIncrement
+                                JCTree.Tag.COMPL -> JRUnary.Operator.Complement
+                                JCTree.Tag.NOT -> JRUnary.Operator.Not
+                                else -> throw IllegalArgumentException("Unexpected unary tag ${node.tag}")    
+                            },
+                            node.arg.convert(),
+                            node.type.jrType(),
+                            node.posRange(),
+                            node.source()
+                    )
+            
             private fun Symbol?.jrType(): JRType? {
                 val owner = { this?.owner?.jrType() }
                 return when (this) {

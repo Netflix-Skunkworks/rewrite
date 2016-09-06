@@ -86,4 +86,9 @@ open class JRTreeVisitor<R>(val default: R) {
     open fun visitPrimitive(primitive: JRPrimitive): R = default
     
     open fun visitLiteral(literal: JRLiteral): R = default
+    
+    open fun visitBinary(binary: JRBinary): R =
+            scan(binary.left).andThen(binary.right)
+    
+    open fun visitUnary(unary: JRUnary): R = scan(unary.expr)
 }
