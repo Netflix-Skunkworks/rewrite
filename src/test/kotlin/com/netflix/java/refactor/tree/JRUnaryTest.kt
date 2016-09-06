@@ -16,6 +16,6 @@ abstract class JRUnaryTest(parser: Parser): AstTest(parser) {
 
         val unary = a.classDecls[0].fields[0].initializer as JRUnary
         assertEquals(JRUnary.Operator.Not, unary.operator)
-        assertTrue(unary.expr is JRBinary)
+        assertTrue(unary.expr is JRParentheses)
     }
 }

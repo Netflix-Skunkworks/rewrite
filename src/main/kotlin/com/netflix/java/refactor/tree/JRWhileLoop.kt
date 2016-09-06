@@ -1,6 +1,6 @@
 package com.netflix.java.refactor.tree
 
-data class JRWhileLoop(val condition: JRExpression,
+data class JRWhileLoop(val condition: JRParentheses,
                   val body: JRStatement,
                   override val pos: IntRange) : JRStatement {
     

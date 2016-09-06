@@ -23,12 +23,12 @@ abstract class JRIfTest(parser: Parser): AstTest(parser) {
         """)
         
         val iff = a.classDecls[0].methods[0].body.statements[0] as JRIf
-        assertTrue(iff.ifCondition is JRBinary)
+        assertTrue(iff.ifCondition.expr is JRBinary)
         assertTrue(iff.thenPart is JRBlock)
         
         assertTrue(iff.elsePart is JRIf)
         val elseIf = iff.elsePart as JRIf
-        assertTrue(elseIf.ifCondition is JRBinary)
+        assertTrue(elseIf.ifCondition.expr is JRBinary)
         assertTrue(elseIf.thenPart is JRBlock)
         assertTrue(elseIf.elsePart is JRBlock)
     }

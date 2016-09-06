@@ -17,7 +17,7 @@ abstract class JRWhileLoopTest(parser: Parser): AstTest(parser) {
         """)
         
         val whileLoop = a.classDecls[0].methods[0].body.statements[0] as JRWhileLoop
-        assertTrue(whileLoop.condition is JRLiteral)
+        assertTrue(whileLoop.condition.expr is JRLiteral)
         assertTrue(whileLoop.body is JRBlock)
     }
 }

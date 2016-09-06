@@ -19,6 +19,6 @@ abstract class JRSynchronizedTest(parser: Parser): AstTest(parser) {
         """)
         
         val sync = a.classDecls[0].methods[0].body.statements[0] as JRSynchronized
-        assertTrue(sync.lock is JRIdent)
+        assertTrue(sync.lock.expr is JRIdent)
     }
 }

@@ -1,6 +1,6 @@
 package com.netflix.java.refactor.tree
 
-data class JRSynchronized(val lock: JRExpression, 
+data class JRSynchronized(val lock: JRParentheses, 
                           val body: JRBlock,
                           override val pos: IntRange): JRStatement {
     

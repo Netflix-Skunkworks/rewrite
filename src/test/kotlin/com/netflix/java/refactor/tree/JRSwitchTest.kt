@@ -21,7 +21,7 @@ abstract class JRSwitchTest(parser: Parser): AstTest(parser) {
         """)
         
         val switch = a.classDecls[0].methods[0].body.statements[0] as JRSwitch
-        assertTrue(switch.selector is JRIdent)
+        assertTrue(switch.selector.expr is JRIdent)
         assertEquals(1, switch.cases.size)
         
         val case0 = switch.cases[0]
@@ -43,7 +43,7 @@ abstract class JRSwitchTest(parser: Parser): AstTest(parser) {
         """)
 
         val switch = a.classDecls[0].methods[0].body.statements[0] as JRSwitch
-        assertTrue(switch.selector is JRIdent)
+        assertTrue(switch.selector.expr is JRIdent)
         assertEquals(1, switch.cases.size)
 
         val default = switch.cases[0]
@@ -63,7 +63,7 @@ abstract class JRSwitchTest(parser: Parser): AstTest(parser) {
         """)
 
         val switch = a.classDecls[0].methods[0].body.statements[0] as JRSwitch
-        assertTrue(switch.selector is JRIdent)
+        assertTrue(switch.selector.expr is JRIdent)
         assertEquals(0, switch.cases.size)
     }
 }

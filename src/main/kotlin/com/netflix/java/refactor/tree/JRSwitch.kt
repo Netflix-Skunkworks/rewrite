@@ -1,6 +1,6 @@
 package com.netflix.java.refactor.tree
 
-data class JRSwitch(val selector: JRExpression, 
+data class JRSwitch(val selector: JRParentheses, 
                val cases: List<JRCase>,
                override val pos: IntRange): JRStatement {
     
