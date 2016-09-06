@@ -1,5 +1,7 @@
 package com.netflix.java.refactor.tree
 
+import sun.tools.tree.BreakStatement
+
 open class JRTreeVisitor<R>(val default: R) {
     /**
      * Some sensible defaults for reduce (boolean OR, list concatenation, or else just the value of r1).
@@ -118,4 +120,10 @@ open class JRTreeVisitor<R>(val default: R) {
     open fun visitDoWhileLoop(doWhileLoop: JRDoWhileLoop): R =
             scan(doWhileLoop.condition)
                     .andThen(doWhileLoop.body)
+    
+    open fun visitBreak(breakStatement: JRBreak): R = default
+
+    open fun visitContinue(continueStatement: JRContinue): R = default
+    
+    open fun visitLabel(label: JRLabel): R = scan(label.statement)
 }

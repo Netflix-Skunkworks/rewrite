@@ -1,7 +1,6 @@
 package com.netflix.java.refactor.tree
 
 import org.junit.Test
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 abstract class JRForEachLoopTest(parser: Parser): AstTest(parser) {
@@ -20,6 +19,5 @@ abstract class JRForEachLoopTest(parser: Parser): AstTest(parser) {
         val forEachLoop = a.classDecls[0].methods[0].body.statements[0] as JRForEachLoop
         assertTrue(forEachLoop.variable is JRVariableDecl)
         assertTrue(forEachLoop.iterable is JRExpression)
-        assertNull(forEachLoop.type)
     }
 }

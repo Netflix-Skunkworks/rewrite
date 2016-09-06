@@ -213,7 +213,6 @@ fun JCTree.JCCompilationUnit.toAst(): JRCompilationUnit =
                             node.condition.convertOrNull(),
                             node.update.convert(),
                             node.statement.convert(),
-                            (node as JCTree.JCForLoop).type.jrType(),
                             node.posRange()
                     )
 
@@ -222,7 +221,6 @@ fun JCTree.JCCompilationUnit.toAst(): JRCompilationUnit =
                             node.variable.convert(),
                             node.expression.convert(),
                             node.statement.convert(),
-                            (node as JCTree.JCEnhancedForLoop).type.jrType(),
                             node.posRange()
                     )
 
@@ -231,7 +229,6 @@ fun JCTree.JCCompilationUnit.toAst(): JRCompilationUnit =
                             node.condition.convert(),
                             node.thenStatement.convert(),
                             node.elseStatement.convertOrNull(),
-                            (node as JCTree.JCIf).type.jrType(),
                             node.posRange()
                     )
 
@@ -249,7 +246,6 @@ fun JCTree.JCCompilationUnit.toAst(): JRCompilationUnit =
                     JRWhileLoop(
                             node.condition.convert(),
                             node.statement.convert(),
-                            (node as JCTree.JCWhileLoop).type.jrType(),
                             node.posRange()
                     )
 
@@ -257,7 +253,25 @@ fun JCTree.JCCompilationUnit.toAst(): JRCompilationUnit =
                     JRDoWhileLoop(
                             node.condition.convert(),
                             node.statement.convert(),
-                            (node as JCTree.JCDoWhileLoop).type.jrType(),
+                            node.posRange()
+                    )
+
+            override fun visitBreak(node: BreakTree, p: Unit?): JRTree =
+                    JRBreak(
+                            node.label?.toString(),
+                            node.posRange()
+                    )
+
+            override fun visitContinue(node: ContinueTree, p: Unit?): JRTree =
+                    JRContinue(
+                            node.label?.toString(),
+                            node.posRange()
+                    )
+
+            override fun visitLabeledStatement(node: LabeledStatementTree, p: Unit?): JRTree =
+                    JRLabel(
+                            node.label.toString(),
+                            node.statement.convert(),
                             node.posRange()
                     )
             

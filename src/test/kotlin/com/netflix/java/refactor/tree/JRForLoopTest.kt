@@ -22,7 +22,6 @@ abstract class JRForLoopTest(parser: Parser): AstTest(parser) {
         assertEquals(1, forLoop.init.size)
         assertTrue(forLoop.condition is JRBinary)
         assertEquals(1, forLoop.update.size)
-        assertNull(forLoop.type)
     }
 
     @Test
