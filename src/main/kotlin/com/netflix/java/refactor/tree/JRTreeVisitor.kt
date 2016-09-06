@@ -103,4 +103,14 @@ open class JRTreeVisitor<R>(val default: R) {
             scan(forEachLoop.variable)
                     .andThen(forEachLoop.iterable)
                     .andThen(forEachLoop.body)
+    
+    open fun visitIf(iff: JRIf): R =
+            scan(iff.ifCondition)
+                    .andThen(iff.thenPart)
+                    .andThen(iff.elsePart)
+    
+    open fun visitTernary(ternary: JRTernary): R =
+            scan(ternary.condition)
+                    .andThen(ternary.truePart)
+                    .andThen(ternary.falsePart)
 }

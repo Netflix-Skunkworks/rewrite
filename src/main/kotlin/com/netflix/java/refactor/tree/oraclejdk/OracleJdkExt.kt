@@ -225,6 +225,25 @@ fun JCTree.JCCompilationUnit.toAst(): JRCompilationUnit =
                             (node as JCTree.JCEnhancedForLoop).type.jrType(),
                             node.posRange()
                     )
+
+            override fun visitIf(node: IfTree, p: Unit?): JRTree =
+                    JRIf(
+                            node.condition.convert(),
+                            node.thenStatement.convert(),
+                            node.elseStatement.convertOrNull(),
+                            (node as JCTree.JCIf).type.jrType(),
+                            node.posRange()
+                    )
+
+            override fun visitConditionalExpression(node: ConditionalExpressionTree, p: Unit?): JRTree =
+                    JRTernary(
+                            node.condition.convert(),
+                            node.trueExpression.convert(),
+                            node.falseExpression.convert(),
+                            (node as JCTree.JCConditional).type.jrType(),
+                            node.posRange(),
+                            node.source()
+                    )
             
             private fun Symbol?.jrType(): JRType? {
                 val owner = { this?.owner?.jrType() }

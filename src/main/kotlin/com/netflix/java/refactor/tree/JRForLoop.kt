@@ -1,7 +1,7 @@
 package com.netflix.java.refactor.tree
 
 
-class JRForLoop(val init: List<JRStatement>,
+data class JRForLoop(val init: List<JRStatement>,
                 val condition: JRExpression?,
                 val update: List<JRStatement>,
                 val body: JRStatement,
