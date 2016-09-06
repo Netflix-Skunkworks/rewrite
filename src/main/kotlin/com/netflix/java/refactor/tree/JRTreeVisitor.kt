@@ -133,7 +133,7 @@ open class JRTreeVisitor<R>(val default: R) {
             scan(case.pattern)
                 .andThen(case.statements)
     
-    open fun visitSwitch(switch: JRSwitch): R =
-            scan(switch.selector)
-                .andThen(switch.cases)
+    open fun visitSwitch(switch: JRSwitch): R = scan(switch.selector).andThen(switch.cases)
+    
+    open fun visitAssign(assign: JRAssign): R = scan(assign.variable).andThen(assign.assignment)
 }

@@ -294,6 +294,14 @@ fun JCTree.JCCompilationUnit.toAst(): JRCompilationUnit =
                             node.statements.convert(),
                             node.posRange()
                     )
+
+            override fun visitAssignment(node: AssignmentTree, p: Unit?): JRTree =
+                    JRAssign(
+                            node.variable.convert(),
+                            node.expression.convert(),
+                            node.posRange(),
+                            node.source()
+                    )
             
             private fun Symbol?.jrType(): JRType? {
                 val owner = { this?.owner?.jrType() }
