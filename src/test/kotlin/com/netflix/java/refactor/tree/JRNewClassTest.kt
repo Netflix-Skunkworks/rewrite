@@ -21,7 +21,7 @@ abstract class JRNewClassTest(parser: Parser): AstTest(parser) {
         """
         
         val b = parse(c, whichDependsOn = a).classDecls[0].fields[0]
-        assertEquals("a.A.B", b.type.asClass().fullyQualifiedName)
+        assertEquals("a.A.B", b.type.asClass()?.fullyQualifiedName)
     }
 
     @Test
@@ -34,7 +34,7 @@ abstract class JRNewClassTest(parser: Parser): AstTest(parser) {
         """
 
         val b = parse(c, whichDependsOn = a).classDecls[0].fields[0]
-        assertEquals("a.A.B", b.type.asClass().fullyQualifiedName)
+        assertEquals("a.A.B", b.type.asClass()?.fullyQualifiedName)
         assertEquals("A.B", (b.initializer as JRNewClass).identifier.source)
     }
     

@@ -16,6 +16,6 @@ abstract class JRIdentTest(parser: Parser): AstTest(parser) {
         
         val ident = a.classDecls[0].fields.first { it.name == "m" }.initializer as JRIdent
         assertEquals("n", ident.name)
-        assertEquals("java.lang.Integer", ident.type.asClass().fullyQualifiedName)
+        assertEquals("java.lang.Integer", ident.type.asClass()?.fullyQualifiedName)
     }
 }

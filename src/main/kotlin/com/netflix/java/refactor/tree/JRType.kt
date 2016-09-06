@@ -42,8 +42,20 @@ sealed class JRType(): Serializable {
     }
 }
 
-fun JRType?.asClass() = this as JRType.Class
-fun JRType?.asGeneric() = this as JRType.GenericTypeVariable
+fun JRType?.asClass(): JRType.Class? = when(this) {
+    is JRType.Class -> this
+    else -> null
+}
+
+fun JRType?.asGeneric(): JRType.GenericTypeVariable? = when(this) {
+    is JRType.GenericTypeVariable -> this
+    else -> null
+}
+
+fun JRType?.asMethod(): JRType.Method? = when(this) {
+    is JRType.Method -> this
+    else -> null
+}
 
 fun JRType?.isArrayOfType(qualifiedNameOrTypeVar: String): Boolean = when(this) {
     is JRType.Array -> when(this.elemType) {

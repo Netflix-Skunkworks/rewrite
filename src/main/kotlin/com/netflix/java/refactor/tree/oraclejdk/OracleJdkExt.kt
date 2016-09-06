@@ -80,9 +80,9 @@ fun JCTree.JCCompilationUnit.toAst(): JRCompilationUnit =
                 return JRMethodInvocation(
                         scan(meth.meth, null) as JRExpression,
                         meth.args.map { scan(it, null) as JRExpression },
-                        methSymbol.jrType() as JRType.Method?,
-                        select?.type.jrType() as JRType.Method?,
-                        methSymbol?.owner?.jrType() as JRType.Class?,
+                        methSymbol.jrType().asMethod(),
+                        select?.type.jrType().asMethod(),
+                        methSymbol?.owner?.jrType().asClass(),
                         meth.posRange(),
                         meth.source()
                 )
@@ -167,10 +167,7 @@ fun JCTree.JCCompilationUnit.toAst(): JRCompilationUnit =
                     is Symbol.MethodSymbol -> {
                         when (this.type) {
                             is Type.ForAll -> (this.type as Type.ForAll).qtype.jrType()
-                            else -> {
-                                val params = this.params.map { it.jrType() }.filterNotNull()
-                                JRType.Method(this.returnType.jrType(), params)
-                            }
+                            else -> this.type.jrType()
                         }
                     }
                     is Symbol.VarSymbol -> JRType.GenericTypeVariable(this.name.toString(), null)
