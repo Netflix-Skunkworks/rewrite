@@ -1,8 +1,5 @@
 package com.netflix.java.refactor.tree
 
-import com.sun.source.tree.ForLoopTree
-import com.sun.source.tree.NewClassTree
-
 open class JRTreeVisitor<R>(val default: R) {
     /**
      * Some sensible defaults for reduce (boolean OR, list concatenation, or else just the value of r1).
@@ -113,4 +110,12 @@ open class JRTreeVisitor<R>(val default: R) {
             scan(ternary.condition)
                     .andThen(ternary.truePart)
                     .andThen(ternary.falsePart)
+    
+    open fun visitWhileLoop(whileLoop: JRWhileLoop): R =
+            scan(whileLoop.condition)
+                    .andThen(whileLoop.body)
+    
+    open fun visitDoWhileLoop(doWhileLoop: JRDoWhileLoop): R =
+            scan(doWhileLoop.condition)
+                    .andThen(doWhileLoop.body)
 }

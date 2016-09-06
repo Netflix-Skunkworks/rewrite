@@ -244,6 +244,22 @@ fun JCTree.JCCompilationUnit.toAst(): JRCompilationUnit =
                             node.posRange(),
                             node.source()
                     )
+
+            override fun visitWhileLoop(node: WhileLoopTree, p: Unit?): JRTree =
+                    JRWhileLoop(
+                            node.condition.convert(),
+                            node.statement.convert(),
+                            (node as JCTree.JCWhileLoop).type.jrType(),
+                            node.posRange()
+                    )
+
+            override fun visitDoWhileLoop(node: DoWhileLoopTree, p: Unit?): JRTree =
+                    JRDoWhileLoop(
+                            node.condition.convert(),
+                            node.statement.convert(),
+                            (node as JCTree.JCDoWhileLoop).type.jrType(),
+                            node.posRange()
+                    )
             
             private fun Symbol?.jrType(): JRType? {
                 val owner = { this?.owner?.jrType() }
