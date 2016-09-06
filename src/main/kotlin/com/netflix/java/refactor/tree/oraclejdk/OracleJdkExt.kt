@@ -390,7 +390,15 @@ fun JCTree.JCCompilationUnit.toAst(): JRCompilationUnit =
                             node.posRange(),
                             node.source()
                     )
-            
+
+            override fun visitLambdaExpression(node: LambdaExpressionTree, p: Unit?): JRTree =
+                    JRLambda(
+                            node.parameters.convert(),
+                            node.body.convert(),
+                            node.posRange(),
+                            node.source()
+                    )
+                
             private fun Symbol?.jrType(): JRType? {
                 val owner = { this?.owner?.jrType() }
                 return when (this) {

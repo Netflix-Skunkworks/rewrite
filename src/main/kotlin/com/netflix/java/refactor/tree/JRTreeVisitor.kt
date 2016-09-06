@@ -160,4 +160,8 @@ open class JRTreeVisitor<R>(val default: R) {
     open fun visitArrayAccess(arrayAccess: JRArrayAccess): R =
             scan(arrayAccess.indexed)
                     .andThen(arrayAccess.index)
+    
+    open fun visitLambda(lambda: JRLambda): R =
+            scan(lambda.params)
+                    .andThen(lambda.body)
 }
