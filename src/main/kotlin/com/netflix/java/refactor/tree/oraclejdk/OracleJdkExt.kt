@@ -302,6 +302,12 @@ fun JCTree.JCCompilationUnit.toAst(): JRCompilationUnit =
                             node.posRange(),
                             node.source()
                     )
+
+            override fun visitThrow(node: ThrowTree, p: Unit?): JRTree =
+                    JRThrow(
+                            node.expression.convert(),
+                            node.posRange()
+                    )
             
             private fun Symbol?.jrType(): JRType? {
                 val owner = { this?.owner?.jrType() }

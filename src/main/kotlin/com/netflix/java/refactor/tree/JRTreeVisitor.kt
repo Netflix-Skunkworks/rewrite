@@ -136,4 +136,6 @@ open class JRTreeVisitor<R>(val default: R) {
     open fun visitSwitch(switch: JRSwitch): R = scan(switch.selector).andThen(switch.cases)
     
     open fun visitAssign(assign: JRAssign): R = scan(assign.variable).andThen(assign.assignment)
+    
+    open fun visitThrow(thrown: JRThrow): R = scan(thrown.expr)
 }
