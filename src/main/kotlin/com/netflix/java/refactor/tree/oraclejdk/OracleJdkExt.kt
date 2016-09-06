@@ -373,6 +373,23 @@ fun JCTree.JCCompilationUnit.toAst(): JRCompilationUnit =
                             node.posRange(), 
                             node.source()
                     )
+
+            override fun visitNewArray(node: NewArrayTree, p: Unit?): JRTree =
+                    JRNewArray(
+                            node.type.convert(),
+                            node.dimensions.convert(),
+                            node.initializers.convert(),
+                            node.posRange(),
+                            node.source()
+                    )
+
+            override fun visitArrayAccess(node: ArrayAccessTree, p: Unit?): JRTree =
+                    JRArrayAccess(
+                            node.expression.convert(),
+                            node.index.convert(),
+                            node.posRange(),
+                            node.source()
+                    )
             
             private fun Symbol?.jrType(): JRType? {
                 val owner = { this?.owner?.jrType() }

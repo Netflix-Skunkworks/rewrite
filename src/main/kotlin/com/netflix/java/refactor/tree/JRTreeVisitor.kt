@@ -151,4 +151,13 @@ open class JRTreeVisitor<R>(val default: R) {
     open fun visitParentheses(parens: JRParentheses): R = scan(parens.expr)
     
     open fun visitInstanceOf(instanceOf: JRInstanceOf): R = scan(instanceOf.expr).andThen(instanceOf.clazz)
+    
+    open fun visitNewArray(newArray: JRNewArray): R =
+            scan(newArray.type)
+                    .andThen(newArray.dimensions)
+                    .andThen(newArray.elements)
+    
+    open fun visitArrayAccess(arrayAccess: JRArrayAccess): R =
+            scan(arrayAccess.indexed)
+                    .andThen(arrayAccess.index)
 }
