@@ -10,7 +10,7 @@ class JRMethodInvocation(val methodSelect: JRExpression,
 
                          val declaringType: JRType.Class?,
                          override val pos: IntRange,
-                         override val source: String): JRExpression {
+                         override val source: String): JRExpression, JRStatement {
     override fun <R> accept(v: JRTreeVisitor<R>): R = v.visitMethodInvocation(this)
     
     fun returnType(): JRType? = resolvedSignature?.returnType

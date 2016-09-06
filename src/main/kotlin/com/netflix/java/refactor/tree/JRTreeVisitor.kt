@@ -128,4 +128,12 @@ open class JRTreeVisitor<R>(val default: R) {
     open fun visitLabel(label: JRLabel): R = scan(label.statement)
     
     open fun visitReturn(retrn: JRReturn): R = scan(retrn.expr)
+    
+    open fun visitCase(case: JRCase): R = 
+            scan(case.pattern)
+                .andThen(case.statements)
+    
+    open fun visitSwitch(switch: JRSwitch): R =
+            scan(switch.selector)
+                .andThen(switch.cases)
 }

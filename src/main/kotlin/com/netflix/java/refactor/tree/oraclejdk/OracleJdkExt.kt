@@ -280,6 +280,20 @@ fun JCTree.JCCompilationUnit.toAst(): JRCompilationUnit =
                             node.expression.convertOrNull(),
                             node.posRange()
                     )
+
+            override fun visitSwitch(node: SwitchTree, p: Unit?): JRTree =
+                    JRSwitch(
+                            node.expression.convert(),
+                            node.cases.convert(),
+                            node.posRange()
+                    )
+
+            override fun visitCase(node: CaseTree, p: Unit?): JRTree =
+                    JRCase(
+                            node.expression.convertOrNull(),
+                            node.statements.convert(),
+                            node.posRange()
+                    )
             
             private fun Symbol?.jrType(): JRType? {
                 val owner = { this?.owner?.jrType() }
