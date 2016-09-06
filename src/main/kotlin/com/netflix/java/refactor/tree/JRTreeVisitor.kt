@@ -138,4 +138,14 @@ open class JRTreeVisitor<R>(val default: R) {
     open fun visitAssign(assign: JRAssign): R = scan(assign.variable).andThen(assign.assignment)
     
     open fun visitThrow(thrown: JRThrow): R = scan(thrown.expr)
+    
+    open fun visitTry(tryable: JRTry): R =
+            scan(tryable.resources)
+                .andThen(tryable.body)
+                .andThen(tryable.catchers)
+                .andThen(tryable.finally)
+    
+    open fun visitCatch(catch: JRCatch): R =
+            scan(catch.param)
+                .andThen(catch.body)
 }

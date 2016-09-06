@@ -308,6 +308,22 @@ fun JCTree.JCCompilationUnit.toAst(): JRCompilationUnit =
                             node.expression.convert(),
                             node.posRange()
                     )
+
+            override fun visitTry(node: TryTree, p: Unit?): JRTree =
+                    JRTry(
+                            node.resources.convert(),
+                            node.block.convert(),
+                            node.catches.convert(),
+                            node.finallyBlock.convertOrNull(),
+                            node.posRange()
+                    )
+
+            override fun visitCatch(node: CatchTree, p: Unit?): JRTree =
+                    JRCatch(
+                            node.parameter.convert(),
+                            node.block.convert(),
+                            node.posRange()
+                    )
             
             private fun Symbol?.jrType(): JRType? {
                 val owner = { this?.owner?.jrType() }
