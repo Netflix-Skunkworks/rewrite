@@ -9,6 +9,7 @@ import com.sun.tools.javac.code.Type
 import com.sun.tools.javac.code.TypeTag
 import com.sun.tools.javac.tree.EndPosTable
 import com.sun.tools.javac.tree.JCTree
+import sun.tools.tree.AssignOpExpression
 import javax.lang.model.type.TypeKind
 import kotlin.properties.Delegates
 
@@ -299,6 +300,28 @@ fun JCTree.JCCompilationUnit.toAst(): JRCompilationUnit =
                     JRAssign(
                             node.variable.convert(),
                             node.expression.convert(),
+                            node.posRange(),
+                            node.source()
+                    )
+
+            override fun visitCompoundAssignment(node: CompoundAssignmentTree, p: Unit?): JRTree =
+                    JRAssignOp(
+                            when((node as JCTree.JCAssignOp).tag) {
+                                JCTree.Tag.PLUS_ASG -> JRAssignOp.Operator.Addition
+                                JCTree.Tag.MINUS_ASG -> JRAssignOp.Operator.Subtraction
+                                JCTree.Tag.DIV_ASG -> JRAssignOp.Operator.Division
+                                JCTree.Tag.MUL_ASG -> JRAssignOp.Operator.Multiplication
+                                JCTree.Tag.MOD_ASG -> JRAssignOp.Operator.Modulo
+                                JCTree.Tag.BITAND_ASG -> JRAssignOp.Operator.BitAnd
+                                JCTree.Tag.BITOR_ASG -> JRAssignOp.Operator.BitOr
+                                JCTree.Tag.BITXOR_ASG -> JRAssignOp.Operator.BitXor
+                                JCTree.Tag.SL_ASG -> JRAssignOp.Operator.LeftShift
+                                JCTree.Tag.SR_ASG -> JRAssignOp.Operator.RightShift
+                                JCTree.Tag.USR_ASG -> JRAssignOp.Operator.UnsignedRightShift
+                                else -> throw IllegalArgumentException("Unexpected compound assignment tag ${node.tag}")
+                            },
+                            node.lhs.convert(),
+                            node.rhs.convert(),
                             node.posRange(),
                             node.source()
                     )

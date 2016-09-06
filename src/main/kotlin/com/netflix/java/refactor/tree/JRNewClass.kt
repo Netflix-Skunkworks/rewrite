@@ -7,6 +7,6 @@ class JRNewClass(val encl: JRExpression?,
                  val classBody: JRClassDecl?, // non-null for anonymous classes
                  val type: JRType?,
                  override val pos: IntRange,
-                 override val source: String): JRExpression {
+                 override val source: String): JRExpression, JRStatement {
     override fun <R> accept(v: JRTreeVisitor<R>): R = v.visitNewClass(this)
 }
