@@ -324,6 +324,19 @@ fun JCTree.JCCompilationUnit.toAst(): JRCompilationUnit =
                             node.block.convert(),
                             node.posRange()
                     )
+
+            override fun visitSynchronized(node: SynchronizedTree, p: Unit?): JRTree =
+                    JRSynchronized(
+                            node.expression.convert(),
+                            node.block.convert(),
+                            node.posRange()
+                    )
+
+            override fun visitEmptyStatement(node: EmptyStatementTree, p: Unit?): JRTree =
+                    JREmpty(node.posRange())
+
+            override fun visitParenthesized(node: ParenthesizedTree, p: Unit?): JRTree =
+                    JRParentheses(node.expression.convert(), node.posRange(), node.source())
             
             private fun Symbol?.jrType(): JRType? {
                 val owner = { this?.owner?.jrType() }

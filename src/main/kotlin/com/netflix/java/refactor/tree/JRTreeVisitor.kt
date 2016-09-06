@@ -145,7 +145,11 @@ open class JRTreeVisitor<R>(val default: R) {
                 .andThen(tryable.catchers)
                 .andThen(tryable.finally)
     
-    open fun visitCatch(catch: JRCatch): R =
-            scan(catch.param)
-                .andThen(catch.body)
+    open fun visitCatch(catch: JRCatch): R = scan(catch.param).andThen(catch.body)
+    
+    open fun visitSynchronized(synch: JRSynchronized): R = scan(synch.lock).andThen(synch.body)
+    
+    open fun visitEmpty(empty: JREmpty): R = default
+    
+    open fun visitParentheses(parens: JRParentheses): R = scan(parens.expr)
 }
