@@ -1,5 +1,6 @@
 package com.netflix.java.refactor.tree
 
+import com.sun.source.tree.ForLoopTree
 import com.sun.source.tree.NewClassTree
 
 open class JRTreeVisitor<R>(val default: R) {
@@ -91,4 +92,15 @@ open class JRTreeVisitor<R>(val default: R) {
             scan(binary.left).andThen(binary.right)
     
     open fun visitUnary(unary: JRUnary): R = scan(unary.expr)
+    
+    open fun visitForLoop(forLoop: JRForLoop): R =
+            scan(forLoop.init)
+                    .andThen(forLoop.condition)
+                    .andThen(forLoop.update)
+                    .andThen(forLoop.body)
+    
+    open fun visitForEachLoop(forEachLoop: JRForEachLoop): R =
+            scan(forEachLoop.variable)
+                    .andThen(forEachLoop.iterable)
+                    .andThen(forEachLoop.body)
 }

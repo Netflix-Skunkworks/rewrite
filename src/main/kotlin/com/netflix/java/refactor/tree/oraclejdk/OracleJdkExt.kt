@@ -23,8 +23,9 @@ fun JCTree.JCCompilationUnit.toAst(): JRCompilationUnit =
             @Suppress("UNCHECKED_CAST") private fun <T : JRTree> Tree?.convertOrNull(): T? =
                     if (this is Tree) scan(this, null) as T? else null
 
-            private fun <T : JRTree> List<Tree>?.convert(): List<T> = if (this == null) emptyList()
-            else map { it.convertOrNull<T>() }.filterNotNull()
+            private fun <T : JRTree> List<Tree>?.convert(): List<T> = 
+                    if (this == null) emptyList()
+                    else map { it.convertOrNull<T>() }.filterNotNull()
 
             override fun visitCompilationUnit(node: CompilationUnitTree, p: Unit?): JRTree {
                 val cu = node as JCTree.JCCompilationUnit
@@ -204,6 +205,25 @@ fun JCTree.JCCompilationUnit.toAst(): JRCompilationUnit =
                             node.type.jrType(),
                             node.posRange(),
                             node.source()
+                    )
+            
+            override fun visitForLoop(node: ForLoopTree, p: Unit?): JRTree =
+                    JRForLoop(
+                            node.initializer.convert(),
+                            node.condition.convertOrNull(),
+                            node.update.convert(),
+                            node.statement.convert(),
+                            (node as JCTree.JCForLoop).type.jrType(),
+                            node.posRange()
+                    )
+
+            override fun visitEnhancedForLoop(node: EnhancedForLoopTree, p: Unit?): JRTree =
+                    JRForEachLoop(
+                            node.variable.convert(),
+                            node.expression.convert(),
+                            node.statement.convert(),
+                            (node as JCTree.JCEnhancedForLoop).type.jrType(),
+                            node.posRange()
                     )
             
             private fun Symbol?.jrType(): JRType? {

@@ -7,7 +7,6 @@ data class JRBinary(val operator: Operator,
                     override val pos: IntRange,
                     override val source: String): JRExpression {
     
-    // TODO what is a ternary considered?
     enum class Operator {
         // Arithmetic
         Addition, Subtraction, Multiplication, Division, Modulo,
