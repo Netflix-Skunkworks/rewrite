@@ -1,11 +1,12 @@
 package com.netflix.java.refactor.gradle
 
-import com.netflix.java.refactor.SourceSet
+import com.netflix.java.refactor.annot.AnnotationScanner
+import com.netflix.java.refactor.parse.FileSource
+import com.netflix.java.refactor.parse.OracleJdkParser
 import org.gradle.api.DefaultTask
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.TaskAction
 import org.gradle.logging.StyledTextOutputFactory
-import java.nio.file.Path
 import java.util.*
 import javax.inject.Inject
 
@@ -16,18 +17,20 @@ open class RefactorAndFixSourceTask : DefaultTask() {
     
     private class RuleDescriptor(val name: String, val description: String)
     
+    typealias RelativePath = String
+    
     @TaskAction
     fun refactorSource() {
-        val fixesByRule = hashMapOf<RuleDescriptor, MutableSet<Path>>()
+        val fixesByRule = hashMapOf<RuleDescriptor, MutableSet<RelativePath>>()
 
         project.convention.getPlugin(JavaPluginConvention::class.java).sourceSets.forEach {
-            val sourceSet = SourceSet(it.allJava.map { it.toPath() }, it.compileClasspath.map { it.toPath() })
-            sourceSet.allAutoRefactorsOnClasspath().forEach {
-                val (refactor, scanner) = it
-                sourceSet.allJava().forEach { source ->
-                    scanner.scan(source)
-                    if(source.changedFile) {
-                        fixesByRule.getOrPut(RuleDescriptor(refactor.value, refactor.description), { HashSet<Path>() }).add(source.file())
+            val sources = it.allJava.map { it.toPath() }
+            val classpath = it.compileClasspath.map { it.toPath() }
+            
+            AnnotationScanner.allAutoRefactorsOnClasspath(classpath).forEach { refactor, visitor ->
+                OracleJdkParser(classpath).parse(sources, FileSource.Builder::fromPath).forEach { cu -> 
+                    if(visitor.visit(cu).isNotEmpty()) {
+                        fixesByRule.getOrPut(RuleDescriptor(refactor.value, refactor.description), { HashSet<RelativePath>() }).add(cu.source.path)
                     }
                 }
             }
@@ -36,7 +39,7 @@ open class RefactorAndFixSourceTask : DefaultTask() {
         printReport(fixesByRule)
     }
     
-    private fun printReport(fixesByRule: Map<RuleDescriptor, Collection<Path>>) {
+    private fun printReport(fixesByRule: Map<RuleDescriptor, Collection<RelativePath>>) {
         val textOutput = getTextOutputFactory()!!.create(RefactorAndFixSourceTask::class.java)
         
         if(fixesByRule.isEmpty()) {

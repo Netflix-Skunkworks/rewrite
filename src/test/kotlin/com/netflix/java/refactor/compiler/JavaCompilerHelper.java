@@ -101,11 +101,9 @@ public class JavaCompilerHelper {
 
 		Options options = Options.instance(context);
 		options.put("-g", "");
-//		options.put("-verbose", "");
 		options.put("verboseCompilePolicy", "");
 		options.put("dev", "");
 		options.put("-Xdiags:verbose", "");
-//		options.isSet(Option.XDIAGS, "verbose");
 		
 		com.sun.tools.javac.main.JavaCompiler compiler = new com.sun.tools.javac.main.JavaCompiler(context);
 		compiler.initProcessAnnotations(this.processors);

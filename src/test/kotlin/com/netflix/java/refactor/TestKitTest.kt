@@ -5,15 +5,19 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.rules.TemporaryFolder
 import java.io.File
+import java.util.regex.Pattern
 
 /**
  * Things that really belong in the unfinished Gradle Testkit
  */
-abstract class TestKitTest: AbstractRefactorTest() {
+abstract class TestKitTest {
     lateinit var projectDir: File
     lateinit var buildFile: File
     lateinit var settingsFile: File
 
+    @JvmField @Rule
+    val temp = TemporaryFolder()
+    
     @Before
     fun setup() {
         projectDir = temp.root
@@ -61,4 +65,12 @@ abstract class TestKitTest: AbstractRefactorTest() {
             createJavaFile(projectDir, source, "src/main/java")
     
     fun createJavaSourceFile(source: String) = createJavaSourceFile(projectDir, source)
+
+    fun fullyQualifiedName(sourceStr: String): String? {
+        val pkgMatcher = Pattern.compile("\\s*package\\s+([\\w\\.]+)").matcher(sourceStr)
+        val pkg = if (pkgMatcher.find()) pkgMatcher.group(1) + "." else ""
+
+        val classMatcher = Pattern.compile("(class|interface|enum)\\s*(<[^>]*>)?\\s+(\\w+)").matcher(sourceStr)
+        return if (classMatcher.find()) pkg + classMatcher.group(3) else null
+    }
 }

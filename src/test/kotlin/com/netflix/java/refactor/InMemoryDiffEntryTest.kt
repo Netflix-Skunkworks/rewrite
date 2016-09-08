@@ -1,5 +1,6 @@
 package com.netflix.java.refactor
 
+import com.netflix.java.refactor.diff.InMemoryDiffEntry
 import org.junit.Test
 import org.junit.Assert.assertEquals
 
