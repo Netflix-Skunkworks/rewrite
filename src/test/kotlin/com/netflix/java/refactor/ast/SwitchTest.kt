@@ -22,13 +22,13 @@ abstract class SwitchTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val switch = a.classDecls[0].methods[0].body.statements[0] as Switch
-        assertTrue(switch.selector.expr is Ident)
+        val switch = a.classDecls[0].methods[0].body.statements[0] as Tr.Switch
+        assertTrue(switch.selector.expr is Tr.Ident)
         assertEquals(1, switch.cases.size)
         
         val case0 = switch.cases[0]
-        assertTrue(case0.pattern is Literal)
-        assertTrue(case0.statements[0] is Break)
+        assertTrue(case0.pattern is Tr.Literal)
+        assertTrue(case0.statements[0] is Tr.Break)
     }
     
     @Test
@@ -44,13 +44,13 @@ abstract class SwitchTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val switch = a.classDecls[0].methods[0].body.statements[0] as Switch
-        assertTrue(switch.selector.expr is Ident)
+        val switch = a.classDecls[0].methods[0].body.statements[0] as Tr.Switch
+        assertTrue(switch.selector.expr is Tr.Ident)
         assertEquals(1, switch.cases.size)
 
         val default = switch.cases[0]
         assertNull(default.pattern)
-        assertTrue(default.statements[0] is MethodInvocation)
+        assertTrue(default.statements[0] is Tr.MethodInvocation)
     }
     
     @Test
@@ -64,8 +64,8 @@ abstract class SwitchTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val switch = a.classDecls[0].methods[0].body.statements[0] as Switch
-        assertTrue(switch.selector.expr is Ident)
+        val switch = a.classDecls[0].methods[0].body.statements[0] as Tr.Switch
+        assertTrue(switch.selector.expr is Tr.Ident)
         assertEquals(0, switch.cases.size)
     }
 }

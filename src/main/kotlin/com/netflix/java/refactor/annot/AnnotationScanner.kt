@@ -1,7 +1,7 @@
 package com.netflix.java.refactor.annot
 
 import com.netflix.java.refactor.ast.AstVisitor
-import com.netflix.java.refactor.refactor.RefactorTreeVisitor
+import com.netflix.java.refactor.refactor.fix.RefactorTreeVisitor
 import eu.infomas.annotation.AnnotationDetector
 import org.slf4j.LoggerFactory
 import java.net.URLClassLoader

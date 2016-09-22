@@ -1,6 +1,6 @@
 package com.netflix.java.refactor.parse
 
-import com.netflix.java.refactor.ast.CompilationUnit
+import com.netflix.java.refactor.ast.Tr
 import java.nio.file.Path
 
 abstract class Parser(classpath: List<Path>?) {
@@ -9,7 +9,7 @@ abstract class Parser(classpath: List<Path>?) {
         fn.endsWith(".jar") && !fn.endsWith("-javadoc.jar") && !fn.endsWith("-sources.jar")
     }
 
-    abstract fun parse(sourceFiles: List<Path>, sourceFactory: (Path) -> Source): List<CompilationUnit>
+    abstract fun parse(sourceFiles: List<Path>, sourceFactory: (Path) -> RawSourceCode): List<Tr.CompilationUnit>
     
     protected fun filterSourceFiles(sourceFiles: List<Path>) =
         sourceFiles.filter { it.fileName.toString().endsWith(".java") }.toList()

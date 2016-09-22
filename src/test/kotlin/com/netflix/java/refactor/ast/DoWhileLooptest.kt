@@ -18,8 +18,8 @@ abstract class DoWhileLoopTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val whileLoop = a.classDecls[0].methods[0].body.statements[0] as DoWhileLoop
-        assertTrue(whileLoop.condition.expr is Literal)
-        assertTrue(whileLoop.body is Block)
+        val whileLoop = a.classDecls[0].methods[0].body.statements[0] as Tr.DoWhileLoop
+        assertTrue(whileLoop.condition.expr is Tr.Literal)
+        assertTrue(whileLoop.body is Tr.Block)
     }
 }

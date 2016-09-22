@@ -1,16 +1,13 @@
 package com.netflix.java.refactor.search
 
-import com.netflix.java.refactor.ast.AstVisitor
-import com.netflix.java.refactor.ast.CompilationUnit
-import com.netflix.java.refactor.ast.Type
-import com.netflix.java.refactor.ast.asClass
+import com.netflix.java.refactor.ast.*
 
 data class Field(val name: String, val type: String)
 
 class FindFields(val clazz: String, val includeInherited: Boolean) : AstVisitor<List<Field>>(emptyList()) {
 
-    override fun visitCompilationUnit(cu: CompilationUnit): List<Field> {
-        super.visitCompilationUnit(cu)
+    override fun visitCompilationUnit(cu: Tr.CompilationUnit, cursor: Cursor): List<Field> {
+        super.visitCompilationUnit(cu, cursor)
         return cu.classDecls.flatMap { superFields(it.type.asClass()) }
     }
 

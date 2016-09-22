@@ -21,13 +21,13 @@ abstract class MethodInvocationTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val inv = a.classDecls[0].fields[0].initializer as MethodInvocation
+        val inv = a.classDecls[0].fields[0].initializer as Tr.MethodInvocation
 
         // check assumptions about the call site
-        assertEquals("foo", a.source.snippet(inv.methodSelect))
+        assertEquals("foo", inv.methodSelect.source.text(a))
         assertEquals("java.lang.Integer", inv.returnType().asClass()?.fullyQualifiedName)
         assertEquals(listOf(Type.Tag.Int, Type.Tag.Int, Type.Tag.Int),
-                inv.args.filterIsInstance<Literal>().map { it.typeTag })
+                inv.args.filterIsInstance<Tr.Literal>().map { it.typeTag })
         
         val effectParams = inv.resolvedSignature!!.paramTypes
         assertEquals("java.lang.Integer", effectParams[0].asClass()?.fullyQualifiedName)
@@ -55,13 +55,13 @@ abstract class MethodInvocationTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val inv = a.classDecls[0].fields[0].initializer as MethodInvocation
+        val inv = a.classDecls[0].fields[0].initializer as Tr.MethodInvocation
         
         // check assumptions about the call site
-        assertEquals("foo", a.source.snippet(inv.methodSelect))
+        assertEquals("foo", inv.methodSelect.source.text(a))
         assertEquals("java.lang.Integer", inv.returnType().asClass()?.fullyQualifiedName)
         assertEquals(listOf(Type.Tag.Int, Type.Tag.Int, Type.Tag.Int),
-                inv.args.filterIsInstance<Literal>().map { it.typeTag })
+                inv.args.filterIsInstance<Tr.Literal>().map { it.typeTag })
         val effectParams = inv.resolvedSignature!!.paramTypes
         assertEquals("java.lang.Integer", effectParams[0].asClass()?.fullyQualifiedName)
         assertTrue(effectParams[1].isArrayOfType("java.lang.Integer"))
@@ -88,8 +88,8 @@ abstract class MethodInvocationTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val inv = a.classDecls[0].fields[0].initializer as MethodInvocation
-        assertEquals("staticFoo", a.source.snippet(inv.methodSelect))
+        val inv = a.classDecls[0].fields[0].initializer as Tr.MethodInvocation
+        assertEquals("staticFoo", inv.methodSelect.source.text(a))
         assertEquals("A", inv.declaringType?.fullyQualifiedName)
     }
     
@@ -101,7 +101,7 @@ abstract class MethodInvocationTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val inv = a.classDecls[0].fields[0].initializer as MethodInvocation
+        val inv = a.classDecls[0].fields[0].initializer as Tr.MethodInvocation
         assertEquals("A", inv.declaringType?.fullyQualifiedName)
         assertNull(inv.resolvedSignature)
         assertNull(inv.genericSignature)

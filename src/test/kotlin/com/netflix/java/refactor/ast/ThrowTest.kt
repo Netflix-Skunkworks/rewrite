@@ -17,7 +17,7 @@ abstract class ThrowTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val thrown = a.classDecls[0].methods[0].body.statements[0] as Throw
-        assertTrue(thrown.expr is NewClass)
+        val thrown = a.classDecls[0].methods[0].body.statements[0] as Tr.Throw
+        assertTrue(thrown.expr is Tr.NewClass)
     }
 }

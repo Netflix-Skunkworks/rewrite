@@ -21,10 +21,10 @@ abstract class TryTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val tryable = a.classDecls[0].methods[0].body.statements[0] as Try
-        assertTrue(tryable.body is Block)
+        val tryable = a.classDecls[0].methods[0].body.statements[0] as Tr.Try
+        assertTrue(tryable.body is Tr.Block)
         assertEquals(0, tryable.catchers.size)
-        assertTrue(tryable.finally is Block)
+        assertTrue(tryable.finally is Tr.Block)
     }
     
     @Test
@@ -40,7 +40,7 @@ abstract class TryTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val tryable = a.classDecls[0].methods[0].body.statements[0] as Try
+        val tryable = a.classDecls[0].methods[0].body.statements[0] as Tr.Try
         assertEquals(1, tryable.catchers.size)
     }
     
@@ -59,7 +59,7 @@ abstract class TryTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val tryable = a.classDecls[0].methods[0].body.statements[0] as Try
+        val tryable = a.classDecls[0].methods[0].body.statements[0] as Tr.Try
         assertEquals(1, tryable.resources.size)
     }
 }

@@ -1,13 +1,12 @@
 package com.netflix.java.refactor.refactor.op
 
-import com.netflix.java.refactor.ast.Ident
+import com.netflix.java.refactor.ast.Cursor
+import com.netflix.java.refactor.ast.Tr
 import com.netflix.java.refactor.ast.asClass
-import com.netflix.java.refactor.parse.Source
-import com.netflix.java.refactor.refactor.RefactorFix
-import com.netflix.java.refactor.refactor.RefactorTreeVisitor
+import com.netflix.java.refactor.refactor.fix.RefactorFix
+import com.netflix.java.refactor.refactor.fix.RefactorTreeVisitor
 
-data class ChangeType(override val source: Source, 
-                      val from: String, val to: String): RefactorTreeVisitor() {
+data class ChangeType(val from: String, val to: String): RefactorTreeVisitor() {
 //    override fun scanner() = IfThenScanner(
 //            ifFixesResultFrom = ChangeTypeScanner(this),
 //            then = arrayOf(
@@ -16,7 +15,7 @@ data class ChangeType(override val source: Source,
 //            )
 //    )
 
-    override fun visitIdentifier(ident: Ident): List<RefactorFix> =
+    override fun visitIdentifier(ident: Tr.Ident, cursor: Cursor): List<RefactorFix> =
         if(ident.type.asClass()?.fullyQualifiedName == from)
             listOf(ident.replace(className(to)))
         else emptyList()

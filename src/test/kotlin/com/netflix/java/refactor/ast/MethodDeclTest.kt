@@ -2,7 +2,6 @@ package com.netflix.java.refactor.ast
 
 import com.netflix.java.refactor.parse.Parser
 import com.netflix.java.refactor.test.AstTest
-import com.sun.tools.javac.tree.JCTree
 import org.junit.Test
 import kotlin.test.assertEquals
 
@@ -24,6 +23,6 @@ abstract class MethodDeclTest(parser: Parser): AstTest(parser) {
         assertEquals("foo", meth.name)
         assertEquals(3, meth.params.size)
         assertEquals(1, meth.body.statements.size)
-        assertEquals("P", ((meth.returnTypeExpr as Ident).type as Type.GenericTypeVariable).name)
+        assertEquals("P", ((meth.returnTypeExpr as Tr.Ident).type as Type.GenericTypeVariable).name)
     }
 }

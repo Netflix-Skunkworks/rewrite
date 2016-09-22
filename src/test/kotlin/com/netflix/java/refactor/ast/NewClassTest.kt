@@ -38,7 +38,7 @@ abstract class NewClassTest(parser: Parser): AstTest(parser) {
         val cu = parse(c, whichDependsOn = a)
         val b = cu.classDecls[0].fields[0]
         assertEquals("a.A.B", b.type.asClass()?.fullyQualifiedName)
-        assertEquals("A.B", cu.source.snippet((b.initializer as NewClass).identifier))
+        assertEquals("A.B", (b.initializer as Tr.NewClass).identifier.source.text(cu))
     }
     
     @Test
@@ -50,7 +50,7 @@ abstract class NewClassTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val newClass = a.classDecls[0].fields[0].initializer as NewClass
+        val newClass = a.classDecls[0].fields[0].initializer as Tr.NewClass
         assertEquals(1, newClass.args.size)
     }
 }

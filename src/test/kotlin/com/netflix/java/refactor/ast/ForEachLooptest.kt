@@ -18,8 +18,8 @@ abstract class ForEachLoopTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val forEachLoop = a.classDecls[0].methods[0].body.statements[0] as ForEachLoop
-        assertTrue(forEachLoop.variable is VariableDecl)
+        val forEachLoop = a.classDecls[0].methods[0].body.statements[0] as Tr.ForEachLoop
+        assertTrue(forEachLoop.variable is Tr.VariableDecl)
         assertTrue(forEachLoop.iterable is Expression)
     }
 }

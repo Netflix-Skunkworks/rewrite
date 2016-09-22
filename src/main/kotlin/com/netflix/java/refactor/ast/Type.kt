@@ -1,11 +1,13 @@
 package com.netflix.java.refactor.ast
 
 import java.io.Serializable
+import java.util.*
 
 sealed class Type(): Serializable {
     abstract class TypeWithOwner: Type() {
         abstract val owner: Type?
 
+        // FIXME is this useful anymore?
         fun ownedByType(clazz: String): Boolean =
             if (this is Type.Class && fullyQualifiedName == clazz)
                 true
@@ -14,9 +16,20 @@ sealed class Type(): Serializable {
             else false
     }
     
-    data class Package(val fullName: String, override val owner: Type?): TypeWithOwner()
+    data class Package private constructor(val fullName: String, override val owner: Type?): TypeWithOwner() {
+        companion object {
+            private val packagePool = HashMap<String, Package>()
+            
+            fun build(fullName: String): Package? =
+                if(fullName.isEmpty()) null
+                else packagePool.getOrPut(fullName) { 
+                    val subpackage = fullName.substringBeforeLast('.')
+                    Package(fullName, if(subpackage != fullName) build(subpackage) else null)
+                }
+        }
+    }
     
-    data class Class(val fullyQualifiedName: String, 
+    data class Class private constructor(val fullyQualifiedName: String, 
                      override val owner: Type?,
                      val members: List<Var>,
                      val supertype: Class?): TypeWithOwner() {
@@ -25,6 +38,17 @@ sealed class Type(): Serializable {
         
         companion object {
             val Cyclic = Class("CYCLIC_TYPE_REF", null, emptyList(), null)
+            private val classPool = HashMap<String, Class>()
+            
+            fun build(fullyQualifiedName: String, members: List<Var> = emptyList(), supertype: Class? = null) =
+                classPool.getOrPut(fullyQualifiedName) {
+                    Class(fullyQualifiedName,
+                            Package.build(fullyQualifiedName.substringBeforeLast(".")),
+                            members,
+                            supertype)
+                }
+            
+            
         }
     }
     

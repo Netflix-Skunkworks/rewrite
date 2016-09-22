@@ -1,15 +1,14 @@
 package com.netflix.java.refactor.refactor.op
 
 import com.netflix.java.refactor.ast.*
-import com.netflix.java.refactor.parse.Source
-import com.netflix.java.refactor.refactor.RefactorFix
+import com.netflix.java.refactor.refactor.fix.RefactorFix
 import com.netflix.java.refactor.refactor.RefactorTransaction
-import com.netflix.java.refactor.refactor.RefactorTreeVisitor
+import com.netflix.java.refactor.refactor.fix.RefactorTreeVisitor
 import com.netflix.java.refactor.search.MethodMatcher
 import java.util.*
 import java.util.regex.Pattern
 
-class ChangeMethodInvocation(override val source: Source, signature: String, val tx: RefactorTransaction) : RefactorTreeVisitor() {
+class ChangeMethodInvocation(signature: String, val tx: RefactorTransaction) : RefactorTreeVisitor() {
 //    override fun scanner(): AstScanner<List<RefactorFix>> =
 //            if (refactorTargetToStatic is String) {
 //                IfThenScanner(ifFixesResultFrom = ChangeMethodInvocationScanner(this),
@@ -60,24 +59,24 @@ class ChangeMethodInvocation(override val source: Source, signature: String, val
 
     fun done() = tx
 
-    override fun visitMethodInvocation(meth: MethodInvocation): List<RefactorFix> {
+    override fun visitMethodInvocation(meth: Tr.MethodInvocation, cursor: Cursor): List<RefactorFix> {
         if (matcher.matches(meth)) {
-            return refactorMethod(meth)
+            return refactorMethod(meth, cursor)
         }
         return emptyList()
     }
 
-    fun refactorMethod(invocation: MethodInvocation): List<RefactorFix> {
+    fun refactorMethod(invocation: Tr.MethodInvocation, cursor: Cursor): List<RefactorFix> {
         val meth = invocation.methodSelect
         val fixes = ArrayList<RefactorFix>()
 
         if (refactorName is String) {
             when (meth) {
-                is FieldAccess -> {
-                    val nameStart = meth.target.pos.endInclusive + 1
-                    fixes.add(RefactorFix(nameStart..nameStart + meth.fieldName.length, refactorName!!, source))
+                is Tr.FieldAccess -> {
+//                    val nameStart = meth.target.pos.endInclusive + 1
+//                    fixes.add(RefactorFix(nameStart..nameStart + meth.fieldName.length, refactorName!!, source))
                 }
-                is Ident -> meth.replace(refactorName!!)
+                is Tr.Ident -> meth.replace(refactorName!!)
             }
         }
 
@@ -114,8 +113,8 @@ class ChangeMethodInvocation(override val source: Source, signature: String, val
                                 }
                             }
 
-                            swaps.forEach { swap ->
-                                fixes.add(invocation.args[argPos].replace(swap.changesToArgument(argPos) ?: swap.source()))
+                            swaps.forEach { swap: Expression ->
+//                                fixes.add(invocation.args[argPos].replace(swap.changesToArgument(argPos, cursor) ?: swap.source()))
                                 argPos++
                             }
                         }
@@ -127,76 +126,79 @@ class ChangeMethodInvocation(override val source: Source, signature: String, val
                 }
             } else {
                 invocation.args.forEachIndexed { i, arg ->
-                    arg.changesToArgument(i)?.let { changes ->
+                    arg.changesToArgument(i, cursor)?.let { changes ->
                         fixes.add(arg.replace(changes))
                     }
                 }
             }
 
             refactorArguments?.insertions?.forEach { insertion ->
-                if(invocation.args.isEmpty()) {
-                    val argStart = source.text.indexOf('(', invocation.methodSelect.pos.endInclusive) + 1
-                    fixes.add(insertAt(argStart, "${if(insertion.pos > 0) ", " else ""}${insertion.value}"))
-                }
-                else if(invocation.args.size <= insertion.pos) {
-                    fixes.add(insertAt(invocation.args.last().pos.endInclusive, ", ${insertion.value}"))
-                }
-                else {
-                    fixes.add(insertAt(invocation.args[insertion.pos].pos.start, "${insertion.value}, "))
-                }
+//                if(invocation.args.isEmpty()) {
+//                    val argStart = source.text.indexOf('(', invocation.methodSelect.pos.endInclusive) + 1
+//                    fixes.add(insertAt(argStart, "${if(insertion.pos > 0) ", " else ""}${insertion.value}"))
+//                }
+//                else if(invocation.args.size <= insertion.pos) {
+//                    fixes.add(insertAt(invocation.args.last().pos.endInclusive, ", ${insertion.value}"))
+//                }
+//                else {
+//                    fixes.add(insertAt(invocation.args[insertion.pos].pos.start, "${insertion.value}, "))
+//                }
             }
         }
 
         if (refactorTargetToStatic is String) {
             when (meth) {
-                is FieldAccess -> fixes.add(meth.target.replace(className(refactorTargetToStatic!!)))
-                is Ident -> fixes.add(meth.insertBefore(className(refactorTargetToStatic!! + ".")))
+                is Tr.FieldAccess -> fixes.add(meth.target.replace(className(refactorTargetToStatic!!)))
+                is Tr.Ident -> fixes.add(meth.insertBefore(className(refactorTargetToStatic!! + ".")))
             }
         }
 
         if (refactorTargetToVariable is String) {
             when (meth) {
-                is FieldAccess -> fixes.add(meth.target.replace(refactorTargetToVariable!!))
-                is Ident -> fixes.add(meth.insertBefore(refactorTargetToVariable!! + "."))
+                is Tr.FieldAccess -> fixes.add(meth.target.replace(refactorTargetToVariable!!))
+                is Tr.Ident -> fixes.add(meth.insertBefore(refactorTargetToVariable!! + "."))
             }
         }
 
         return fixes
     }
 
-    fun Expression.changesToArgument(pos: Int): String? {
+    fun Expression.changesToArgument(pos: Int, cursor: Cursor): String? {
         val refactor = refactorArguments?.individualArgumentRefactors?.find { it.posConstraint == pos } ?:
                 refactorArguments?.individualArgumentRefactors?.find { this.type?.matches(it.typeConstraint) ?: false }
 
-        return if (refactor is RefactorArgument) {
-            val fixes = ChangeArgumentScanner(source, refactor).visit(this)
-
-            // aggregate all the fixes to this argument into one "change" replacement rule
-            return if (fixes.isNotEmpty()) {
-                val sortedFixes = fixes.sortedBy { it.position.last }.sortedBy { it.position.start }
-                var fixedArg = sortedFixes.foldIndexed("") { i, src, fix ->
-                    val prefix = if (i == 0)
-                        source.text.substring(this.pos.start, fix.position.start)
-                    else source.text.substring(sortedFixes[i - 1].position.last, fix.position.start)
-                    src + prefix + (fix.changes ?: "")
-                }
-                if (sortedFixes.last().position.last < source.text.length) {
-                    fixedArg += source.text.substring(sortedFixes.last().position.last, this.pos.endInclusive)
-                }
-
-                fixedArg
-            } else null
-        } else null
+//        return if (refactor is RefactorArgument) {
+//            val fixes = ChangeArgumentScanner(refactor).visit(this, cursor)
+//
+//            // aggregate all the fixes to this argument into one "change" replacement rule
+//            return if (fixes.isNotEmpty()) {
+//                val sortedFixes = fixes.sortedBy { it.position.last }.sortedBy { it.position.start }
+//                var fixedArg = sortedFixes.foldIndexed("") { i, src, fix ->
+//                    val prefix = if (i == 0)
+//                        source.text.substring(this.pos.start, fix.position.start)
+//                    else source.text.substring(sortedFixes[i - 1].position.last, fix.position.start)
+//                    src + prefix + (fix.changes ?: "")
+//                }
+//                if (sortedFixes.last().position.last < source.text.length) {
+//                    fixedArg += source.text.substring(sortedFixes.last().position.last, this.pos.endInclusive)
+//                }
+//
+//                fixedArg
+//            } else null
+//        } else null
+        
+        return null
     }
 }
 
-class ChangeArgumentScanner(override val source: Source, val refactor: RefactorArgument) : RefactorTreeVisitor() {
-    override fun visitLiteral(literal: Literal): List<RefactorFix> {
+class ChangeArgumentScanner(val refactor: RefactorArgument) : RefactorTreeVisitor() {
+    
+    override fun visitLiteral(literal: Tr.Literal, cursor: Cursor): List<RefactorFix> {
         val value = literal.value.toString()
 
         // prefix and suffix hold the special characters surrounding the values of primitive-ish types,
         // e.g. the "" around String, the L at the end of a long, etc.
-        val valueMatcher = "(.*)${Pattern.quote(value)}(.*)".toRegex().find(source.snippet(literal).replace("\\", ""))
+        val valueMatcher = "(.*)${Pattern.quote(value)}(.*)".toRegex().find(literal.source.text(cu).replace("\\", ""))
         return when(valueMatcher) {
             is MatchResult -> {
                 val (prefix, suffix) = valueMatcher.groupValues.drop(1)

@@ -5,7 +5,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 
-class FileSource(val file: File): Source {
+class FileSource(val file: File): RawSourceCode() {
     override val text = file.readText()
     override val path = file.path
     

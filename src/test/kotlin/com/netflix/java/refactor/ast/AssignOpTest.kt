@@ -18,7 +18,7 @@ abstract class AssignOpTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val assign = a.classDecls[0].methods[0].body.statements[0] as AssignOp
-        assertEquals(AssignOp.Operator.Addition, assign.operator)
+        val assign = a.classDecls[0].methods[0].body.statements[0] as Tr.AssignOp
+        assertEquals(Tr.AssignOp.Operator.Addition, assign.operator)
     }
 }

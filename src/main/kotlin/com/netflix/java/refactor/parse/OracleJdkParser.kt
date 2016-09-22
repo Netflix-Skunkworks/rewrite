@@ -50,7 +50,7 @@ class OracleJdkParser(classpath: List<Path>? = null): Parser(classpath) {
         }))
     }
 
-    override fun parse(sourceFiles: List<Path>, sourceFactory: (Path) -> Source): List<CompilationUnit> {
+    override fun parse(sourceFiles: List<Path>, sourceFactory: (Path) -> RawSourceCode): List<Tr.CompilationUnit> {
         if(filteredClasspath != null) { // override classpath
             assert(context.get(JavaFileManager::class.java) === pfm)
             pfm.setLocation(StandardLocation.CLASS_PATH, filteredClasspath)
@@ -83,10 +83,9 @@ class OracleJdkParser(classpath: List<Path>? = null): Parser(classpath) {
         enter.main(compilationUnits)
     }
 
-    private fun toIntermediateAst(cu: JCTree.JCCompilationUnit, path: Path, sourceFactory: (Path) -> Source): CompilationUnit =
+    private fun toIntermediateAst(cu: JCTree.JCCompilationUnit, path: Path, sourceFactory: (Path) -> RawSourceCode): Tr.CompilationUnit =
             object : TreeScanner<Tree, Unit>() {
                 var endPosTable: EndPosTable by Delegates.notNull()
-                var source: String by Delegates.notNull()
 
                 override fun reduce(r1: Tree?, r2: Tree?) = r1 ?: r2
 
@@ -100,30 +99,29 @@ class OracleJdkParser(classpath: List<Path>? = null): Parser(classpath) {
 
                 override fun visitCompilationUnit(node: CompilationUnitTree, p: Unit?): Tree {
                     endPosTable = (node as JCTree.JCCompilationUnit).endPositions
-                    return CompilationUnit(
+                    return Tr.CompilationUnit(
                             sourceFactory(path),
                             node.packageName.convertOrNull(),
                             node.imports.convert(),
-                            node.typeDecls.filterIsInstance<JCTree.JCClassDecl>().convert(),
-                            node.posRange()
+                            node.typeDecls.filterIsInstance<JCTree.JCClassDecl>().convert()
                     )
                 }
 
                 override fun visitNewClass(node: NewClassTree, p: Unit?): Tree =
-                        NewClass(
+                        Tr.NewClass(
                                 node.enclosingExpression.convertOrNull(),
                                 node.typeArguments.convert(),
                                 node.identifier.convert(),
                                 node.arguments.convert(),
                                 node.classBody.convertOrNull(),
                                 (node as JCTree.JCNewClass).type.type(),
-                                node.posRange()
+                                node.source()
                         )
 
 //                var r = scan(node.modifiers, p)
 //                r = scanAndReduce(node.typeParameters, p, r)
                 override fun visitClass(node: ClassTree, p: Unit?): Tree =
-                        ClassDecl(
+                        Tr.ClassDecl(
                                 node.simpleName.toString(),
                                 node.members.filterIsInstance<JCTree.JCVariableDecl>().convert(),
                                 node.members.filterIsInstance<JCTree.JCMethodDecl>()
@@ -134,7 +132,7 @@ class OracleJdkParser(classpath: List<Path>? = null): Parser(classpath) {
                                 node.extendsClause.convertOrNull(),
                                 node.implementsClause.convert(),
                                 node.type(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitMethodInvocation(node: MethodInvocationTree, p: Unit?): Tree {
@@ -148,40 +146,40 @@ class OracleJdkParser(classpath: List<Path>? = null): Parser(classpath) {
                         else -> throw IllegalArgumentException("Unexpected method select type $this")
                     }
 
-                    return MethodInvocation(
+                    return Tr.MethodInvocation(
                             scan(meth.meth, null) as Expression,
                             meth.args.map { scan(it, null) as Expression },
                             methSymbol.type().asMethod(),
                             select?.type.type().asMethod(),
                             methSymbol?.owner?.type().asClass(),
-                            meth.posRange()
+                            meth.source()
                     )
                 }
 
                 override fun visitMethod(node: MethodTree, p: Unit?): Tree =
-                        MethodDecl(
+                        Tr.MethodDecl(
                                 node.name.toString(),
                                 node.returnType.convertOrNull(), // only null when compilation problem (literally no return type)
                                 node.parameters.convert(),
                                 node.throws.convert(),
                                 node.body.convert(),
                                 node.defaultValue.convertOrNull(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitBlock(node: BlockTree, p: Unit?): Tree =
-                        Block(node.statements.convert(), node.posRange())
+                        Tr.Block(node.statements.convert(), node.source())
 
                 override fun visitLiteral(node: LiteralTree, p: Unit?): Tree =
-                        Literal(
+                        Tr.Literal(
                                 (node as JCTree.JCLiteral).typetag.tag(),
                                 node.value,
                                 node.type(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitPrimitiveType(node: PrimitiveTypeTree, p: Unit?): Tree =
-                        Primitive(when (node.primitiveTypeKind) {
+                        Tr.Primitive(when (node.primitiveTypeKind) {
                             TypeKind.BOOLEAN -> Type.Tag.Boolean
                             TypeKind.BYTE -> Type.Tag.Byte
                             TypeKind.CHAR -> Type.Tag.Char
@@ -192,284 +190,282 @@ class OracleJdkParser(classpath: List<Path>? = null): Parser(classpath) {
                             TypeKind.SHORT -> Type.Tag.Short
                             TypeKind.VOID -> Type.Tag.Void
                             else -> throw IllegalArgumentException("Unknown primitive type $this")
-                        }, node.type(), node.posRange())
+                        }, node.type(), node.source())
 
                 override fun visitVariable(node: VariableTree, p: Unit?): Tree? = when (node.name.toString()) {
                     "<error>" -> null
                     else ->
-                        VariableDecl(
+                        Tr.VariableDecl(
                                 node.name.toString(),
                                 node.nameExpression.convertOrNull(),
                                 (node as JCTree.JCVariableDecl).vartype.convertOrNull(),
                                 node.init.convertOrNull(),
                                 node.type(),
-                                node.posRange()
+                                node.source()
                         )
                 }
 
                 override fun visitImport(node: ImportTree, p: Unit?): Tree =
-                        Import(
+                        Tr.Import(
                                 node.qualifiedIdentifier.convert(),
                                 node.isStatic,
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitMemberSelect(node: MemberSelectTree, p: Unit?): Tree =
-                        FieldAccess(
+                        Tr.FieldAccess(
                                 (node as JCTree.JCFieldAccess).name.toString(),
                                 node.selected.convert(),
                                 node.type(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitIdentifier(node: IdentifierTree, p: Unit?): Tree =
-                        Ident(
-                                node.name.toString(),
-                                node.type(),
-                                node.posRange()
+                        Tr.Ident(
+                            node.name.toString(),
+                            node.type(),
+                            node.source()
                         )
 
                 override fun visitBinary(node: BinaryTree, p: Unit?): Tree =
-                        Binary(
+                        Tr.Binary(
                                 when((node as JCTree.JCBinary).tag) {
-                                    JCTree.Tag.PLUS -> Binary.Operator.Addition
-                                    JCTree.Tag.MINUS -> Binary.Operator.Subtraction
-                                    JCTree.Tag.DIV -> Binary.Operator.Division
-                                    JCTree.Tag.MUL -> Binary.Operator.Multiplication
-                                    JCTree.Tag.MOD -> Binary.Operator.Modulo
-                                    JCTree.Tag.AND -> Binary.Operator.And
-                                    JCTree.Tag.OR -> Binary.Operator.Or
-                                    JCTree.Tag.BITAND -> Binary.Operator.BitAnd
-                                    JCTree.Tag.BITOR -> Binary.Operator.BitOr
-                                    JCTree.Tag.BITXOR -> Binary.Operator.BitXor
-                                    JCTree.Tag.SL -> Binary.Operator.LeftShift
-                                    JCTree.Tag.SR -> Binary.Operator.RightShift
-                                    JCTree.Tag.USR -> Binary.Operator.UnsignedRightShift
-                                    JCTree.Tag.LT -> Binary.Operator.LessThan
-                                    JCTree.Tag.GT -> Binary.Operator.GreaterThan
-                                    JCTree.Tag.LE -> Binary.Operator.LessThanOrEqual
-                                    JCTree.Tag.GE -> Binary.Operator.GreaterThanOrEqual
-                                    JCTree.Tag.EQ -> Binary.Operator.Equal
-                                    JCTree.Tag.NE -> Binary.Operator.NotEqual
+                                    JCTree.Tag.PLUS -> Tr.Binary.Operator.Addition
+                                    JCTree.Tag.MINUS -> Tr.Binary.Operator.Subtraction
+                                    JCTree.Tag.DIV -> Tr.Binary.Operator.Division
+                                    JCTree.Tag.MUL -> Tr.Binary.Operator.Multiplication
+                                    JCTree.Tag.MOD -> Tr.Binary.Operator.Modulo
+                                    JCTree.Tag.AND -> Tr.Binary.Operator.And
+                                    JCTree.Tag.OR -> Tr.Binary.Operator.Or
+                                    JCTree.Tag.BITAND -> Tr.Binary.Operator.BitAnd
+                                    JCTree.Tag.BITOR -> Tr.Binary.Operator.BitOr
+                                    JCTree.Tag.BITXOR -> Tr.Binary.Operator.BitXor
+                                    JCTree.Tag.SL -> Tr.Binary.Operator.LeftShift
+                                    JCTree.Tag.SR -> Tr.Binary.Operator.RightShift
+                                    JCTree.Tag.USR -> Tr.Binary.Operator.UnsignedRightShift
+                                    JCTree.Tag.LT -> Tr.Binary.Operator.LessThan
+                                    JCTree.Tag.GT -> Tr.Binary.Operator.GreaterThan
+                                    JCTree.Tag.LE -> Tr.Binary.Operator.LessThanOrEqual
+                                    JCTree.Tag.GE -> Tr.Binary.Operator.GreaterThanOrEqual
+                                    JCTree.Tag.EQ -> Tr.Binary.Operator.Equal
+                                    JCTree.Tag.NE -> Tr.Binary.Operator.NotEqual
                                     else -> throw IllegalArgumentException("Unexpected binary tag ${node.tag}")
                                 },
                                 node.leftOperand.convert(),
                                 node.rightOperand.convert(),
                                 node.type(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitUnary(node: UnaryTree, p: Unit?): Tree =
-                        Unary(
+                        Tr.Unary(
                                 when((node as JCTree.JCUnary).tag) {
-                                    JCTree.Tag.POS -> Unary.Operator.Positive
-                                    JCTree.Tag.NEG -> Unary.Operator.Negative
-                                    JCTree.Tag.PREDEC -> Unary.Operator.PreDecrement
-                                    JCTree.Tag.PREINC -> Unary.Operator.PreIncrement
-                                    JCTree.Tag.POSTDEC -> Unary.Operator.PostDecrement
-                                    JCTree.Tag.POSTINC -> Unary.Operator.PostIncrement
-                                    JCTree.Tag.COMPL -> Unary.Operator.Complement
-                                    JCTree.Tag.NOT -> Unary.Operator.Not
+                                    JCTree.Tag.POS -> Tr.Unary.Operator.Positive
+                                    JCTree.Tag.NEG -> Tr.Unary.Operator.Negative
+                                    JCTree.Tag.PREDEC -> Tr.Unary.Operator.PreDecrement
+                                    JCTree.Tag.PREINC -> Tr.Unary.Operator.PreIncrement
+                                    JCTree.Tag.POSTDEC -> Tr.Unary.Operator.PostDecrement
+                                    JCTree.Tag.POSTINC -> Tr.Unary.Operator.PostIncrement
+                                    JCTree.Tag.COMPL -> Tr.Unary.Operator.Complement
+                                    JCTree.Tag.NOT -> Tr.Unary.Operator.Not
                                     else -> throw IllegalArgumentException("Unexpected unary tag ${node.tag}")
                                 },
                                 node.arg.convert(),
                                 node.type(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitForLoop(node: ForLoopTree, p: Unit?): Tree =
-                        ForLoop(
+                        Tr.ForLoop(
                                 node.initializer.convert(),
                                 node.condition.convertOrNull(),
                                 node.update.convert(),
                                 node.statement.convert(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitEnhancedForLoop(node: EnhancedForLoopTree, p: Unit?): Tree =
-                        ForEachLoop(
+                        Tr.ForEachLoop(
                                 node.variable.convert(),
                                 node.expression.convert(),
                                 node.statement.convert(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitIf(node: IfTree, p: Unit?): Tree =
-                        If(
+                        Tr.If(
                                 node.condition.convert(),
                                 node.thenStatement.convert(),
                                 node.elseStatement.convertOrNull(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitConditionalExpression(node: ConditionalExpressionTree, p: Unit?): Tree =
-                        Ternary(
+                        Tr.Ternary(
                                 node.condition.convert(),
                                 node.trueExpression.convert(),
                                 node.falseExpression.convert(),
                                 node.type(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitWhileLoop(node: WhileLoopTree, p: Unit?): Tree =
-                        WhileLoop(
+                        Tr.WhileLoop(
                                 node.condition.convert(),
                                 node.statement.convert(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitDoWhileLoop(node: DoWhileLoopTree, p: Unit?): Tree =
-                        DoWhileLoop(
+                        Tr.DoWhileLoop(
                                 node.condition.convert(),
                                 node.statement.convert(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitBreak(node: BreakTree, p: Unit?): Tree =
-                        Break(
+                        Tr.Break(
                                 node.label?.toString(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitContinue(node: ContinueTree, p: Unit?): Tree =
-                        Continue(
+                        Tr.Continue(
                                 node.label?.toString(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitLabeledStatement(node: LabeledStatementTree, p: Unit?): Tree =
-                        Label(
+                        Tr.Label(
                                 node.label.toString(),
                                 node.statement.convert(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitReturn(node: ReturnTree, p: Unit?): Tree =
-                        Return(
+                        Tr.Return(
                                 node.expression.convertOrNull(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitSwitch(node: SwitchTree, p: Unit?): Tree =
-                        Switch(
+                        Tr.Switch(
                                 node.expression.convert(),
                                 node.cases.convert(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitCase(node: CaseTree, p: Unit?): Tree =
-                        Case(
+                        Tr.Case(
                                 node.expression.convertOrNull(),
                                 node.statements.convert(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitAssignment(node: AssignmentTree, p: Unit?): Tree =
-                        Assign(
+                        Tr.Assign(
                                 node.variable.convert(),
                                 node.expression.convert(),
                                 node.type(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitCompoundAssignment(node: CompoundAssignmentTree, p: Unit?): Tree =
-                        AssignOp(
+                        Tr.AssignOp(
                                 when((node as JCTree.JCAssignOp).tag) {
-                                    JCTree.Tag.PLUS_ASG -> AssignOp.Operator.Addition
-                                    JCTree.Tag.MINUS_ASG -> AssignOp.Operator.Subtraction
-                                    JCTree.Tag.DIV_ASG -> AssignOp.Operator.Division
-                                    JCTree.Tag.MUL_ASG -> AssignOp.Operator.Multiplication
-                                    JCTree.Tag.MOD_ASG -> AssignOp.Operator.Modulo
-                                    JCTree.Tag.BITAND_ASG -> AssignOp.Operator.BitAnd
-                                    JCTree.Tag.BITOR_ASG -> AssignOp.Operator.BitOr
-                                    JCTree.Tag.BITXOR_ASG -> AssignOp.Operator.BitXor
-                                    JCTree.Tag.SL_ASG -> AssignOp.Operator.LeftShift
-                                    JCTree.Tag.SR_ASG -> AssignOp.Operator.RightShift
-                                    JCTree.Tag.USR_ASG -> AssignOp.Operator.UnsignedRightShift
+                                    JCTree.Tag.PLUS_ASG -> Tr.AssignOp.Operator.Addition
+                                    JCTree.Tag.MINUS_ASG -> Tr.AssignOp.Operator.Subtraction
+                                    JCTree.Tag.DIV_ASG -> Tr.AssignOp.Operator.Division
+                                    JCTree.Tag.MUL_ASG -> Tr.AssignOp.Operator.Multiplication
+                                    JCTree.Tag.MOD_ASG -> Tr.AssignOp.Operator.Modulo
+                                    JCTree.Tag.BITAND_ASG -> Tr.AssignOp.Operator.BitAnd
+                                    JCTree.Tag.BITOR_ASG -> Tr.AssignOp.Operator.BitOr
+                                    JCTree.Tag.BITXOR_ASG -> Tr.AssignOp.Operator.BitXor
+                                    JCTree.Tag.SL_ASG -> Tr.AssignOp.Operator.LeftShift
+                                    JCTree.Tag.SR_ASG -> Tr.AssignOp.Operator.RightShift
+                                    JCTree.Tag.USR_ASG -> Tr.AssignOp.Operator.UnsignedRightShift
                                     else -> throw IllegalArgumentException("Unexpected compound assignment tag ${node.tag}")
                                 },
                                 node.lhs.convert(),
                                 node.rhs.convert(),
                                 node.type(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitThrow(node: ThrowTree, p: Unit?): Tree =
-                        Throw(
+                        Tr.Throw(
                                 node.expression.convert(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitTry(node: TryTree, p: Unit?): Tree =
-                        Try(
+                        Tr.Try(
                                 node.resources.convert(),
                                 node.block.convert(),
                                 node.catches.convert(),
                                 node.finallyBlock.convertOrNull(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitCatch(node: CatchTree, p: Unit?): Tree =
-                        Catch(
+                        Tr.Catch(
                                 node.parameter.convert(),
                                 node.block.convert(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitSynchronized(node: SynchronizedTree, p: Unit?): Tree =
-                        Synchronized(
+                        Tr.Synchronized(
                                 node.expression.convert(),
                                 node.block.convert(),
-                                node.posRange()
+                                node.source()
                         )
 
-                override fun visitEmptyStatement(node: EmptyStatementTree, p: Unit?): Tree =
-                        Empty(node.posRange())
+                override fun visitEmptyStatement(node: EmptyStatementTree, p: Unit?): Tree = Tr.Empty
 
                 override fun visitParenthesized(node: ParenthesizedTree, p: Unit?): Tree =
-                        Parentheses(
+                        Tr.Parentheses(
                                 node.expression.convert(),
                                 node.type(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitInstanceOf(node: InstanceOfTree, p: Unit?): Tree =
-                        InstanceOf(
+                        Tr.InstanceOf(
                                 node.expression.convert(),
                                 node.type.convert(),
                                 node.type(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitNewArray(node: NewArrayTree, p: Unit?): Tree =
-                        NewArray(
+                        Tr.NewArray(
                                 node.type.convert(),
                                 node.dimensions.convert(),
                                 node.initializers.convert(),
                                 node.type(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitArrayAccess(node: ArrayAccessTree, p: Unit?): Tree =
-                        ArrayAccess(
+                        Tr.ArrayAccess(
                                 node.expression.convert(),
                                 node.index.convert(),
                                 node.type(),
-                                node.posRange()
+                                node.source()
                         )
 
                 override fun visitLambdaExpression(node: LambdaExpressionTree, p: Unit?): Tree =
-                        Lambda(
+                        Tr.Lambda(
                                 node.parameters.convert(),
                                 node.body.convert(),
                                 node.type(),
-                                node.posRange()
+                                node.source()
                         )
 
                 private val allFlagsMask = Type.Var.Flags.values().map { it.value }.reduce { f1, f2 -> f1 or f2 }
                 
                 private fun Symbol?.type(stack: List<Any?> = emptyList()): Type? {
-                    val owner = { this?.owner?.type(stack.plus(this)) }
                     return when (this) {
                         is Symbol.ClassSymbol -> {
                             val fields = (this.members_field?.elements ?: emptyList())
@@ -482,9 +478,9 @@ class OracleJdkParser(classpath: List<Path>? = null): Parser(classpath) {
                                         )
                                     }
                             
-                            Type.Class(this.className(), owner(), fields, null)
+                            Type.Class.build(this.className(), fields, null)
                         }
-                        is Symbol.PackageSymbol -> Type.Package(this.fullname.toString(), owner())
+                        is Symbol.PackageSymbol -> Type.Package.build(this.fullname.toString())
                         is Symbol.MethodSymbol -> {
                             when (this.type) {
                                 is com.sun.tools.javac.code.Type.ForAll -> 
@@ -522,12 +518,13 @@ class OracleJdkParser(classpath: List<Path>? = null): Parser(classpath) {
 
                 private fun com.sun.source.tree.Tree.type(): Type? = (this as JCTree).type.type()
                 
-                private fun com.sun.source.tree.Tree.posRange(): IntRange = (this as JCTree).posRange()
-                private fun JCTree.posRange(): IntRange =
+                private fun com.sun.source.tree.Tree.source(): Source = (this as JCTree).source()
+                
+                private fun JCTree.source(): Source =
                         if (getEndPosition(endPosTable) < 0)
-                            0..0
+                            Source.None
                         else
-                            startPosition..getEndPosition(endPosTable) - 1
+                            Source.Persisted(startPosition..getEndPosition(endPosTable) - 1, "", "") // FIXME correctly calculate prefix and suffix
 
                 private fun TypeTag.tag() = when (this) {
                     TypeTag.BOOLEAN -> Type.Tag.Boolean
@@ -544,5 +541,5 @@ class OracleJdkParser(classpath: List<Path>? = null): Parser(classpath) {
                     else -> throw IllegalArgumentException("Unknown type tag $this")
                 }
 
-            }.scan(cu, null) as CompilationUnit
+            }.scan(cu, null) as Tr.CompilationUnit
 }

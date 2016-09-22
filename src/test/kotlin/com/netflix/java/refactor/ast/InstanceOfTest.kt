@@ -18,8 +18,8 @@ abstract class InstanceOfTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val variable = a.classDecls[0].methods[0].body.statements[0] as VariableDecl
-        val instanceof = variable.initializer as InstanceOf
-        assertEquals("java.lang.String", (instanceof.clazz as Ident).type.asClass()?.fullyQualifiedName)
+        val variable = a.classDecls[0].methods[0].body.statements[0] as Tr.VariableDecl
+        val instanceof = variable.initializer as Tr.InstanceOf
+        assertEquals("java.lang.String", (instanceof.clazz as Tr.Ident).type.asClass()?.fullyQualifiedName)
     }
 }

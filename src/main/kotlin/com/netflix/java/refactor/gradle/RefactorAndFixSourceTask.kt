@@ -30,7 +30,7 @@ open class RefactorAndFixSourceTask : DefaultTask() {
             AnnotationScanner.allAutoRefactorsOnClasspath(classpath).forEach { refactor, visitor ->
                 OracleJdkParser(classpath).parse(sources, FileSource.Builder::fromPath).forEach { cu -> 
                     if(visitor.visit(cu).isNotEmpty()) {
-                        fixesByRule.getOrPut(RuleDescriptor(refactor.value, refactor.description), { HashSet<RelativePath>() }).add(cu.source.path)
+                        fixesByRule.getOrPut(RuleDescriptor(refactor.value, refactor.description), { HashSet<RelativePath>() }).add(cu.rawSource.path)
                     }
                 }
             }

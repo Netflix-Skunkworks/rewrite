@@ -19,8 +19,8 @@ abstract class AssignTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val assign = a.classDecls[0].methods[0].body.statements[0] as Assign
-        assertEquals("s", (assign.variable as Ident).name)
-        assertTrue(assign.assignment is Literal)
+        val assign = a.classDecls[0].methods[0].body.statements[0] as Tr.Assign
+        assertEquals("s", (assign.variable as Tr.Ident).name)
+        assertTrue(assign.assignment is Tr.Literal)
     }
 }

@@ -16,8 +16,8 @@ abstract class UnaryTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val unary = a.classDecls[0].fields[0].initializer as Unary
-        assertEquals(Unary.Operator.Not, unary.operator)
-        assertTrue(unary.expr is Parentheses)
+        val unary = a.classDecls[0].fields[0].initializer as Tr.Unary
+        assertEquals(Tr.Unary.Operator.Not, unary.operator)
+        assertTrue(unary.expr is Tr.Parentheses)
     }
 }

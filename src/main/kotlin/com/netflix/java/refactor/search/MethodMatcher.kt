@@ -3,7 +3,7 @@ package com.netflix.java.refactor.search
 import com.netflix.java.refactor.aspectj.AspectJLexer
 import com.netflix.java.refactor.aspectj.RefactorMethodSignatureParser
 import com.netflix.java.refactor.aspectj.RefactorMethodSignatureParserBaseVisitor
-import com.netflix.java.refactor.ast.MethodInvocation
+import com.netflix.java.refactor.ast.Tr
 import com.netflix.java.refactor.ast.Type
 import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
@@ -31,7 +31,7 @@ class MethodMatcher(signature: String) {
         }.visit(parser.methodPattern())
     }
 
-    fun matches(meth: MethodInvocation): Boolean {
+    fun matches(meth: Tr.MethodInvocation): Boolean {
         val targetType = meth.declaringType?.fullyQualifiedName ?: return false
         return targetTypePattern.matches(targetType) && 
                 methodNamePattern.matches(meth.methodName()) &&

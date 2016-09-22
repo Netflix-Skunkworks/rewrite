@@ -20,9 +20,9 @@ abstract class ForLoopTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val forLoop = a.classDecls[0].methods[0].body.statements[0] as ForLoop
+        val forLoop = a.classDecls[0].methods[0].body.statements[0] as Tr.ForLoop
         assertEquals(1, forLoop.init.size)
-        assertTrue(forLoop.condition is Binary)
+        assertTrue(forLoop.condition is Tr.Binary)
         assertEquals(1, forLoop.update.size)
     }
 
@@ -37,7 +37,7 @@ abstract class ForLoopTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val forLoop = a.classDecls[0].methods[0].body.statements[0] as ForLoop
+        val forLoop = a.classDecls[0].methods[0].body.statements[0] as Tr.ForLoop
         assertEquals(0, forLoop.init.size)
         assertNull(forLoop.condition)
         assertEquals(0, forLoop.update.size)

@@ -4,7 +4,7 @@ import java.io.Serializable
 import java.nio.file.Path
 
 class StringSource(override var text: String,
-                   override val path: String): Source, Serializable {
+                   override val path: String): RawSourceCode(), Serializable {
      
     override fun fix(newSource: String) {
         text = newSource

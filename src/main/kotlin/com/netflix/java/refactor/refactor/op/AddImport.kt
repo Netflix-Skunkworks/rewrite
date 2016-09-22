@@ -1,34 +1,34 @@
 package com.netflix.java.refactor.refactor.op
 
+import com.netflix.java.refactor.ast.Cursor
 import com.netflix.java.refactor.ast.Expression
-import com.netflix.java.refactor.ast.Import
-import com.netflix.java.refactor.parse.Source
-import com.netflix.java.refactor.refactor.RefactorFix
-import com.netflix.java.refactor.refactor.RefactorTreeVisitor
+import com.netflix.java.refactor.ast.Tr
+import com.netflix.java.refactor.refactor.fix.RefactorFix
+import com.netflix.java.refactor.refactor.fix.RefactorTreeVisitor
 import java.util.*
 
-class AddImport(override val source: Source, val clazz: String, val staticMethod: String? = null): RefactorTreeVisitor() {
-    val imports = ArrayList<Import>()
+class AddImport(val clazz: String, val staticMethod: String? = null): RefactorTreeVisitor() {
+    val imports = ArrayList<Tr.Import>()
     var coveredByExistingImport = false
     
     private val packageComparator = PackageComparator()
 
-    override fun visitImport(import: Import): List<RefactorFix> {
+    override fun visitImport(import: Tr.Import, cursor: Cursor): List<RefactorFix> {
         imports.add(import)
         val importedType = import.qualid.fieldName
         
         if (addingStaticImport()) {
-            if (import.matches(source, clazz) && importedType == staticMethod) {
+            if (import.matches(clazz, cu) && importedType == staticMethod) {
                 coveredByExistingImport = true
             }
-            if (import.matches(source, clazz) && importedType == "*") {
+            if (import.matches(clazz, cu) && importedType == "*") {
                 coveredByExistingImport = true
             }
         }
         else {
-            if (import.matches(source, clazz)) {
+            if (import.matches(clazz, cu)) {
                 coveredByExistingImport = true
-            } else if (source.snippet(import.qualid.target) == packageOwner(clazz) && importedType == "*") {
+            } else if (import.qualid.target.source.text(cu) == packageOwner(clazz) && importedType == "*") {
                 coveredByExistingImport = true
             }
         }
@@ -48,7 +48,7 @@ class AddImport(override val source: Source, val clazz: String, val staticMethod
         else if(lastPrior == null && imports.isNotEmpty()) {
             listOf(imports.first().insertBefore("$importStatementToAdd\n"))
         }
-        else if(lastPrior is Import) {
+        else if(lastPrior is Tr.Import) {
             listOf(lastPrior.insertAt("$importStatementToAdd\n"))
         }
         else if(cu.packageDecl is Expression) {
@@ -57,7 +57,7 @@ class AddImport(override val source: Source, val clazz: String, val staticMethod
         else listOf(cu.insertBefore("$importStatementToAdd\n"))
     }
     
-    fun lastPriorImport(): Import? {
+    fun lastPriorImport(): Tr.Import? {
         return imports.lastOrNull { import ->
             // static imports go after all non-static imports
             if(addingStaticImport() && !import.static)
@@ -67,7 +67,7 @@ class AddImport(override val source: Source, val clazz: String, val staticMethod
             if(!addingStaticImport() && import.static)
                 return@lastOrNull false
             
-            val comp = packageComparator.compare(source.snippet(import.qualid.target), 
+            val comp = packageComparator.compare(import.qualid.target.source.text(cu), 
                     if(addingStaticImport()) clazz else packageOwner(clazz))
             if(comp == 0) {
                 if(import.qualid.fieldName.toString().compareTo(

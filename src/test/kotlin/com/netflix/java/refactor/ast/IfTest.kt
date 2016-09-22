@@ -24,15 +24,15 @@ abstract class IfTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val iff = a.classDecls[0].methods[0].body.statements[0] as If
-        assertTrue(iff.ifCondition.expr is Binary)
-        assertTrue(iff.thenPart is Block)
+        val iff = a.classDecls[0].methods[0].body.statements[0] as Tr.If
+        assertTrue(iff.ifCondition.expr is Tr.Binary)
+        assertTrue(iff.thenPart is Tr.Block)
         
-        assertTrue(iff.elsePart is If)
-        val elseIf = iff.elsePart as If
-        assertTrue(elseIf.ifCondition.expr is Binary)
-        assertTrue(elseIf.thenPart is Block)
-        assertTrue(elseIf.elsePart is Block)
+        assertTrue(iff.elsePart is Tr.If)
+        val elseIf = iff.elsePart as Tr.If
+        assertTrue(elseIf.ifCondition.expr is Tr.Binary)
+        assertTrue(elseIf.thenPart is Tr.Block)
+        assertTrue(elseIf.elsePart is Tr.Block)
     }
     
     @Test
@@ -46,7 +46,7 @@ abstract class IfTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val iff = a.classDecls[0].methods[0].body.statements[0] as If
+        val iff = a.classDecls[0].methods[0].body.statements[0] as Tr.If
         assertNull(iff.elsePart)
     }
 }

@@ -23,8 +23,8 @@ abstract class FieldAccessTest(parser: Parser): AstTest(parser) {
         """
 
         val cu = parse(a, whichDependsOn = b)
-        val acc = cu.classDecls[0].fields.first { it.name == "s" }.initializer as FieldAccess
+        val acc = cu.classDecls[0].fields.first { it.name == "s" }.initializer as Tr.FieldAccess
         assertEquals("field", acc.fieldName)
-        assertEquals("b", cu.source.snippet(acc.target))
+        assertEquals("b", acc.target.source.text(cu))
     }
 }

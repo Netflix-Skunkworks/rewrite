@@ -1,5 +1,6 @@
 package com.netflix.java.refactor.refactor
 
+import com.netflix.java.refactor.refactor.fix.RefactorTreeVisitor
 import org.junit.Test
 import kotlin.test.assertEquals
 

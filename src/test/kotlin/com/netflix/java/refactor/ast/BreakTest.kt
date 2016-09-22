@@ -19,9 +19,9 @@ abstract class BreakTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val whileLoop = a.classDecls[0].methods[0].body.statements[0] as WhileLoop
-        assertTrue(whileLoop.body is Break)
-        assertNull((whileLoop.body as Break).label)
+        val whileLoop = a.classDecls[0].methods[0].body.statements[0] as Tr.WhileLoop
+        assertTrue(whileLoop.body is Tr.Break)
+        assertNull((whileLoop.body as Tr.Break).label)
     }
 
     @Test
@@ -35,8 +35,8 @@ abstract class BreakTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val whileLoop = (a.classDecls[0].methods[0].body.statements[0] as Label).statement as WhileLoop
-        assertTrue(whileLoop.body is Break)
-        assertEquals("labeled", (whileLoop.body as Break).label)
+        val whileLoop = (a.classDecls[0].methods[0].body.statements[0] as Tr.Label).statement as Tr.WhileLoop
+        assertTrue(whileLoop.body is Tr.Break)
+        assertEquals("labeled", (whileLoop.body as Tr.Break).label)
     }
 }

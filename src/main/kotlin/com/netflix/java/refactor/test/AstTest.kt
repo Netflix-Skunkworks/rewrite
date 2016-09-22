@@ -1,6 +1,6 @@
 package com.netflix.java.refactor.test
 
-import com.netflix.java.refactor.ast.CompilationUnit
+import com.netflix.java.refactor.ast.Tr
 import com.netflix.java.refactor.parse.Parser
 import com.netflix.java.refactor.parse.StringSource
 import org.junit.Assert.assertEquals
@@ -20,7 +20,7 @@ abstract class AstTest(var parser: Parser) {
     fun parse(source: String, whichDependOn: List<String>) =
         parse(source, *whichDependOn.toTypedArray())
     
-    fun parse(source: String, vararg whichDependOn: String): CompilationUnit {
+    fun parse(source: String, vararg whichDependOn: String): Tr.CompilationUnit {
         fun simpleName(sourceStr: String): String? {
             val classMatcher = Pattern.compile("(class|interface|enum)\\s*(<[^>]*>)?\\s+(\\w+)").matcher(sourceStr)
             return if (classMatcher.find()) classMatcher.group(3) else null
@@ -38,7 +38,7 @@ abstract class AstTest(var parser: Parser) {
         return parser.parse(sources, StringSource.Builder::fromPath).last()
     }
 
-    fun assertRefactored(cu: CompilationUnit, refactored: String) {
-        assertEquals(refactored.trimMargin(), cu.source.text)
+    fun assertRefactored(cu: Tr.CompilationUnit, refactored: String) {
+        assertEquals(refactored.trimMargin(), cu.rawSource.text)
     }
 }

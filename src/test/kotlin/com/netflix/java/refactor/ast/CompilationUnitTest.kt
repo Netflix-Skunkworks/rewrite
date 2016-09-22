@@ -56,10 +56,10 @@ abstract class CompilationUnitTest(parser: Parser): AstTest(parser) {
         }
 
         val expectedDiff = """
-            |diff --git a/${cu.source.path} b/${cu.source.path}
+            |diff --git a/${cu.rawSource.path} b/${cu.rawSource.path}
             |index 70f03ee..b82f543 100644
-            |--- a/${cu.source.path}
-            |+++ b/${cu.source.path}
+            |--- a/${cu.rawSource.path}
+            |+++ b/${cu.rawSource.path}
             |@@ -1,6 +1,6 @@
             | public class A {
             |    public void test() {
