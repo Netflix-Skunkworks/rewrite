@@ -17,7 +17,7 @@ abstract class ParenthesesTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val variable = a.classDecls[0].methods[0].body.statements[0] as Tr.VariableDecl
+        val variable = a.classDecls[0].methods()[0].body.statements[0] as Tr.VariableDecl
         assertTrue(variable.initializer is Tr.Parentheses)
     }
 }

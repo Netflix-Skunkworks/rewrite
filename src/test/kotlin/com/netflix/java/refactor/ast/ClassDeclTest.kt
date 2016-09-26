@@ -27,7 +27,7 @@ abstract class ClassDeclTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        assertEquals(1, a.classDecls[0].fields.size)
+        assertEquals(1, a.classDecls[0].fields().size)
     }
 
     @Test
@@ -38,7 +38,7 @@ abstract class ClassDeclTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        assertEquals(1, a.classDecls[0].methods.size)
+        assertEquals(1, a.classDecls[0].methods().size)
     }
     
     @Test

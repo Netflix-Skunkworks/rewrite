@@ -2,7 +2,6 @@ package com.netflix.java.refactor.test
 
 import com.netflix.java.refactor.ast.Tr
 import com.netflix.java.refactor.parse.Parser
-import com.netflix.java.refactor.parse.StringSource
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.rules.TemporaryFolder
@@ -35,10 +34,10 @@ abstract class AstTest(var parser: Parser) {
         val dependencies = whichDependOn.map { it.trimMargin() }.map(::sourceFile) 
         val sources = dependencies + listOf(sourceFile(source.trimMargin()))
                 
-        return parser.parse(sources, StringSource.Builder::fromPath).last()
+        return parser.parse(sources).last()
     }
 
     fun assertRefactored(cu: Tr.CompilationUnit, refactored: String) {
-        assertEquals(refactored.trimMargin(), cu.rawSource.text)
+        assertEquals(refactored.trimMargin(), cu.print())
     }
 }

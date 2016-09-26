@@ -19,7 +19,7 @@ abstract class MethodDeclTest(parser: Parser): AstTest(parser) {
             }
         """
         
-        val meth = parse(a, whichDependsOn = p).classDecls[0].methods[0]
+        val meth = parse(a, whichDependsOn = p).classDecls[0].methods()[0]
         assertEquals("foo", meth.name)
         assertEquals(3, meth.params.size)
         assertEquals(1, meth.body.statements.size)

@@ -19,7 +19,7 @@ abstract class LabelTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val labeled = a.classDecls[0].methods[0].body.statements[0] as Tr.Label
+        val labeled = a.classDecls[0].methods()[0].body.statements[0] as Tr.Label
         assertEquals("labeled", labeled.label)
         assertTrue(labeled.statement is Tr.WhileLoop)
     }

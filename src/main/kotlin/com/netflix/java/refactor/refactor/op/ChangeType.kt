@@ -15,7 +15,7 @@ data class ChangeType(val from: String, val to: String): RefactorTreeVisitor() {
 //            )
 //    )
 
-    override fun visitIdentifier(ident: Tr.Ident, cursor: Cursor): List<RefactorFix> =
+    override fun visitIdentifier(ident: Tr.Ident): List<RefactorFix> =
         if(ident.type.asClass()?.fullyQualifiedName == from)
             listOf(ident.replace(className(to)))
         else emptyList()

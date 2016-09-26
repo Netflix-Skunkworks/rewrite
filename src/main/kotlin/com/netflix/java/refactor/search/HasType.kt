@@ -7,14 +7,14 @@ import com.netflix.java.refactor.ast.Type
 
 class HasType(val clazz: String): AstVisitor<Boolean>(false) {
 
-    override fun visitIdentifier(ident: Tr.Ident, cursor: Cursor): Boolean =
+    override fun visitIdentifier(ident: Tr.Ident): Boolean =
         ident.type is Type.Class && ident.type.fullyQualifiedName == clazz
 
-    override fun visitMethodInvocation(meth: Tr.MethodInvocation, cursor: Cursor): Boolean {
+    override fun visitMethodInvocation(meth: Tr.MethodInvocation): Boolean {
         if(meth.methodSelect is Tr.Ident) {
             // statically imported type
             return meth.declaringType?.fullyQualifiedName == clazz
         }
-        return super.visitMethodInvocation(meth, cursor)
+        return super.visitMethodInvocation(meth)
     }
 }

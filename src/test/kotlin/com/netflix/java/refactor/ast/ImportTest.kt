@@ -15,7 +15,7 @@ abstract class ImportTest(parser: Parser): AstTest(parser) {
             public class A {}
         """)
 
-        assertTrue(a.imports.first().matches("java.util.List", a))
+        assertTrue(a.imports.first().matches("java.util.List"))
     }
 
     @Test
@@ -25,7 +25,7 @@ abstract class ImportTest(parser: Parser): AstTest(parser) {
             public class A {}
         """)
 
-        assertTrue(a.imports.first().matches("java.util.List", a))
+        assertTrue(a.imports.first().matches("java.util.List"))
     }
 
     @Test
@@ -46,29 +46,25 @@ abstract class ImportTest(parser: Parser): AstTest(parser) {
 
         val cu = parse(c, whichDependsOn = a)
         val import = cu.imports.first()
-        assertTrue(import.matches("a.A.B", cu))
-        assertTrue(import.matches("a.A", cu))
+        assertTrue(import.matches("a.A.B"))
+        assertTrue(import.matches("a.A"))
     }
     
     @Test
     fun buildImport() {
-        val a = parse("public class A {}")
-        
         val import = Tr.Import.build("java.util.List")
         
-        assertEquals("import java.util.List;", import.source.text(a))
-        assertEquals("java.util.List", import.qualid.source.text(a))
+        assertEquals("import java.util.List", import.print())
+        assertEquals("java.util.List", import.qualid.print())
         assertEquals("List", import.qualid.fieldName)
     }
     
     @Test
     fun buildImportOnInnerClass() {
-        val a = parse("public class A {}")
-
         val import = Tr.Import.build("a.Outer.Inner")
 
-        assertEquals("import a.Outer.Inner;", import.source.text(a))
-        assertEquals("a.Outer.Inner", import.qualid.source.text(a))
+        assertEquals("import a.Outer.Inner", import.print())
+        assertEquals("a.Outer.Inner", import.qualid.print())
         
         val inner = import.qualid
         assertEquals("Inner", inner.fieldName)
@@ -81,12 +77,24 @@ abstract class ImportTest(parser: Parser): AstTest(parser) {
 
     @Test
     fun buildStaticImport() {
-        val a = parse("public class B {}")
-
         val import = Tr.Import.build("a.A.*", static = true)
 
-        assertEquals("import static a.A.*;", import.source.text(a))
-        assertEquals("a.A.*", import.qualid.source.text(a))
+        assertEquals("import static a.A.*", import.print())
+        assertEquals("a.A.*", import.qualid.print())
         assertEquals("*", import.qualid.fieldName)
+    }
+    
+    @Test
+    fun format() {
+        val a = parse("""
+            |import java.util.List;
+            |import static java.util.Collections.*;
+            |public class A {}
+        """)
+        
+        // FIXME scan is getting called too late, so currentPath is missing path elements
+        
+        assertEquals("import java.util.List", a.imports[0].print())
+        assertEquals("import static java.util.Collections.*", a.imports[1].print())
     }
 }

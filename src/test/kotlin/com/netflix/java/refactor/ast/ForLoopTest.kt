@@ -20,10 +20,10 @@ abstract class ForLoopTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val forLoop = a.classDecls[0].methods[0].body.statements[0] as Tr.ForLoop
-        assertEquals(1, forLoop.init.size)
-        assertTrue(forLoop.condition is Tr.Binary)
-        assertEquals(1, forLoop.update.size)
+        val forLoop = a.classDecls[0].methods()[0].body.statements[0] as Tr.ForLoop
+        assertEquals(1, forLoop.control.init.size)
+        assertTrue(forLoop.control.condition is Tr.Binary)
+        assertEquals(1, forLoop.control.update.size)
     }
 
     @Test
@@ -37,9 +37,24 @@ abstract class ForLoopTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val forLoop = a.classDecls[0].methods[0].body.statements[0] as Tr.ForLoop
-        assertEquals(0, forLoop.init.size)
-        assertNull(forLoop.condition)
-        assertEquals(0, forLoop.update.size)
+        val forLoop = a.classDecls[0].methods()[0].body.statements[0] as Tr.ForLoop
+        assertEquals(0, forLoop.control.init.size)
+        assertNull(forLoop.control.condition)
+        assertEquals(0, forLoop.control.update.size)
+    }
+
+    @Test
+    fun format() {
+        val a = parse("""
+            public class A {
+                public void test() {
+                    for(int i = 0; i < 10; i++) {
+                    }
+                }
+            }
+        """)
+
+        val forLoop = a.classDecls[0].methods()[0].body.statements[0] as Tr.ForLoop
+        assertEquals("for(int i = 0; i < 10; i++) {\n}", forLoop.print())
     }
 }

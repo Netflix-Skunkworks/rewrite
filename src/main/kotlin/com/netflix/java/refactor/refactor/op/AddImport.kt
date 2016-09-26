@@ -1,7 +1,5 @@
 package com.netflix.java.refactor.refactor.op
 
-import com.netflix.java.refactor.ast.Cursor
-import com.netflix.java.refactor.ast.Expression
 import com.netflix.java.refactor.ast.Tr
 import com.netflix.java.refactor.refactor.fix.RefactorFix
 import com.netflix.java.refactor.refactor.fix.RefactorTreeVisitor
@@ -13,22 +11,22 @@ class AddImport(val clazz: String, val staticMethod: String? = null): RefactorTr
     
     private val packageComparator = PackageComparator()
 
-    override fun visitImport(import: Tr.Import, cursor: Cursor): List<RefactorFix> {
+    override fun visitImport(import: Tr.Import): List<RefactorFix> {
         imports.add(import)
         val importedType = import.qualid.fieldName
         
         if (addingStaticImport()) {
-            if (import.matches(clazz, cu) && importedType == staticMethod) {
+            if (import.matches(clazz) && importedType == staticMethod) {
                 coveredByExistingImport = true
             }
-            if (import.matches(clazz, cu) && importedType == "*") {
+            if (import.matches(clazz) && importedType == "*") {
                 coveredByExistingImport = true
             }
         }
         else {
-            if (import.matches(clazz, cu)) {
+            if (import.matches(clazz)) {
                 coveredByExistingImport = true
-            } else if (import.qualid.target.source.text(cu) == packageOwner(clazz) && importedType == "*") {
+            } else if (import.qualid.target.print() == packageOwner(clazz) && importedType == "*") {
                 coveredByExistingImport = true
             }
         }
@@ -51,7 +49,7 @@ class AddImport(val clazz: String, val staticMethod: String? = null): RefactorTr
         else if(lastPrior is Tr.Import) {
             listOf(lastPrior.insertAt("$importStatementToAdd\n"))
         }
-        else if(cu.packageDecl is Expression) {
+        else if(cu.packageDecl is Tr.Package) {
             listOf(cu.packageDecl!!.insertAt("\n\n$importStatementToAdd"))
         }
         else listOf(cu.insertBefore("$importStatementToAdd\n"))
@@ -67,7 +65,7 @@ class AddImport(val clazz: String, val staticMethod: String? = null): RefactorTr
             if(!addingStaticImport() && import.static)
                 return@lastOrNull false
             
-            val comp = packageComparator.compare(import.qualid.target.source.text(cu), 
+            val comp = packageComparator.compare(import.qualid.target.print(), 
                     if(addingStaticImport()) clazz else packageOwner(clazz))
             if(comp == 0) {
                 if(import.qualid.fieldName.toString().compareTo(

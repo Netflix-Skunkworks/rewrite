@@ -18,7 +18,7 @@ abstract class ReturnTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val rtn = a.classDecls[0].methods[0].body.statements[0] as Tr.Return
+        val rtn = a.classDecls[0].methods()[0].body.statements[0] as Tr.Return
         assertTrue(rtn.expr is Tr.Literal)
     }
 
@@ -32,7 +32,7 @@ abstract class ReturnTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val rtn = a.classDecls[0].methods[0].body.statements[0] as Tr.Return
+        val rtn = a.classDecls[0].methods()[0].body.statements[0] as Tr.Return
         assertNull(rtn.expr)
     }
 }

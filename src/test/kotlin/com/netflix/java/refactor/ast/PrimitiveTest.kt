@@ -15,7 +15,7 @@ abstract class PrimitiveTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val primitive = a.classDecls[0].fields[0].varType as Tr.Primitive
+        val primitive = a.classDecls[0].fields()[0].varType as Tr.Primitive
         assertEquals(Type.Tag.Int, primitive.typeTag)
     }
 }

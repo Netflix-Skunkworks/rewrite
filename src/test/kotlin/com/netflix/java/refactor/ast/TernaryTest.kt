@@ -18,7 +18,7 @@ abstract class TernaryTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val evenOrOdd = a.classDecls[0].methods[0].body.statements[0] as Tr.VariableDecl
+        val evenOrOdd = a.classDecls[0].methods()[0].body.statements[0] as Tr.VariableDecl
         val ternary = evenOrOdd.initializer as Tr.Ternary
         
         assertEquals("java.lang.String", ternary.type.asClass()?.fullyQualifiedName)

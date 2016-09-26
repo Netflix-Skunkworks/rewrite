@@ -56,10 +56,10 @@ abstract class CompilationUnitTest(parser: Parser): AstTest(parser) {
         }
 
         val expectedDiff = """
-            |diff --git a/${cu.rawSource.path} b/${cu.rawSource.path}
+            |diff --git a/${cu.source.path} b/${cu.source.path}
             |index 70f03ee..b82f543 100644
-            |--- a/${cu.rawSource.path}
-            |+++ b/${cu.rawSource.path}
+            |--- a/${cu.source.path}
+            |+++ b/${cu.source.path}
             |@@ -1,6 +1,6 @@
             | public class A {
             |    public void test() {
@@ -73,5 +73,18 @@ abstract class CompilationUnitTest(parser: Parser): AstTest(parser) {
 
         assertEquals(expectedDiff, diff1.gitStylePatch())
         assertEquals(expectedDiff, diff2)
+    }
+    
+    @Test
+    fun format() {
+        val a = """
+            |/* Comment */
+            |package a;
+            |import java.util.List;
+            |
+            |public class A {}
+        """
+        
+        assertEquals(a.trimMargin(), parse(a).print())
     }
 }

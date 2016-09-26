@@ -20,7 +20,7 @@ abstract class SynchronizedTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val sync = a.classDecls[0].methods[0].body.statements[0] as Tr.Synchronized
+        val sync = a.classDecls[0].methods()[0].body.statements[0] as Tr.Synchronized
         assertTrue(sync.lock.expr is Tr.Ident)
     }
 }

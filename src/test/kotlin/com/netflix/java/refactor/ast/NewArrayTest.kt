@@ -16,7 +16,7 @@ abstract class NewArrayTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val newArr = a.classDecls[0].fields[0].initializer as Tr.NewArray
+        val newArr = a.classDecls[0].fields()[0].initializer as Tr.NewArray
         assertTrue(newArr.elements.isEmpty())
         assertTrue(newArr.type is Type.Array)
         assertTrue(newArr.type.asArray()?.elemType is Type.Primitive)
@@ -32,7 +32,7 @@ abstract class NewArrayTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val newArr = a.classDecls[0].fields[0].initializer as Tr.NewArray
+        val newArr = a.classDecls[0].fields()[0].initializer as Tr.NewArray
         assertTrue(newArr.dimensions.isEmpty())
         assertTrue(newArr.type is Type.Array)
         assertTrue(newArr.type.asArray()?.elemType is Type.Primitive)

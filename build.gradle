@@ -53,8 +53,10 @@ dependencies {
     testCompile 'junit:junit:4.+'
     testCompile 'org.ow2.asm:asm:latest.release'
     testCompile 'org.ow2.asm:asm-util:latest.release'
-    testCompile 'org.jetbrains.spek:spek:latest.release'
-    testCompile 'com.github.marschall:memoryfilesystem:0.8.0'
+    
+    testCompile('org.jetbrains.spek:spek:latest.release') {
+        exclude module: 'kotlin-reflect'
+    }
 }
 
 pluginBundle {

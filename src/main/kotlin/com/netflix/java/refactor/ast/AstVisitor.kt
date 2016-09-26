@@ -25,171 +25,182 @@ open class AstVisitor<R> {
         else -> r1
     }
 
-    fun visit(cu: Tr.CompilationUnit): R = visit(cu, Cursor.Empty)
+    var cursor: Cursor = Cursor.Empty
     
-    open fun visit(tree: Tree?, cursor: Cursor): R = if(tree != null) tree.accept(this, cursor.plus(tree)) else default(tree)
+    open fun visit(tree: Tree?): R =
+        if(tree != null) {
+            cursor = cursor.plus(tree)
+            tree.accept(this)
+        } else default(tree)
     
-    private fun R.andThen(nodes: Iterable<Tree>, cursor: Cursor): R = reduce(visit(nodes, cursor), this)
-    private fun R.andThen(node: Tree?, cursor: Cursor): R = if(node != null) reduce(visit(node, cursor), this) else this
+    private fun R.andThen(nodes: Iterable<Tree>): R = reduce(visit(nodes), this)
+    private fun R.andThen(node: Tree?): R = if(node != null) reduce(visit(node), this) else this
     
-    fun visit(nodes: Iterable<Tree>?, cursor: Cursor): R =
+    fun visit(nodes: Iterable<Tree>?): R =
         nodes?.let {
             var r: R = default(null)
             var first = true
             for (node in nodes) {
-                r = if (first) visit(node, cursor) else r.andThen(node, cursor)
+                r = if (first) visit(node) else r.andThen(node)
                 first = false
             }
             r
         } ?: default(null)
 
-    open fun visitImport(import: Tr.Import, cursor: Cursor): R = 
-            visit(import.importKeyword, cursor)
-                .andThen(import.qualid, cursor)
+    open fun visitImport(import: Tr.Import): R = visit(import.qualid)
     
-    open fun visitSelect(field: Tr.FieldAccess, cursor: Cursor): R = visit(field.target, cursor)
+    open fun visitFieldAccess(field: Tr.FieldAccess): R = visit(field.target)
 
-    open fun visitClassDecl(classDecl: Tr.ClassDecl, cursor: Cursor): R = 
-        visit(classDecl.fields, cursor)
-                .andThen(classDecl.implements, cursor)
-                .andThen(classDecl.extends, cursor)
-                .andThen(classDecl.methods, cursor)
+    open fun visitClassDecl(classDecl: Tr.ClassDecl): R = 
+        visit(classDecl.definitions)
+                .andThen(classDecl.implements)
+                .andThen(classDecl.extends)
     
-    open fun visitMethodInvocation(meth: Tr.MethodInvocation, cursor: Cursor): R = 
-        visit(meth.methodSelect, cursor).andThen(meth.args, cursor)
+    open fun visitMethodInvocation(meth: Tr.MethodInvocation): R = 
+        visit(meth.methodSelect).andThen(meth.args)
 
-    open fun visitVariable(variable: Tr.VariableDecl, cursor: Cursor): R =
-        visit(variable.varType, cursor)
-                .andThen(variable.nameExpr, cursor)
-                .andThen(variable.initializer, cursor)
+    open fun visitVariable(variable: Tr.VariableDecl): R =
+        visit(variable.varType)
+                .andThen(variable.nameExpr)
+                .andThen(variable.initializer)
 
-    open fun visitCompilationUnit(cu: Tr.CompilationUnit, cursor: Cursor): R {
+    open fun visitCompilationUnit(cu: Tr.CompilationUnit): R {
         this.cu = cu
         return reduce(
-                visit(cu.imports, cursor)
-                        .andThen(cu.packageDecl, cursor)
-                        .andThen(cu.classDecls, cursor), 
+                visit(cu.imports)
+                        .andThen(cu.packageDecl)
+                        .andThen(cu.classDecls), 
                 visitEnd()
         )
     }
     
-    open fun visitIdentifier(ident: Tr.Ident, cursor: Cursor): R = default(ident)
+    open fun visitIdentifier(ident: Tr.Ident): R = default(ident)
     
-    open fun visitBlock(block: Tr.Block, cursor: Cursor): R = visit(block.statements, cursor)
+    open fun visitBlock(block: Tr.Block): R = visit(block.statements)
 
-    open fun visitMethod(method: Tr.MethodDecl, cursor: Cursor): R =
-        visit(method.params, cursor)
-                .andThen(method.returnTypeExpr, cursor)
-                .andThen(method.thrown, cursor)
-                .andThen(method.defaultValue, cursor)
-                .andThen(method.body, cursor)
+    open fun visitMethod(method: Tr.MethodDecl): R =
+        visit(method.params)
+                .andThen(method.returnTypeExpr)
+                .andThen(method.thrown)
+                .andThen(method.defaultValue)
+                .andThen(method.body)
 
-    open fun visitNewClass(newClass: Tr.NewClass, cursor: Cursor): R =
-            visit(newClass.encl, cursor)
-                    .andThen(newClass.identifier, cursor)
-                    .andThen(newClass.typeargs, cursor)
-                    .andThen(newClass.args, cursor)
-                    .andThen(newClass.classBody, cursor)
+    open fun visitNewClass(newClass: Tr.NewClass): R =
+            visit(newClass.encl)
+                    .andThen(newClass.identifier)
+                    .andThen(newClass.typeArgs)
+                    .andThen(newClass.args)
+                    .andThen(newClass.classBody)
 
-    open fun visitPrimitive(primitive: Tr.Primitive, cursor: Cursor): R = default(primitive)
+    open fun visitPrimitive(primitive: Tr.Primitive): R = default(primitive)
     
-    open fun visitLiteral(literal: Tr.Literal, cursor: Cursor): R = default(literal)
+    open fun visitLiteral(literal: Tr.Literal): R = default(literal)
     
-    open fun visitBinary(binary: Tr.Binary, cursor: Cursor): R = 
-            visit(binary.left, cursor)
-                    .andThen(binary.right, cursor)
+    open fun visitBinary(binary: Tr.Binary): R = 
+            visit(binary.left)
+                    .andThen(binary.right)
     
-    open fun visitUnary(unary: Tr.Unary, cursor: Cursor): R = visit(unary.expr, cursor)
+    open fun visitUnary(unary: Tr.Unary): R = visit(unary.expr)
     
-    open fun visitForLoop(forLoop: Tr.ForLoop, cursor: Cursor) =
-            visit(forLoop.init, cursor)
-                    .andThen(forLoop.condition, cursor)
-                    .andThen(forLoop.update, cursor)
-                    .andThen(forLoop.body, cursor)
+    open fun visitForLoop(forLoop: Tr.ForLoop) =
+            visit(forLoop.control.init)
+                    .andThen(forLoop.control.condition)
+                    .andThen(forLoop.control.update)
+                    .andThen(forLoop.body)
     
-    open fun visitForEachLoop(forEachLoop: Tr.ForEachLoop, cursor: Cursor): R =
-            visit(forEachLoop.variable, cursor)
-                    .andThen(forEachLoop.iterable, cursor)
-                    .andThen(forEachLoop.body, cursor)
+    open fun visitForEachLoop(forEachLoop: Tr.ForEachLoop): R =
+            visit(forEachLoop.variable)
+                    .andThen(forEachLoop.iterable)
+                    .andThen(forEachLoop.body)
     
-    open fun visitIf(iff: Tr.If, cursor: Cursor): R =
-            visit(iff.ifCondition, cursor)
-                    .andThen(iff.thenPart, cursor)
-                    .andThen(iff.elsePart, cursor)
+    open fun visitIf(iff: Tr.If): R =
+            visit(iff.ifCondition)
+                    .andThen(iff.thenPart)
+                    .andThen(iff.elsePart)
     
-    open fun visitTernary(ternary: Tr.Ternary, cursor: Cursor): R =
-            visit(ternary.condition, cursor)
-                    .andThen(ternary.truePart, cursor)
-                    .andThen(ternary.falsePart, cursor)
+    open fun visitTernary(ternary: Tr.Ternary): R =
+            visit(ternary.condition)
+                    .andThen(ternary.truePart)
+                    .andThen(ternary.falsePart)
     
-    open fun visitWhileLoop(whileLoop: Tr.WhileLoop, cursor: Cursor): R =
-            visit(whileLoop.condition, cursor)
-                    .andThen(whileLoop.body, cursor)
+    open fun visitWhileLoop(whileLoop: Tr.WhileLoop): R =
+            visit(whileLoop.condition)
+                    .andThen(whileLoop.body)
     
-    open fun visitDoWhileLoop(doWhileLoop: Tr.DoWhileLoop, cursor: Cursor): R =
-            visit(doWhileLoop.condition, cursor)
-                    .andThen(doWhileLoop.body, cursor)
+    open fun visitDoWhileLoop(doWhileLoop: Tr.DoWhileLoop): R =
+            visit(doWhileLoop.condition)
+                    .andThen(doWhileLoop.body)
     
-    open fun visitBreak(breakStatement: Tr.Break, cursor: Cursor): R = default(breakStatement)
+    open fun visitBreak(breakStatement: Tr.Break): R = default(breakStatement)
 
-    open fun visitContinue(continueStatement: Tr.Continue, cursor: Cursor): R = default(continueStatement)
+    open fun visitContinue(continueStatement: Tr.Continue): R = default(continueStatement)
     
-    open fun visitLabel(label: Tr.Label, cursor: Cursor): R = visit(label.statement, cursor)
+    open fun visitLabel(label: Tr.Label): R = visit(label.statement)
     
-    open fun visitReturn(retrn: Tr.Return, cursor: Cursor): R = visit(retrn.expr, cursor)
+    open fun visitReturn(retrn: Tr.Return): R = visit(retrn.expr)
     
-    open fun visitCase(case: Tr.Case, cursor: Cursor): R = 
-            visit(case.pattern, cursor)
-                    .andThen(case.statements, cursor)
+    open fun visitCase(case: Tr.Case): R = 
+            visit(case.pattern)
+                    .andThen(case.statements)
     
-    open fun visitSwitch(switch: Tr.Switch, cursor: Cursor): R = 
-            visit(switch.selector, cursor)
-                    .andThen(switch.cases, cursor)
+    open fun visitSwitch(switch: Tr.Switch): R = 
+            visit(switch.selector)
+                    .andThen(switch.cases)
     
-    open fun visitAssign(assign: Tr.Assign, cursor: Cursor): R = 
-            visit(assign.variable, cursor)
-                    .andThen(assign.assignment, cursor)
+    open fun visitAssign(assign: Tr.Assign): R = 
+            visit(assign.variable)
+                    .andThen(assign.assignment)
 
-    open fun visitAssignOp(assign: Tr.AssignOp, cursor: Cursor): R = 
-            visit(assign.variable, cursor)
-                    .andThen(assign.assignment, cursor)
+    open fun visitAssignOp(assign: Tr.AssignOp): R = 
+            visit(assign.variable)
+                    .andThen(assign.assignment)
     
-    open fun visitThrow(thrown: Tr.Throw, cursor: Cursor): R = visit(thrown.expr, cursor)
+    open fun visitThrow(thrown: Tr.Throw): R = visit(thrown.expr)
     
-    open fun visitTry(tryable: Tr.Try, cursor: Cursor): R =
-            visit(tryable.resources, cursor)
-                .andThen(tryable.body, cursor)
-                .andThen(tryable.catchers, cursor)
-                .andThen(tryable.finally, cursor)
+    open fun visitTry(tryable: Tr.Try): R =
+            visit(tryable.resources)
+                .andThen(tryable.body)
+                .andThen(tryable.catchers)
+                .andThen(tryable.finally)
     
-    open fun visitCatch(catch: Tr.Catch, cursor: Cursor): R = 
-            visit(catch.param, cursor)
-                    .andThen(catch.body, cursor)
+    open fun visitTypeParameter(typeParameter: Tr.TypeParameter): R =
+            visit(typeParameter.bounds)
+                .andThen(typeParameter.annotations)
     
-    open fun visitSynchronized(synch: Tr.Synchronized, cursor: Cursor): R = 
-            visit(synch.lock, cursor)
-                    .andThen(synch.body, cursor)
+    open fun visitCatch(catch: Tr.Catch): R = 
+            visit(catch.param)
+                    .andThen(catch.body)
     
-    open fun visitEmpty(empty: Tr.Empty, cursor: Cursor): R = default(empty)
+    open fun visitSynchronized(synch: Tr.Synchronized): R = 
+            visit(synch.lock)
+                    .andThen(synch.body)
     
-    open fun visitParentheses(parens: Tr.Parentheses, cursor: Cursor): R = visit(parens.expr, cursor)
+    open fun visitEmpty(empty: Tr.Empty): R = default(empty)
     
-    open fun visitInstanceOf(instanceOf: Tr.InstanceOf, cursor: Cursor): R = 
-            visit(instanceOf.expr, cursor)
-                    .andThen(instanceOf.clazz, cursor)
+    open fun visitPackage(pkg: Tr.Package): R = visit(pkg.expr)
     
-    open fun visitNewArray(newArray: Tr.NewArray, cursor: Cursor): R =
-            visit(newArray.typeExpr, cursor)
-                    .andThen(newArray.dimensions, cursor)
-                    .andThen(newArray.elements, cursor)
+    open fun visitParentheses(parens: Tr.Parentheses): R = visit(parens.expr)
     
-    open fun visitArrayAccess(arrayAccess: Tr.ArrayAccess, cursor: Cursor): R =
-            visit(arrayAccess.indexed, cursor)
-                    .andThen(arrayAccess.index, cursor)
+    open fun visitInstanceOf(instanceOf: Tr.InstanceOf): R = 
+            visit(instanceOf.expr)
+                    .andThen(instanceOf.clazz)
     
-    open fun visitLambda(lambda: Tr.Lambda, cursor: Cursor): R =
-            visit(lambda.params, cursor)
-                    .andThen(lambda.body, cursor)
+    open fun visitNewArray(newArray: Tr.NewArray): R =
+            visit(newArray.typeExpr)
+                    .andThen(newArray.dimensions)
+                    .andThen(newArray.elements)
+    
+    open fun visitAnnotation(annotation: Tr.Annotation): R =
+            visit(annotation.annotationType)
+                    .andThen(annotation.args)
+    
+    open fun visitArrayAccess(arrayAccess: Tr.ArrayAccess): R =
+            visit(arrayAccess.indexed)
+                    .andThen(arrayAccess.index)
+    
+    open fun visitLambda(lambda: Tr.Lambda): R =
+            visit(lambda.params)
+                    .andThen(lambda.body)
 
     open fun visitEnd() = default(null)
 }

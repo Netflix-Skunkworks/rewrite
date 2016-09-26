@@ -6,8 +6,8 @@ data class Field(val name: String, val type: String)
 
 class FindFields(val clazz: String, val includeInherited: Boolean) : AstVisitor<List<Field>>(emptyList()) {
 
-    override fun visitCompilationUnit(cu: Tr.CompilationUnit, cursor: Cursor): List<Field> {
-        super.visitCompilationUnit(cu, cursor)
+    override fun visitCompilationUnit(cu: Tr.CompilationUnit): List<Field> {
+        super.visitCompilationUnit(cu)
         return cu.classDecls.flatMap { superFields(it.type.asClass()) }
     }
 

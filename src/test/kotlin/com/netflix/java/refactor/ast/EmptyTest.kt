@@ -17,6 +17,6 @@ abstract class EmptyTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        assertTrue(a.classDecls[0].methods[0].body.statements[0] is Tr.Empty)
+        assertTrue(a.classDecls[0].methods()[0].body.statements[0] is Tr.Empty)
     }
 }

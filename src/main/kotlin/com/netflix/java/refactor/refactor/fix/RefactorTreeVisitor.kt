@@ -3,7 +3,6 @@ package com.netflix.java.refactor.refactor.fix
 import com.netflix.java.refactor.ast.AstVisitor
 import com.netflix.java.refactor.ast.Tree
 import com.netflix.java.refactor.ast.Type
-import com.netflix.java.refactor.refactor.fix.RefactorFix
 
 // FIXME delete me!
 @Deprecated("Use ")
@@ -33,7 +32,7 @@ abstract class RefactorTreeVisitor: AstVisitor<List<RefactorFix>>({ emptyList() 
     }
 
     fun Tree?.matches(fullyQualifiedClassName: String?) = when(this) {
-        is Tree -> matches(source.text(cu), fullyQualifiedClassName)
+        is Tree -> matches(this.print(), fullyQualifiedClassName)
         else -> false
     }
 

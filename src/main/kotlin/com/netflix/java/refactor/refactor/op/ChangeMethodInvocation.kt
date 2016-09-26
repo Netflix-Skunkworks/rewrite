@@ -1,8 +1,11 @@
 package com.netflix.java.refactor.refactor.op
 
-import com.netflix.java.refactor.ast.*
-import com.netflix.java.refactor.refactor.fix.RefactorFix
+import com.netflix.java.refactor.ast.Expression
+import com.netflix.java.refactor.ast.Tr
+import com.netflix.java.refactor.ast.Type
+import com.netflix.java.refactor.ast.asClass
 import com.netflix.java.refactor.refactor.RefactorTransaction
+import com.netflix.java.refactor.refactor.fix.RefactorFix
 import com.netflix.java.refactor.refactor.fix.RefactorTreeVisitor
 import com.netflix.java.refactor.search.MethodMatcher
 import java.util.*
@@ -59,14 +62,14 @@ class ChangeMethodInvocation(signature: String, val tx: RefactorTransaction) : R
 
     fun done() = tx
 
-    override fun visitMethodInvocation(meth: Tr.MethodInvocation, cursor: Cursor): List<RefactorFix> {
+    override fun visitMethodInvocation(meth: Tr.MethodInvocation): List<RefactorFix> {
         if (matcher.matches(meth)) {
-            return refactorMethod(meth, cursor)
+            return refactorMethod(meth)
         }
         return emptyList()
     }
 
-    fun refactorMethod(invocation: Tr.MethodInvocation, cursor: Cursor): List<RefactorFix> {
+    fun refactorMethod(invocation: Tr.MethodInvocation): List<RefactorFix> {
         val meth = invocation.methodSelect
         val fixes = ArrayList<RefactorFix>()
 
@@ -114,7 +117,7 @@ class ChangeMethodInvocation(signature: String, val tx: RefactorTransaction) : R
                             }
 
                             swaps.forEach { swap: Expression ->
-//                                fixes.add(invocation.args[argPos].replace(swap.changesToArgument(argPos, cursor) ?: swap.source()))
+//                                fixes.add(invocation.args[argPos].replace(swap.changesToArgument(argPos) ?: swap.source()))
                                 argPos++
                             }
                         }
@@ -126,7 +129,7 @@ class ChangeMethodInvocation(signature: String, val tx: RefactorTransaction) : R
                 }
             } else {
                 invocation.args.forEachIndexed { i, arg ->
-                    arg.changesToArgument(i, cursor)?.let { changes ->
+                    arg.changesToArgument(i)?.let { changes ->
                         fixes.add(arg.replace(changes))
                     }
                 }
@@ -163,12 +166,12 @@ class ChangeMethodInvocation(signature: String, val tx: RefactorTransaction) : R
         return fixes
     }
 
-    fun Expression.changesToArgument(pos: Int, cursor: Cursor): String? {
+    fun Expression.changesToArgument(pos: Int): String? {
         val refactor = refactorArguments?.individualArgumentRefactors?.find { it.posConstraint == pos } ?:
                 refactorArguments?.individualArgumentRefactors?.find { this.type?.matches(it.typeConstraint) ?: false }
 
 //        return if (refactor is RefactorArgument) {
-//            val fixes = ChangeArgumentScanner(refactor).visit(this, cursor)
+//            val fixes = ChangeArgumentScanner(refactor).visit(this)
 //
 //            // aggregate all the fixes to this argument into one "change" replacement rule
 //            return if (fixes.isNotEmpty()) {
@@ -193,12 +196,12 @@ class ChangeMethodInvocation(signature: String, val tx: RefactorTransaction) : R
 
 class ChangeArgumentScanner(val refactor: RefactorArgument) : RefactorTreeVisitor() {
     
-    override fun visitLiteral(literal: Tr.Literal, cursor: Cursor): List<RefactorFix> {
+    override fun visitLiteral(literal: Tr.Literal): List<RefactorFix> {
         val value = literal.value.toString()
 
         // prefix and suffix hold the special characters surrounding the values of primitive-ish types,
         // e.g. the "" around String, the L at the end of a long, etc.
-        val valueMatcher = "(.*)${Pattern.quote(value)}(.*)".toRegex().find(literal.source.text(cu).replace("\\", ""))
+        val valueMatcher = "(.*)${Pattern.quote(value)}(.*)".toRegex().find(literal.print().replace("\\", ""))
         return when(valueMatcher) {
             is MatchResult -> {
                 val (prefix, suffix) = valueMatcher.groupValues.drop(1)

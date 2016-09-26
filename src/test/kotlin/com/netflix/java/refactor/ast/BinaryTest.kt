@@ -16,7 +16,7 @@ abstract class BinaryTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val bin = a.classDecls[0].fields[0].initializer as Tr.Binary
+        val bin = a.classDecls[0].fields()[0].initializer as Tr.Binary
         assertEquals(Tr.Binary.Operator.Addition, bin.operator)
         assertTrue(bin.left is Tr.Literal)
         assertTrue(bin.right is Tr.Literal)

@@ -1,7 +1,6 @@
 package com.netflix.java.refactor.gradle
 
 import com.netflix.java.refactor.annot.AnnotationScanner
-import com.netflix.java.refactor.parse.FileSource
 import com.netflix.java.refactor.parse.OracleJdkParser
 import org.gradle.api.DefaultTask
 import org.gradle.api.plugins.JavaPluginConvention
@@ -28,9 +27,9 @@ open class RefactorAndFixSourceTask : DefaultTask() {
             val classpath = it.compileClasspath.map { it.toPath() }
             
             AnnotationScanner.allAutoRefactorsOnClasspath(classpath).forEach { refactor, visitor ->
-                OracleJdkParser(classpath).parse(sources, FileSource.Builder::fromPath).forEach { cu -> 
+                OracleJdkParser(classpath).parse(sources).forEach { cu -> 
                     if(visitor.visit(cu).isNotEmpty()) {
-                        fixesByRule.getOrPut(RuleDescriptor(refactor.value, refactor.description), { HashSet<RelativePath>() }).add(cu.rawSource.path)
+                        fixesByRule.getOrPut(RuleDescriptor(refactor.value, refactor.description), { HashSet<RelativePath>() }).add(cu.source.path)
                     }
                 }
             }

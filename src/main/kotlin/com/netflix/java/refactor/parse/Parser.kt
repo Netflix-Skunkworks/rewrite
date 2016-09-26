@@ -9,7 +9,7 @@ abstract class Parser(classpath: List<Path>?) {
         fn.endsWith(".jar") && !fn.endsWith("-javadoc.jar") && !fn.endsWith("-sources.jar")
     }
 
-    abstract fun parse(sourceFiles: List<Path>, sourceFactory: (Path) -> RawSourceCode): List<Tr.CompilationUnit>
+    abstract fun parse(sourceFiles: List<Path>): List<Tr.CompilationUnit>
     
     protected fun filterSourceFiles(sourceFiles: List<Path>) =
         sourceFiles.filter { it.fileName.toString().endsWith(".java") }.toList()

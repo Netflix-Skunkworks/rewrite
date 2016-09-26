@@ -18,18 +18,18 @@ class RemoveImport(val clazz: String) : RefactorTreeVisitor() {
     var staticNamedImports = ArrayList<Tr.Import>()
     var staticStarImport: Tr.Import? = null
 
-    override fun visitImport(import: Tr.Import, cursor: Cursor): List<RefactorFix> {
+    override fun visitImport(import: Tr.Import): List<RefactorFix> {
         if (import.static) {
-            if (import.qualid.target.source.text(cu) == clazz) {
+            if (import.qualid.target.print() == clazz) {
                 if (import.qualid.fieldName == "*")
                     staticStarImport = import
                 else
                     staticNamedImports.add(import)
             }
         } else {
-            if (import.qualid.source.text(cu) == clazz) {
+            if (import.qualid.print() == clazz) {
                 namedImport = import
-            } else if (import.qualid.fieldName == "*" && clazz.startsWith(import.qualid.target.source.text(cu))) {
+            } else if (import.qualid.fieldName == "*" && clazz.startsWith(import.qualid.target.print())) {
                 starImport = import
             }
         }
@@ -37,19 +37,19 @@ class RemoveImport(val clazz: String) : RefactorTreeVisitor() {
         return emptyList()
     }
     
-    override fun visitIdentifier(ident: Tr.Ident, cursor: Cursor): List<RefactorFix> {
+    override fun visitIdentifier(ident: Tr.Ident): List<RefactorFix> {
         val pkg = ident.type.asClass()?.owner.asPackage()?.fullName
         if(pkg is String && clazz.startsWith(pkg))
             ident.type.asClass()?.let { referencedTypes.add(it) }
         return emptyList()
     }
 
-    override fun visitMethodInvocation(meth: Tr.MethodInvocation, cursor: Cursor): List<RefactorFix> {
+    override fun visitMethodInvocation(meth: Tr.MethodInvocation): List<RefactorFix> {
         if(methodMatcher.matches(meth)) {
             if(meth.declaringType?.fullyQualifiedName == clazz)
                referencedMethods.add(meth)
         }
-        return super.visitMethodInvocation(meth, cursor)
+        return super.visitMethodInvocation(meth)
     }
 
     override fun visitEnd(): List<RefactorFix> =

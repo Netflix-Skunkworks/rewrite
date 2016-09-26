@@ -17,7 +17,7 @@ abstract class LambdaTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val lambda = a.classDecls[0].fields[0].initializer as Tr.Lambda
+        val lambda = a.classDecls[0].fields()[0].initializer as Tr.Lambda
         assertEquals(1, lambda.params.size)
         assertTrue(lambda.body is Tr.Literal)
     }

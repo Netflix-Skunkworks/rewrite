@@ -19,7 +19,7 @@ abstract class ContinueTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val whileLoop = a.classDecls[0].methods[0].body.statements[0] as Tr.WhileLoop
+        val whileLoop = a.classDecls[0].methods()[0].body.statements[0] as Tr.WhileLoop
         assertTrue(whileLoop.body is Tr.Continue)
         assertNull((whileLoop.body as Tr.Continue).label)
     }
@@ -35,7 +35,7 @@ abstract class ContinueTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val whileLoop = (a.classDecls[0].methods[0].body.statements[0] as Tr.Label).statement as Tr.WhileLoop
+        val whileLoop = (a.classDecls[0].methods()[0].body.statements[0] as Tr.Label).statement as Tr.WhileLoop
         assertTrue(whileLoop.body is Tr.Continue)
         assertEquals("labeled", (whileLoop.body as Tr.Continue).label)
     }

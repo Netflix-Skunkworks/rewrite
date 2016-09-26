@@ -21,10 +21,10 @@ abstract class MethodInvocationTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val inv = a.classDecls[0].fields[0].initializer as Tr.MethodInvocation
+        val inv = a.classDecls[0].fields()[0].initializer as Tr.MethodInvocation
 
         // check assumptions about the call site
-        assertEquals("foo", inv.methodSelect.source.text(a))
+        assertEquals("foo", inv.methodSelect.print())
         assertEquals("java.lang.Integer", inv.returnType().asClass()?.fullyQualifiedName)
         assertEquals(listOf(Type.Tag.Int, Type.Tag.Int, Type.Tag.Int),
                 inv.args.filterIsInstance<Tr.Literal>().map { it.typeTag })
@@ -55,10 +55,10 @@ abstract class MethodInvocationTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val inv = a.classDecls[0].fields[0].initializer as Tr.MethodInvocation
+        val inv = a.classDecls[0].fields()[0].initializer as Tr.MethodInvocation
         
         // check assumptions about the call site
-        assertEquals("foo", inv.methodSelect.source.text(a))
+        assertEquals("foo", inv.methodSelect.print())
         assertEquals("java.lang.Integer", inv.returnType().asClass()?.fullyQualifiedName)
         assertEquals(listOf(Type.Tag.Int, Type.Tag.Int, Type.Tag.Int),
                 inv.args.filterIsInstance<Tr.Literal>().map { it.typeTag })
@@ -88,8 +88,8 @@ abstract class MethodInvocationTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val inv = a.classDecls[0].fields[0].initializer as Tr.MethodInvocation
-        assertEquals("staticFoo", inv.methodSelect.source.text(a))
+        val inv = a.classDecls[0].fields()[0].initializer as Tr.MethodInvocation
+        assertEquals("staticFoo", inv.methodSelect.print())
         assertEquals("A", inv.declaringType?.fullyQualifiedName)
     }
     
@@ -101,7 +101,7 @@ abstract class MethodInvocationTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val inv = a.classDecls[0].fields[0].initializer as Tr.MethodInvocation
+        val inv = a.classDecls[0].fields()[0].initializer as Tr.MethodInvocation
         assertEquals("A", inv.declaringType?.fullyQualifiedName)
         assertNull(inv.resolvedSignature)
         assertNull(inv.genericSignature)

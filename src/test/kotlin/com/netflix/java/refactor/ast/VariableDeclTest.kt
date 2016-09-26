@@ -17,7 +17,7 @@ abstract class VariableDeclTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val varDecl = a.classDecls[0].fields[0]
+        val varDecl = a.classDecls[0].fields()[0]
         assertTrue(varDecl.varType is Tr.Ident)
         assertEquals("a", varDecl.name)
         assertEquals("java.lang.String", varDecl.type.asClass()?.fullyQualifiedName)
@@ -35,7 +35,7 @@ abstract class VariableDeclTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val varDecl = a.classDecls[0].methods[0].body.statements[0] as Tr.VariableDecl
+        val varDecl = a.classDecls[0].methods()[0].body.statements[0] as Tr.VariableDecl
         assertEquals("java.lang.String", varDecl.type.asClass()?.fullyQualifiedName)
         assertEquals("a", varDecl.name)
     }
@@ -48,7 +48,7 @@ abstract class VariableDeclTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val varDecl = a.classDecls[0].fields[0]
+        val varDecl = a.classDecls[0].fields()[0]
         assertNull(varDecl.initializer)
     }
 }
