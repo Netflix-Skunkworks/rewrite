@@ -314,7 +314,7 @@ class OracleJdkParser(classpath: List<Path>? = null) : Parser(classpath) {
                                 },
                                 node.name.toString(),
                                 node.nameExpression.convertOrNull(listOf(node.modifiers), "^((public)|(protected)|(private)|(abstract)|(static)|(final)|(transient)|(volatile))(\s+((public)|(protected)|(private)|(abstract)|(static)|(final)|(transient)|(volatile))*)".toRegex()),
-                                node.vartype.convertOrNull(),
+                                node.vartype.convertOrNull(listOf(node.modifiers, node.nameExpression)),
                                 node.init.convertOrNull(listOf(node.modifiers, node.nameExpression, node.vartype), Formatting.Reified(opSource.substringAfter("="))),
                                 node.type(),
                                 fmt
