@@ -19,4 +19,15 @@ abstract class BlockTest(parser: Parser): AstTest(parser) {
         
         assertEquals(1, a.classDecls[0].methods()[0].body.statements.size)
     }
+
+    @Test
+    fun format() {
+        val a = parse("""
+            public class A {
+                public void foo() {  }
+            }
+        """)
+        
+        assertEquals("{  }", a.classDecls[0].methods()[0].body.print())
+    }
 }

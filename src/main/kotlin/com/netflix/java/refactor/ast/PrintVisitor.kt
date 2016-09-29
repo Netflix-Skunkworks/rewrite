@@ -9,10 +9,9 @@ class PrintVisitor : AstVisitor<String>("") {
     override fun visitAssign(assign: Tr.Assign): String =
             assign.fmt("${visit(assign.variable)}${assign.operator.fmt("=")}${visit(assign.assignment)}")
 
-    override fun visitClassDecl(classDecl: Tr.ClassDecl): String {
-        return super.visitClassDecl(classDecl)
-    }
-
+    override fun visitBlock(block: Tr.Block): String =
+        block.fmt("{${visit(block.statements)}${block.formattingEnd.prefix()}}")
+    
     override fun visitFieldAccess(field: Tr.FieldAccess): String =
             field.fmt("${visit(field.target)}.${field.fieldName}")
 
@@ -63,13 +62,38 @@ class PrintVisitor : AstVisitor<String>("") {
                 is Tr.Unary.Operator.Not -> "!${visit(unary.expr)}"
             })
     
+    override fun visitVariable(variable: Tr.VariableDecl): String {
+        val init = when(variable.initializer) {
+            is Expression -> variable.operator.fmt("=${visit(variable.initializer)}")
+            else -> ""
+        } 
+        return variable.fmt("${visit(variable.annotations)}${visit(variable.modifiers)}${visit(variable.varType)}${visit(variable.name)}$init")
+    }
+
+    override fun visitPrimitive(primitive: Tr.Primitive): String =
+        primitive.fmt(when(primitive.typeTag) {
+            Type.Tag.Boolean -> "boolean"
+            Type.Tag.Byte -> "byte"
+            Type.Tag.Char -> "char"
+            Type.Tag.Double -> "double"
+            Type.Tag.Float -> "float"
+            Type.Tag.Int -> "int"
+            Type.Tag.Long -> "long"
+            Type.Tag.Short -> "short"
+            Type.Tag.Void -> "void"
+            Type.Tag.String -> "String"
+            Type.Tag.None -> throw IllegalStateException("Unable to print None primitive")
+            Type.Tag.Wildcard -> "*"
+        })
+    
     private fun Tree?.fmt(code: String?): String =
             if (this == null || code == null)
                 ""
-            else when (formatting) {
-                is Formatting.Reified ->
-                    (formatting as Formatting.Reified).prefix + code
-                is Formatting.Infer -> code
-                is Formatting.None -> code
-            }
+            else formatting.prefix() + code
+    
+    private fun Formatting.prefix(): String = when(this) {
+        is Formatting.Reified -> prefix
+        is Formatting.Infer -> ""
+        is Formatting.None -> ""
+    }
 }

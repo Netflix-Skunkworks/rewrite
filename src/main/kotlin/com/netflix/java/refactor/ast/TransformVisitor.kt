@@ -58,12 +58,12 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
     }
 
     override fun visitVariable(variable: Tr.VariableDecl): Tree {
-        val varType = visit(variable.varType) as Expression?
-        val nameExpr = visit(variable.nameExpr) as Expression?
+        val varType = visit(variable.varType) as Expression
+        val name = visit(variable.name) as Tr.Ident
         val initializer = visit(variable.initializer) as Expression?
         
-        return (if(varType !== variable.varType || nameExpr !== variable.nameExpr || initializer !== variable.initializer) {
-            variable.copy(varType = varType, nameExpr = nameExpr, initializer = initializer)
+        return (if(varType !== variable.varType || name !== variable.name || initializer !== variable.initializer) {
+            variable.copy(varType = varType, name = name, initializer = initializer)
         } else variable).transformIfNecessary(cursor)
     }
 

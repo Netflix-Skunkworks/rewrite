@@ -9,20 +9,30 @@ abstract class MethodDeclTest(parser: Parser): AstTest(parser) {
     
     @Test
     fun methodDecl() {
-        val p = "public class P {}"
-        
-        val a = """
+        val a = parse("""
             public class A {
                 public <P> P foo(P p, String s, String... args) {
                     return p;
                 }
             }
-        """
+        """)
         
-        val meth = parse(a, whichDependsOn = p).classDecls[0].methods()[0]
-        assertEquals("foo", meth.name)
+        val meth = a.classDecls[0].methods()[0]
+        assertEquals("foo", meth.name.name)
         assertEquals(3, meth.params.size)
         assertEquals(1, meth.body.statements.size)
         assertEquals("P", ((meth.returnTypeExpr as Tr.Ident).type as Type.GenericTypeVariable).name)
+    }
+    
+    @Test
+    fun format() {
+        val a = parse("""
+            public class A {
+                public <P> P foo(P p, String s, String... args) { return p; }
+            }
+        """)
+
+        val meth = a.classDecls[0].methods()[0]
+        assertEquals("public <P> P foo(P p, String s, String... args) { return p; }", meth.print())
     }
 }

@@ -107,48 +107,58 @@ class OracleJdkParser(classpath: List<Path>? = null) : Parser(classpath) {
             private fun <T : Tree> com.sun.source.tree.Tree.convert(fmt: Formatting): T = scan(this, fmt) as T
 
             @Suppress("UNCHECKED_CAST")
-            private fun <T : Tree> com.sun.source.tree.Tree.convert(predecessors: List<com.sun.source.tree.Tree?> = emptyList(), trimLeft: Regex? = null): T =
-                    convert(this.formatLeft(predecessors.toList(), trimLeft))
+            private fun <T : Tree> com.sun.source.tree.Tree.convert(predecessors: List<com.sun.source.tree.Tree?> = emptyList(), trim: Regex? = null): T =
+                    convert(this.format(predecessors.toList(), trim))
 
             @Suppress("UNCHECKED_CAST")
-            private fun <T : Tree> com.sun.source.tree.Tree.convertOrNull(predecessors: List<com.sun.source.tree.Tree?> = emptyList(), trimLeft: Regex? = null): T? =
-                    if (this is com.sun.source.tree.Tree) scan(this, this.formatLeft(predecessors.toList(), trimLeft)) as T? else null
+            private fun <T : Tree> com.sun.source.tree.Tree.convertOrNull(predecessors: List<com.sun.source.tree.Tree?> = emptyList(), trim: Regex? = null): T? =
+                    if (this is com.sun.source.tree.Tree) scan(this, this.format(predecessors.toList(), trim)) as T? else null
 
             @Suppress("UNCHECKED_CAST")
-            private fun <T : Tree> com.sun.source.tree.Tree.convertOrNull(predecessors: List<com.sun.source.tree.Tree?> = emptyList(), fmt: Formatting): T? =
+            private fun <T : Tree> com.sun.source.tree.Tree.convertOrNull(fmt: Formatting): T? =
                 if (this is com.sun.source.tree.Tree) scan(this, fmt) as T? else null
 
-            private fun <T : Tree> List<com.sun.source.tree.Tree>?.convert(predecessors: List<com.sun.source.tree.Tree?> = emptyList(), trimLeft: Regex? = null): List<T> =
+            private fun <T : Tree> List<com.sun.source.tree.Tree>?.convert(predecessors: List<com.sun.source.tree.Tree?> = emptyList(), trim: Regex? = null): List<T> =
                     if (this == null) emptyList()
                     else {
                         mapIndexed { i, tree ->
-                            tree.convert<T>(predecessors + if(i > 0) this.subList(0, i-1) else emptyList(),
-                                    if(i == 0) trimLeft else null)
+                            tree.convert<T>(predecessors + if(i > 0) this.subList(0, i) else emptyList(),
+                                    if(i == 0) trim else null)
                         }
                     }
 
-            private fun com.sun.source.tree.Tree.formatLeft(predecessors: List<com.sun.source.tree.Tree?> = emptyList(), trimLeft: Regex? = null): Formatting.Reified {
-                val sibling = predecessors.findLast { it != null }
+            private fun com.sun.source.tree.Tree.format(predecessors: List<com.sun.source.tree.Tree?> = emptyList(), trim: Regex? = null): Formatting.Reified {
+                val sibling = predecessors.findLast { it != null && (it as JCTree).startPosition >= 0 }
                 val prefix = if(sibling != null) {
-                    source.substring((sibling as JCTree).getEndPosition(endPosTable) + 1,
-                            (this as JCTree).startPosition)
+                    source.substring((sibling as JCTree).getEndPosition(endPosTable), (this as JCTree).startPosition)
                 } else {
                     source.substring(nodeStack.peek().startPosition, (this as JCTree).startPosition)
                 }
 
-                val trimmedPrefix = if(trimLeft != null) prefix.replaceFirst(trimLeft, "") else prefix
+                val trimmedPrefix = if(trim != null) prefix.replaceFirst(trim, "") else prefix
 
                 return Formatting.Reified(trimmedPrefix)
+            }
+            
+            private fun JCTree.JCModifiers.flagFormat(index: Int): Formatting.Reified {
+                val flags = getFlags().toList()
+                val precedingModifiers = ("^\\s*" + flags.subList(0, index).map { "(${it.name.toLowerCase()})" }.joinToString("\\s+")).toRegex()
+                return Formatting.Reified(source
+                        .substring(annotations.lastOrNull()?.getEndPosition(endPosTable) ?: startPosition,
+                                getEndPosition(endPosTable))
+                        .replace(precedingModifiers, "")
+                        .takeWhile { it.isWhitespace() }
+                )
             }
 
             override fun visitCompilationUnit(node: CompilationUnitTree, fmt: Formatting): Tree {
                 endPosTable = (node as JCTree.JCCompilationUnit).endPositions
 
-                val packageExpr: Expression? = node.packageName.convertOrNull(trimLeft = "^package".toRegex())
+                val packageExpr: Expression? = node.packageName.convertOrNull(trim = "^package".toRegex())
 
                 return Tr.CompilationUnit(
                         SourceFile.fromText(path.toString(), source),
-                        if(packageExpr is Expression) Tr.Package(packageExpr, node.packageName.formatLeft(trimLeft = "package\\s+\$".toRegex())) else null,
+                        if(packageExpr is Expression) Tr.Package(packageExpr, node.packageName.format(trim = "package\\s+\$".toRegex())) else null,
                         node.imports.convert(listOf(node.packageName)),
                         node.typeDecls.filterIsInstance<JCTree.JCClassDecl>().convert(listOf(node.packageName) + node.imports),
                         fmt
@@ -166,32 +176,44 @@ class OracleJdkParser(classpath: List<Path>? = null) : Parser(classpath) {
                             fmt
                     )
 
-            override fun visitClass(node: ClassTree, fmt: Formatting): Tree =
-                    Tr.ClassDecl(
-                            node.modifiers.annotations.convert(),
-                            node.modifiers.flags.map {
-                                when(it) {
-                                    Modifier.PUBLIC -> Tr.ClassDecl.Modifier.Public
-                                    Modifier.PROTECTED -> Tr.ClassDecl.Modifier.Protected
-                                    Modifier.PRIVATE -> Tr.ClassDecl.Modifier.Private
-                                    Modifier.ABSTRACT -> Tr.ClassDecl.Modifier.Abstract
-                                    Modifier.STATIC -> Tr.ClassDecl.Modifier.Static
-                                    Modifier.FINAL -> Tr.ClassDecl.Modifier.Final
-                                    else -> throw IllegalArgumentException("Unexpected modifier $it")
-                                }
-                            },
-                            node.simpleName.toString(),
-                            node.typeParameters.convert(),
-                            // we don't care about the compiler-inserted default constructor,
-                            // since it will never be subject to refactoring
-                            node.members
-                                    .filter { it !is JCTree.JCMethodDecl || it.modifiers.flags and Flags.GENERATEDCONSTR == 0L }
-                                    .convert(),
-                            node.extendsClause.convertOrNull(),
-                            node.implementsClause.convert(),
-                            node.type(),
-                            fmt
-                    )
+            override fun visitClass(node: ClassTree, fmt: Formatting): Tree {
+                // turn this into an AST element so we can preserve the whitespace prefix
+                val name = Tr.Ident((node as JCTree.JCClassDecl).simpleName.toString(), node.type(),
+                        Formatting.Reified(source
+                                .substring(
+                                        if(node.modifiers != null && (node.modifiers.annotations.isNotEmpty() || node.modifiers.getFlags().isNotEmpty()))
+                                            node.modifiers.getEndPosition(endPosTable) 
+                                        else node.startPosition, 
+                                        node.getEndPosition(endPosTable))
+                                .substringBefore(node.simpleName.toString()))
+                )
+                return Tr.ClassDecl(
+                        node.modifiers.annotations.convert(),
+                        node.modifiers.getFlags().mapIndexed { i, mod ->
+                            val modFormat = (node.modifiers as JCTree.JCModifiers).flagFormat(i)
+                            when (mod) {
+                                Modifier.PUBLIC -> Tr.ClassDecl.Modifier.Public(modFormat)
+                                Modifier.PROTECTED -> Tr.ClassDecl.Modifier.Protected(modFormat)
+                                Modifier.PRIVATE -> Tr.ClassDecl.Modifier.Private(modFormat)
+                                Modifier.ABSTRACT -> Tr.ClassDecl.Modifier.Abstract(modFormat)
+                                Modifier.STATIC -> Tr.ClassDecl.Modifier.Static(modFormat)
+                                Modifier.FINAL -> Tr.ClassDecl.Modifier.Final(modFormat)
+                                else -> throw IllegalArgumentException("Unexpected modifier $mod")
+                            }
+                        },
+                        name,
+                        node.typeParameters.convert(),
+                        // we don't care about the compiler-inserted default constructor,
+                        // since it will never be subject to refactoring
+                        node.members
+                                .filter { it !is JCTree.JCMethodDecl || it.modifiers.flags and Flags.GENERATEDCONSTR == 0L }
+                                .convert(),
+                        node.extendsClause.convertOrNull(),
+                        node.implementsClause.convert(),
+                        node.type(),
+                        fmt
+                )
+            }
 
             override fun visitTypeParameter(node: TypeParameterTree, fmt: Formatting): Tree =
                     Tr.TypeParameter(
@@ -214,7 +236,7 @@ class OracleJdkParser(classpath: List<Path>? = null) : Parser(classpath) {
                 } else node.arguments.convert(listOf(node.annotationType))
 
                 return Tr.Annotation(
-                        node.annotationType.convert(trimLeft = "^@".toRegex()),
+                        node.annotationType.convert(trim = "^@".toRegex()),
                         args,
                         node.type(),
                         fmt
@@ -256,17 +278,23 @@ class OracleJdkParser(classpath: List<Path>? = null) : Parser(classpath) {
                                     else -> throw IllegalArgumentException("Unexpected modifier $it")
                                 }
                             },
-                            node.name.toString(),
                             node.returnType.convertOrNull(), // only null when compilation problem (literally no return type)
-                            node.parameters.convert(),
-                            node.throws.convert(),
-                            node.body.convert(),
+                            Tr.Ident(node.name.toString(), null, node.format(listOf(node.returnType))), 
+                            node.parameters.convert(listOf(node.returnType)),
+                            node.throws.convert(node.parameters, "^.+\\)".toRegex()),
+                            node.body.convert(node.parameters + node.throws, if(node.throws.isNotEmpty()) null else "^.+\\)".toRegex()),
                             node.defaultValue.convertOrNull(),
                             fmt
                     )
 
-            override fun visitBlock(node: BlockTree, fmt: Formatting): Tree =
-                    Tr.Block(node.statements.convert(), fmt)
+            override fun visitBlock(node: BlockTree, fmt: Formatting): Tree {
+                val beginningOfEnd = // sounds ominous doesn't it? ;)
+                        if((node as JCTree.JCBlock).statements.isEmpty()) node.startPosition + 1
+                        else (node.statements.last() as JCTree.JCStatement).getEndPosition(endPosTable)
+                
+                val whitespaceBeforeEnd = source.substring(beginningOfEnd, node.getEndPosition(endPosTable) - 1)
+                return Tr.Block(node.statements.convert(trim = "^\\{".toRegex()), fmt, Formatting.Reified(whitespaceBeforeEnd))
+            }
 
             override fun visitLiteral(node: LiteralTree, fmt: Formatting): Tree =
                     Tr.Literal(
@@ -291,40 +319,54 @@ class OracleJdkParser(classpath: List<Path>? = null) : Parser(classpath) {
                     }, node.type(), fmt)
 
             override fun visitVariable(node: VariableTree, fmt: Formatting): Tree? {
-                val opSource = source.substring((node as JCTree.JCVariableDecl).nameExpression.getEndPosition(endPosTable),
-                        node.init.startPosition)
-
-                return when (node.name.toString()) {
-                    "<error>" -> null
-                    else ->
-                        Tr.VariableDecl(
-                                node.modifiers.annotations.convert(),
-                                node.modifiers.getFlags().map {
-                                    when(it) {
-                                        Modifier.PUBLIC -> Tr.VariableDecl.Modifier.Public
-                                        Modifier.PROTECTED -> Tr.VariableDecl.Modifier.Protected
-                                        Modifier.PRIVATE -> Tr.VariableDecl.Modifier.Private
-                                        Modifier.ABSTRACT -> Tr.VariableDecl.Modifier.Abstract
-                                        Modifier.STATIC -> Tr.VariableDecl.Modifier.Static
-                                        Modifier.FINAL -> Tr.VariableDecl.Modifier.Final
-                                        Modifier.TRANSIENT -> Tr.VariableDecl.Modifier.Transient
-                                        Modifier.VOLATILE -> Tr.VariableDecl.Modifier.Volatile
-                                        else -> throw IllegalArgumentException("Unexpected modifier $it")
-                                    }
-                                },
-                                node.name.toString(),
-                                node.nameExpression.convertOrNull(listOf(node.modifiers), "^((public)|(protected)|(private)|(abstract)|(static)|(final)|(transient)|(volatile))(\s+((public)|(protected)|(private)|(abstract)|(static)|(final)|(transient)|(volatile))*)".toRegex()),
-                                node.vartype.convertOrNull(listOf(node.modifiers, node.nameExpression)),
-                                node.init.convertOrNull(listOf(node.modifiers, node.nameExpression, node.vartype), Formatting.Reified(opSource.substringAfter("="))),
-                                node.type(),
-                                fmt
-                        )
+                if(node.name.toString() == "<error>") return null
+                
+                val opSource = if ((node as JCTree.JCVariableDecl).init is JCTree.JCExpression) {
+                    source.substring(node.vartype.getEndPosition(endPosTable), node.init.startPosition)
+                            .substringAfter(node.name.toString())
+                } else ""
+                
+                val op = if(node.init is JCTree.JCExpression) {
+                    Tr.VariableDecl.Operator(Formatting.Reified(opSource.substringBefore("=")))
+                } else null
+                
+                // turn this into an AST element so we can preserve the whitespace prefix
+                val name = Tr.Ident(node.name.toString(), node.type(), 
+                        Formatting.Reified(source.substring(node.vartype.getEndPosition(endPosTable), node.getEndPosition(endPosTable))
+                            .substringBefore(node.name.toString()))
+                )
+                
+                // turn these into AST elements so we can preserve the whitespace between them
+                val modifiers = node.modifiers.getFlags().mapIndexed { i, mod ->
+                    val modFormat = node.modifiers.flagFormat(i)
+                    when(mod) {
+                        Modifier.PUBLIC -> Tr.VariableDecl.Modifier.Public(modFormat)
+                        Modifier.PROTECTED -> Tr.VariableDecl.Modifier.Protected(modFormat)
+                        Modifier.PRIVATE -> Tr.VariableDecl.Modifier.Private(modFormat)
+                        Modifier.ABSTRACT -> Tr.VariableDecl.Modifier.Abstract(modFormat)
+                        Modifier.STATIC -> Tr.VariableDecl.Modifier.Static(modFormat)
+                        Modifier.FINAL -> Tr.VariableDecl.Modifier.Final(modFormat)
+                        Modifier.TRANSIENT -> Tr.VariableDecl.Modifier.Transient(modFormat)
+                        Modifier.VOLATILE -> Tr.VariableDecl.Modifier.Volatile(modFormat)
+                        else -> throw IllegalArgumentException("Unexpected modifier $mod")
+                    }
                 }
+                
+                return Tr.VariableDecl(
+                        node.modifiers.annotations.convert(),
+                        modifiers,
+                        node.vartype.convert(listOf(node.modifiers)),
+                        name,
+                        op,
+                        node.init.convertOrNull(Formatting.Reified(opSource.substringAfter("="))),
+                        node.type(),
+                        fmt
+                )
             }
 
             override fun visitImport(node: ImportTree, fmt: Formatting): Tree {
                 return Tr.Import(
-                        node.qualifiedIdentifier.convert(trimLeft = "^import(\\s+static)?".toRegex()),
+                        node.qualifiedIdentifier.convert(trim = "^import(\\s+static)?".toRegex()),
                         node.isStatic,
                         fmt
                 )
@@ -382,13 +424,13 @@ class OracleJdkParser(classpath: List<Path>? = null) : Parser(classpath) {
                             JCTree.Tag.NEG -> Tr.Unary.Operator.Negative(Formatting.Reified.Empty)
                             JCTree.Tag.PREDEC -> Tr.Unary.Operator.PreDecrement(Formatting.Reified.Empty)
                             JCTree.Tag.PREINC -> Tr.Unary.Operator.PreIncrement(Formatting.Reified.Empty)
-                            JCTree.Tag.POSTDEC -> Tr.Unary.Operator.PostDecrement(node.formatLeft(listOf(node.arg)))
-                            JCTree.Tag.POSTINC -> Tr.Unary.Operator.PostIncrement(node.formatLeft(listOf(node.arg)))
+                            JCTree.Tag.POSTDEC -> Tr.Unary.Operator.PostDecrement(node.format(listOf(node.arg)))
+                            JCTree.Tag.POSTINC -> Tr.Unary.Operator.PostIncrement(node.format(listOf(node.arg)))
                             JCTree.Tag.COMPL -> Tr.Unary.Operator.Complement(Formatting.Reified.Empty)
                             JCTree.Tag.NOT -> Tr.Unary.Operator.Not(Formatting.Reified.Empty)
                             else -> throw IllegalArgumentException("Unexpected unary tag ${node.tag}")
                         },
-                        node.arg.convert(trimLeft = when (node.tag) {
+                        node.arg.convert(trim = when (node.tag) {
                             JCTree.Tag.POS -> "^+".toRegex()
                             JCTree.Tag.NEG -> "^-".toRegex()
                             JCTree.Tag.PREDEC -> "^--".toRegex()

@@ -117,7 +117,8 @@ sealed class Tr : Serializable, Tree {
     }
 
     data class Block(val statements: List<Statement>,
-                     override val formatting: Formatting) : Statement, Tr() {
+                     override val formatting: Formatting,
+                     val formattingEnd: Formatting) : Statement, Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitBlock(this)
     }
@@ -145,7 +146,7 @@ sealed class Tr : Serializable, Tree {
     data class ClassDecl(
             val annotations: List<Annotation>,
             val modifiers: List<Modifier>,
-            val name: String,
+            val name: Ident,
             val typeParams: List<TypeParameter>,
             val definitions: List<Tree>,
             val extends: Tree?,
@@ -158,8 +159,15 @@ sealed class Tr : Serializable, Tree {
         fun fields(): List<VariableDecl> = definitions.filterIsInstance<VariableDecl>()
         fun methods(): List<MethodDecl> = definitions.filterIsInstance<MethodDecl>()
 
-        enum class Modifier {
-            Public, Protected, Private, Abstract, Static, Final
+        sealed class Modifier: Tr() {
+            override fun <R> accept(v: AstVisitor<R>): R = v.default(null)
+
+            data class Public(override val formatting: Formatting): Modifier()
+            data class Protected(override val formatting: Formatting): Modifier()
+            data class Private(override val formatting: Formatting): Modifier()
+            data class Abstract(override val formatting: Formatting): Modifier()
+            data class Static(override val formatting: Formatting): Modifier()
+            data class Final(override val formatting: Formatting): Modifier()
         }
     }
 
@@ -353,9 +361,9 @@ sealed class Tr : Serializable, Tree {
     }
 
     data class MethodDecl(val annotations: List<Annotation>,
-                          val modifiers: List<Modifier>,
-                          val name: String,
+                          val modifiers: List<Any>,
                           val returnTypeExpr: Expression?,
+                          val name: Ident,
                           val params: List<VariableDecl>,
                           val thrown: List<Expression>,
                           val body: Block,
@@ -518,24 +526,37 @@ sealed class Tr : Serializable, Tree {
     data class VariableDecl(
             val annotations: List<Annotation>,
             val modifiers: List<Modifier>,
-            val name: String,
-            val nameExpr: Expression?,
-            val varType: Expression?,
+            val varType: Expression,
+            val name: Ident,
+            val operator: Operator?,
             val initializer: Expression?,
             val type: Type?,
             override val formatting: Formatting) : Statement, Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitVariable(this)
 
-        enum class Modifier {
-            Public, Protected, Private, Abstract, Static, Final, Transient, Volatile
+        data class Operator(override val formatting: Formatting): Tr() {
+            override fun <R> accept(v: AstVisitor<R>): R = v.default(null)
+        }
+        
+        sealed class Modifier: Tr() {
+            override fun <R> accept(v: AstVisitor<R>): R = v.default(null)
+            
+            data class Public(override val formatting: Formatting): Modifier()
+            data class Protected(override val formatting: Formatting): Modifier()
+            data class Private(override val formatting: Formatting): Modifier()
+            data class Abstract(override val formatting: Formatting): Modifier()
+            data class Static(override val formatting: Formatting): Modifier()
+            data class Final(override val formatting: Formatting): Modifier()
+            data class Transient(override val formatting: Formatting): Modifier()
+            data class Volatile(override val formatting: Formatting): Modifier()
         }
     }
-
+ 
     data class WhileLoop(val condition: Parentheses,
                          val body: Statement,
                          override val formatting: Formatting) : Statement, Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitWhileLoop(this)
     }
-}   
+}

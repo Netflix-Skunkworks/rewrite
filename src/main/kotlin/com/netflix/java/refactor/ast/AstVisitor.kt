@@ -61,7 +61,7 @@ open class AstVisitor<R> {
 
     open fun visitVariable(variable: Tr.VariableDecl): R =
         visit(variable.varType)
-                .andThen(variable.nameExpr)
+                .andThen(variable.name)
                 .andThen(variable.initializer)
 
     open fun visitCompilationUnit(cu: Tr.CompilationUnit): R {
