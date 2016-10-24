@@ -2,14 +2,14 @@ package com.netflix.java.refactor.ast
 
 import com.netflix.java.refactor.parse.Parser
 import com.netflix.java.refactor.test.AstTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
-import kotlin.test.assertEquals
 
 abstract class AssignOpTest(parser: Parser): AstTest(parser) {
-    
-    @Test
-    fun compoundAssignment() {
-        val a = parse("""
+
+    val a by lazy {
+        parse("""
             public class A {
                 int n = 0;
                 public void test() {
@@ -17,8 +17,19 @@ abstract class AssignOpTest(parser: Parser): AstTest(parser) {
                 }
             }
         """)
-        
-        val assign = a.classDecls[0].methods()[0].body.statements[0] as Tr.AssignOp
-        assertEquals(Tr.AssignOp.Operator.Addition, assign.operator)
+    }
+
+    val assign by lazy {
+        a.firstMethodStatement() as Tr.AssignOp
+    }
+
+    @Test
+    fun compoundAssignment() {
+        assertTrue(assign.operator is Tr.AssignOp.Operator.Addition)
+    }
+
+    @Test
+    fun format() {
+        assertEquals("n += 1", assign.print())
     }
 }

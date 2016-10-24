@@ -2,8 +2,8 @@ package com.netflix.java.refactor.ast
 
 import com.netflix.java.refactor.parse.Parser
 import com.netflix.java.refactor.test.AstTest
+import org.junit.Assert.assertEquals
 import org.junit.Test
-import kotlin.test.assertEquals
 
 abstract class BlockTest(parser: Parser): AstTest(parser) {
     
@@ -17,7 +17,7 @@ abstract class BlockTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        assertEquals(1, a.classDecls[0].methods()[0].body.statements.size)
+        assertEquals(1, a.classDecls[0].methods()[0].body!!.statements.size)
     }
 
     @Test
@@ -28,6 +28,6 @@ abstract class BlockTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        assertEquals("{  }", a.classDecls[0].methods()[0].body.print())
+        assertEquals("{  }", a.classDecls[0].methods()[0].body!!.print())
     }
 }

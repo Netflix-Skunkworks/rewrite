@@ -3,9 +3,9 @@ package com.netflix.java.refactor.ast
 import com.netflix.java.refactor.parse.Parser
 import com.netflix.java.refactor.test.AstTest
 import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 
 abstract class ContinueTest(parser: Parser): AstTest(parser) {
     
@@ -19,7 +19,7 @@ abstract class ContinueTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val whileLoop = a.classDecls[0].methods()[0].body.statements[0] as Tr.WhileLoop
+        val whileLoop = a.firstMethodStatement() as Tr.WhileLoop
         assertTrue(whileLoop.body is Tr.Continue)
         assertNull((whileLoop.body as Tr.Continue).label)
     }
@@ -35,8 +35,23 @@ abstract class ContinueTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val whileLoop = (a.classDecls[0].methods()[0].body.statements[0] as Tr.Label).statement as Tr.WhileLoop
+        val whileLoop = (a.firstMethodStatement() as Tr.Label).statement as Tr.WhileLoop
         assertTrue(whileLoop.body is Tr.Continue)
-        assertEquals("labeled", (whileLoop.body as Tr.Continue).label)
+        assertEquals("labeled", (whileLoop.body as Tr.Continue).label?.name)
+    }
+
+    @Test
+    fun formatContinueLabeled() {
+        val a = parse("""
+            public class A {
+                public void test() {
+                    labeled : while(true)
+                        continue labeled;
+                }
+            }
+        """)
+
+        val whileLoop = (a.firstMethodStatement() as Tr.Label).statement as Tr.WhileLoop
+        assertEquals("continue labeled", whileLoop.body.print())
     }
 }

@@ -2,9 +2,8 @@ package com.netflix.java.refactor.ast
 
 import com.netflix.java.refactor.parse.Parser
 import com.netflix.java.refactor.test.AstTest
+import org.junit.Assert.*
 import org.junit.Test
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 abstract class ReturnTest(parser: Parser): AstTest(parser) {
     
@@ -18,7 +17,7 @@ abstract class ReturnTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val rtn = a.classDecls[0].methods()[0].body.statements[0] as Tr.Return
+        val rtn = a.firstMethodStatement() as Tr.Return
         assertTrue(rtn.expr is Tr.Literal)
     }
 
@@ -32,7 +31,21 @@ abstract class ReturnTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val rtn = a.classDecls[0].methods()[0].body.statements[0] as Tr.Return
+        val rtn = a.firstMethodStatement() as Tr.Return
         assertNull(rtn.expr)
+    }
+    
+    @Test
+    fun format() {
+        val a = parse("""
+            public class A {
+                public int test() {
+                    return 0;
+                }
+            }
+        """)
+
+        val rtn = a.firstMethodStatement() as Tr.Return
+        assertEquals("return 0", rtn.print())
     }
 }

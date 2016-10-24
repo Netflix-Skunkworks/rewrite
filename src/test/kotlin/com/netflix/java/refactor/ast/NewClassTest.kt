@@ -3,7 +3,7 @@ package com.netflix.java.refactor.ast
 import com.netflix.java.refactor.parse.Parser
 import com.netflix.java.refactor.test.AstTest
 import org.junit.Test
-import kotlin.test.assertEquals
+import org.junit.Assert.assertEquals
 
 abstract class NewClassTest(parser: Parser): AstTest(parser) {
     val a = """
@@ -38,7 +38,7 @@ abstract class NewClassTest(parser: Parser): AstTest(parser) {
         val cu = parse(c, whichDependsOn = a)
         val b = cu.classDecls[0].fields()[0]
         assertEquals("a.A.B", b.type.asClass()?.fullyQualifiedName)
-        assertEquals("A.B", (b.initializer as Tr.NewClass).identifier.print())
+        assertEquals("A.B", (b.initializer as Tr.NewClass).classIdentifier.print())
     }
     
     @Test
@@ -51,6 +51,19 @@ abstract class NewClassTest(parser: Parser): AstTest(parser) {
         """)
 
         val newClass = a.classDecls[0].fields()[0].initializer as Tr.NewClass
-        assertEquals(1, newClass.args.size)
+        assertEquals(1, newClass.args.args.size)
+    }
+
+    @Test
+    fun format() {
+        val a = parse("""
+            import java.util.*;
+            public class A {
+                Object l = new ArrayList< String > ( 0 ) { };
+            }
+        """)
+
+        val newClass = a.classDecls[0].fields()[0].initializer as Tr.NewClass
+        assertEquals("new ArrayList< String > ( 0 ) { }", newClass.print())
     }
 }

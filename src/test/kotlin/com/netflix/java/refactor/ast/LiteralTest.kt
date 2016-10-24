@@ -3,7 +3,7 @@ package com.netflix.java.refactor.ast
 import com.netflix.java.refactor.parse.Parser
 import com.netflix.java.refactor.test.AstTest
 import org.junit.Test
-import kotlin.test.assertEquals
+import org.junit.Assert.assertEquals
 
 abstract class LiteralTest(parser: Parser): AstTest(parser) {
     

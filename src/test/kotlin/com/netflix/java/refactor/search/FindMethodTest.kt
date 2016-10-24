@@ -5,7 +5,7 @@ import com.netflix.java.refactor.parse.Parser
 import com.netflix.java.refactor.test.AstTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import kotlin.test.assertTrue
+import org.junit.Assert.assertTrue
 
 abstract class FindMethodTest(parser: Parser): AstTest(parser) {
 

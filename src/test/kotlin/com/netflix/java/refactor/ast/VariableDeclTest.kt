@@ -3,9 +3,9 @@ package com.netflix.java.refactor.ast
 import com.netflix.java.refactor.parse.Parser
 import com.netflix.java.refactor.test.AstTest
 import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 
 abstract class VariableDeclTest(parser: Parser): AstTest(parser) {
     
@@ -35,7 +35,7 @@ abstract class VariableDeclTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val varDecl = a.classDecls[0].methods()[0].body.statements[0] as Tr.VariableDecl
+        val varDecl = a.firstMethodStatement() as Tr.VariableDecl
         assertEquals("java.lang.String", varDecl.type.asClass()?.fullyQualifiedName)
         assertEquals("a", varDecl.name.name)
     }
@@ -62,5 +62,24 @@ abstract class VariableDeclTest(parser: Parser): AstTest(parser) {
         
         val varDecl = a.classDecls[0].fields()[0]
         assertEquals("public static int n = 0", varDecl.print())
+    }
+
+    @Test
+    fun formatArrayVariables() {
+        val a = parse("""
+            |public class A {
+            |   int n [ ];
+            |   String s [ ] [ ];
+            |   int [ ] n2;
+            |   String [ ] [ ] s2;
+            |}
+        """)
+
+        val (n, s, n2, s2) = a.fields(0..3)
+
+        assertEquals("int n [ ]", n.print())
+        assertEquals("String s [ ] [ ]", s.print())
+        assertEquals("int [ ] n2", n2.print())
+        assertEquals("String [ ] [ ] s2", s2.print())
     }
 }

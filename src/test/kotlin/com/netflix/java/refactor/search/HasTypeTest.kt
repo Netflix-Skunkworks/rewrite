@@ -5,7 +5,7 @@ import com.netflix.java.refactor.parse.Parser
 import com.netflix.java.refactor.test.AstTest
 import org.junit.Test
 import java.util.*
-import kotlin.test.assertTrue
+import org.junit.Assert.assertTrue
 
 abstract class HasTypeTest(parser: Parser) : AstTest(parser) {
     

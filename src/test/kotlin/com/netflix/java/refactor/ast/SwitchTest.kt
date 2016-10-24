@@ -3,9 +3,9 @@ package com.netflix.java.refactor.ast
 import com.netflix.java.refactor.parse.Parser
 import com.netflix.java.refactor.test.AstTest
 import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 
 abstract class SwitchTest(parser: Parser): AstTest(parser) {
     
@@ -22,11 +22,11 @@ abstract class SwitchTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val switch = a.classDecls[0].methods()[0].body.statements[0] as Tr.Switch
+        val switch = a.firstMethodStatement() as Tr.Switch
         assertTrue(switch.selector.expr is Tr.Ident)
-        assertEquals(1, switch.cases.size)
+        assertEquals(1, switch.cases.statements.size)
         
-        val case0 = switch.cases[0]
+        val case0 = switch.cases.statements[0]
         assertTrue(case0.pattern is Tr.Literal)
         assertTrue(case0.statements[0] is Tr.Break)
     }
@@ -44,13 +44,33 @@ abstract class SwitchTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val switch = a.classDecls[0].methods()[0].body.statements[0] as Tr.Switch
+        val switch = a.firstMethodStatement() as Tr.Switch
         assertTrue(switch.selector.expr is Tr.Ident)
-        assertEquals(1, switch.cases.size)
+        assertEquals(1, switch.cases.statements.size)
 
-        val default = switch.cases[0]
-        assertNull(default.pattern)
+        val default = switch.cases.statements[0]
+        assertEquals("default", (default.pattern as Tr.Ident).name)
         assertTrue(default.statements[0] is Tr.MethodInvocation)
+    }
+
+    @Test
+    fun format() {
+        val a = parse("""
+            |public class A {
+            |    public void test() {
+            |        switch(n) {
+            |        default: break;
+            |        }
+            |    }
+            |}
+        """)
+
+        val switch = a.firstMethodStatement() as Tr.Switch
+        assertEquals("""
+            |switch(n) {
+            |default: break;
+            |}
+        """.trimMargin(), switch.print())
     }
     
     @Test
@@ -64,8 +84,8 @@ abstract class SwitchTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val switch = a.classDecls[0].methods()[0].body.statements[0] as Tr.Switch
+        val switch = a.firstMethodStatement() as Tr.Switch
         assertTrue(switch.selector.expr is Tr.Ident)
-        assertEquals(0, switch.cases.size)
+        assertEquals(0, switch.cases.statements.size)
     }
 }

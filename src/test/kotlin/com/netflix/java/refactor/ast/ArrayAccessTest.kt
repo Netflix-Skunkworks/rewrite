@@ -2,14 +2,14 @@ package com.netflix.java.refactor.ast
 
 import com.netflix.java.refactor.parse.Parser
 import com.netflix.java.refactor.test.AstTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
-import kotlin.test.assertTrue
 
 abstract class ArrayAccessTest(parser: Parser): AstTest(parser) {
-    
-    @Test
-    fun arrayAccess() {
-        val a = parse("""
+
+    val a by lazy {
+        parse("""
             public class a {
                 int n[] = new int[] { 0 };
                 public void test() {
@@ -17,10 +17,19 @@ abstract class ArrayAccessTest(parser: Parser): AstTest(parser) {
                 }
             }
         """)
-        
-        val variable = a.classDecls[0].methods()[0].body.statements[0] as Tr.VariableDecl
-        val arrAccess = variable.initializer as Tr.ArrayAccess
+    }
+
+    val variable by lazy { a.firstMethodStatement() as Tr.VariableDecl }
+    val arrAccess by lazy { variable.initializer as Tr.ArrayAccess }
+
+    @Test
+    fun arrayAccess() {
         assertTrue(arrAccess.indexed is Tr.Ident)
-        assertTrue(arrAccess.index is Tr.Literal)
+        assertTrue(arrAccess.dimension.index is Tr.Literal)
+    }
+
+    @Test
+    fun format() {
+        assertEquals("n[0]", arrAccess.print())
     }
 }

@@ -12,6 +12,8 @@ import java.util.regex.Pattern
 abstract class AstTest(var parser: Parser) {
     @JvmField @Rule
     val temp = TemporaryFolder()
+
+
     
     fun parse(source: String, whichDependsOn: String) =
         parse(source, listOf(whichDependsOn))
@@ -40,4 +42,10 @@ abstract class AstTest(var parser: Parser) {
     fun assertRefactored(cu: Tr.CompilationUnit, refactored: String) {
         assertEquals(refactored.trimMargin(), cu.print())
     }
+
+    fun Tr.CompilationUnit.firstMethodStatement() =
+            classDecls[0].methods()[0].body!!.statements[0]
+
+    fun Tr.CompilationUnit.fields(ns: IntRange = 0..0) =
+            classDecls[0].fields().subList(ns.start, ns.endInclusive + 1)
 }

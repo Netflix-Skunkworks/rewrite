@@ -3,7 +3,7 @@ package com.netflix.java.refactor.ast
 import com.netflix.java.refactor.parse.Parser
 import com.netflix.java.refactor.test.AstTest
 import org.junit.Test
-import kotlin.test.assertTrue
+import org.junit.Assert.assertTrue
 
 abstract class CyclicTypeTest(parser: Parser): AstTest(parser) {
     
@@ -20,7 +20,7 @@ abstract class CyclicTypeTest(parser: Parser): AstTest(parser) {
 
         val elemType = fieldType!!.elemType.asClass()
         assertTrue(elemType is Type.Class)
-        
-        assertTrue(elemType!!.members[0].type?.isCyclicRef() ?: false)
+
+        assertTrue(elemType!!.members[0].type?.asArray()?.elemType?.asClass()?.isCyclicRef() ?: false)
     }
 }

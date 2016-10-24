@@ -5,28 +5,28 @@ import com.netflix.java.refactor.test.AstTest
 import org.junit.Test
 import org.junit.Assert.*
 
-abstract class WhileLoopTest(parser: Parser): AstTest(parser) {
+abstract class DoWhileLoopTest(parser: Parser): AstTest(parser) {
 
     val a by lazy {
         parse("""
             |public class A {
             |    public void test() {
-            |        while ( true ) { }
+            |        do { } while ( true );
             |    }
             |}
         """)
     }
 
-    val whileLoop by lazy { a.firstMethodStatement() as Tr.WhileLoop }
+    val whileLoop by lazy { a.firstMethodStatement() as Tr.DoWhileLoop }
 
     @Test
-    fun whileLoop() {
+    fun doWhileLoop() {
         assertTrue(whileLoop.condition.expr is Tr.Literal)
         assertTrue(whileLoop.body is Tr.Block<*>)
     }
 
     @Test
     fun format() {
-        assertEquals("while ( true ) { }", whileLoop.print())
+        assertEquals("do { } while ( true )", whileLoop.print())
     }
 }

@@ -3,8 +3,8 @@ package com.netflix.java.refactor.ast
 import com.netflix.java.refactor.parse.Parser
 import com.netflix.java.refactor.test.AstTest
 import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 
 abstract class TernaryTest(parser: Parser): AstTest(parser) {
     @Test
@@ -18,7 +18,7 @@ abstract class TernaryTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val evenOrOdd = a.classDecls[0].methods()[0].body.statements[0] as Tr.VariableDecl
+        val evenOrOdd = a.firstMethodStatement() as Tr.VariableDecl
         val ternary = evenOrOdd.initializer as Tr.Ternary
         
         assertEquals("java.lang.String", ternary.type.asClass()?.fullyQualifiedName)

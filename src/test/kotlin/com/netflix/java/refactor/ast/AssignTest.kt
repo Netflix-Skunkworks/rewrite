@@ -3,8 +3,8 @@ package com.netflix.java.refactor.ast
 import com.netflix.java.refactor.parse.Parser
 import com.netflix.java.refactor.test.AstTest
 import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 
 abstract class AssignTest(parser: Parser): AstTest(parser) {
     
@@ -19,7 +19,7 @@ abstract class AssignTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val assign = a.classDecls[0].methods()[0].body.statements[0] as Tr.Assign
+        val assign = a.firstMethodStatement() as Tr.Assign
         assertEquals("s", (assign.variable as Tr.Ident).name)
         assertTrue(assign.assignment is Tr.Literal)
     }

@@ -2,25 +2,33 @@ package com.netflix.java.refactor.ast
 
 import com.netflix.java.refactor.parse.Parser
 import com.netflix.java.refactor.test.AstTest
+import org.junit.Assert.assertEquals
 import org.junit.Test
-import kotlin.test.assertTrue
+import org.junit.Assert.assertTrue
 
 abstract class SynchronizedTest(parser: Parser): AstTest(parser) {
-    
-    @Test
-    fun synchronized() {
-        val a = parse("""
+
+    val a by lazy {
+        parse("""
             public class A {
                 Integer n = 0;
                 public void test() {
                     synchronized(n) {
-                        System.out.println("locked");
                     }
                 }
             }
         """)
-        
-        val sync = a.classDecls[0].methods()[0].body.statements[0] as Tr.Synchronized
+    }
+
+    val sync by lazy { a.firstMethodStatement() as Tr.Synchronized }
+
+    @Test
+    fun synchronized() {
         assertTrue(sync.lock.expr is Tr.Ident)
+    }
+
+    @Test
+    fun format() {
+        assertEquals("synchronized(n) {\n}", sync.print())
     }
 }

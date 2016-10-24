@@ -5,6 +5,8 @@ import com.netflix.java.refactor.parse.SourceFile
 import com.netflix.java.refactor.refactor.RefactorTransaction
 import com.netflix.java.refactor.search.*
 import java.io.Serializable
+import java.lang.IllegalStateException
+import java.lang.reflect.Parameter
 import java.util.regex.Pattern
 
 interface Tree {
@@ -15,10 +17,23 @@ interface Tree {
     fun print() = PrintVisitor().visit(this).trimIndent()
 }
 
-interface Statement : Tree
+interface Statement : Tree {
+    fun terminator(): String
+}
+
 interface Expression : Tree {
     val type: Type?
 }
+
+/**
+ * A tree representing a simple or fully qualified name
+ */
+interface NameTree : Tree
+
+/**
+ * A tree identifying a type (e.g. a simple or fully qualified class name, a primitive, or an array)
+ */
+interface TypeTree: Tree
 
 /**
  * The stylistic surroundings of a tree element
@@ -30,18 +45,18 @@ sealed class Formatting {
      */
     object Infer : Formatting()
 
-    class Reified(val prefix: String) : Formatting() {
+    data class Reified(val prefix: String, var suffix: String = "") : Formatting() {
         companion object {
             val Empty = Reified("")
         }
     }
-
+ 
     object None : Formatting()
 }
 
 sealed class Tr : Serializable, Tree {
 
-    data class Annotation(var annotationType: Tree, // FieldAccess or Ident
+    data class Annotation(var annotationType: NameTree,
                           var args: List<Expression>,
                           override val type: Type?,
                           override val formatting: Formatting) : Expression, Tr() {
@@ -50,24 +65,24 @@ sealed class Tr : Serializable, Tree {
     }
 
     data class ArrayAccess(val indexed: Expression,
-                           val index: Expression,
+                           val dimension: Dimension,
                            override val type: Type?,
                            override val formatting: Formatting) : Expression, Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitArrayAccess(this)
+
+        data class Dimension(val index: Expression, override val formatting: Formatting): Tr() {
+            override fun <R> accept(v: AstVisitor<R>): R = v.default(null)
+        }
     }
 
-    data class Assign(val variable: Expression,
-                      val operator: Operator,
+    data class Assign(val variable: NameTree,
                       val assignment: Expression,
                       override val type: Type?,
                       override val formatting: Formatting) : Expression, Statement, Tr() {
+        override fun terminator(): String = ";"
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitAssign(this)
-        
-        data class Operator(override val formatting: Formatting): Tr() {
-            override fun <R> accept(v: AstVisitor<R>): R = v.default(null)
-        }
     }
 
     data class AssignOp(val variable: Expression,
@@ -76,55 +91,85 @@ sealed class Tr : Serializable, Tree {
                         override val type: Type?,
                         override val formatting: Formatting) : Expression, Statement, Tr() {
 
+        override fun terminator(): String = ";"
+
         override fun <R> accept(v: AstVisitor<R>): R = v.visitAssignOp(this)
 
-        enum class Operator {
+        sealed class Operator: Tr() {
+            abstract val keyword: String
+            override fun <R> accept(v: AstVisitor<R>): R = v.default(null)
+
             // Arithmetic
-            Addition,
-            Subtraction, Multiplication, Division, Modulo,
+            data class Addition(override val formatting: Formatting) : Operator() { override val keyword = "+=" }
+            data class Subtraction(override val formatting: Formatting) : Operator() { override val keyword = "-=" }
+            data class Multiplication(override val formatting: Formatting) : Operator() { override val keyword = "*=" }
+            data class Division(override val formatting: Formatting) : Operator() { override val keyword = "/=" }
+            data class Modulo(override val formatting: Formatting) : Operator() { override val keyword = "%=" }
 
             // Bitwise
-            BitAnd,
-            BitOr, BitXor, LeftShift, RightShift, UnsignedRightShift
+            data class BitAnd(override val formatting: Formatting) : Operator() { override val keyword = "&=" }
+            data class BitOr(override val formatting: Formatting) : Operator() { override val keyword = "|=" }
+            data class BitXor(override val formatting: Formatting) : Operator() { override val keyword = "^=" }
+            data class LeftShift(override val formatting: Formatting) : Operator() { override val keyword = "<<=" }
+            data class RightShift(override val formatting: Formatting) : Operator() { override val keyword = ">>=" }
+            data class UnsignedRightShift(override val formatting: Formatting) : Operator() { override val keyword = ">>>=" }
         }
     }
 
-    data class Binary(val operator: Operator,
-                      val left: Expression,
+    data class Binary(val left: Expression,
+                      val operator: Operator,
                       val right: Expression,
                       override val type: Type?,
                       override val formatting: Formatting) : Expression, Tr() {
 
-        enum class Operator {
-            // Arithmetic
-            Addition,
-            Subtraction, Multiplication, Division, Modulo,
-
-            // Relational
-            LessThan,
-            GreaterThan, LessThanOrEqual, GreaterThanOrEqual, Equal, NotEqual,
-
-            // Bitwise
-            BitAnd,
-            BitOr, BitXor, LeftShift, RightShift, UnsignedRightShift,
-
-            // Boolean
-            Or,
-            And
-        }
-
         override fun <R> accept(v: AstVisitor<R>): R = v.visitBinary(this)
+        
+        sealed class Operator: Tr() {
+            abstract val keyword: String
+            override fun <R> accept(v: AstVisitor<R>): R = v.default(null)
+
+            // Arithmetic
+            data class Addition(override val formatting: Formatting) : Operator() { override val keyword = "+" }
+            data class Subtraction(override val formatting: Formatting) : Operator() { override val keyword = "-" }
+            data class Multiplication(override val formatting: Formatting) : Operator() { override val keyword = "*" }
+            data class Division(override val formatting: Formatting) : Operator() { override val keyword = "/" }
+            data class Modulo(override val formatting: Formatting) : Operator() { override val keyword = "%" }
+            
+            // Relational
+            data class LessThan(override val formatting: Formatting) : Operator() { override val keyword = "<" }
+            data class GreaterThan(override val formatting: Formatting) : Operator() { override val keyword = ">" }
+            data class LessThanOrEqual(override val formatting: Formatting) : Operator() { override val keyword = "<=" }
+            data class GreaterThanOrEqual(override val formatting: Formatting) : Operator() { override val keyword = ">=" }
+            data class Equal(override val formatting: Formatting) : Operator() { override val keyword = "==" }
+            data class NotEqual(override val formatting: Formatting) : Operator() { override val keyword = "!=" }
+            
+            // Bitwise
+            data class BitAnd(override val formatting: Formatting) : Operator() { override val keyword = "&" }
+            data class BitOr(override val formatting: Formatting) : Operator() { override val keyword = "|" }
+            data class BitXor(override val formatting: Formatting) : Operator() { override val keyword = "^" }
+            data class LeftShift(override val formatting: Formatting) : Operator() { override val keyword = "<<" }
+            data class RightShift(override val formatting: Formatting) : Operator() { override val keyword = ">>" }
+            data class UnsignedRightShift(override val formatting: Formatting) : Operator() { override val keyword = ">>>" }
+            
+            // Boolean
+            data class Or(override val formatting: Formatting) : Operator() { override val keyword = "||" }
+            data class And(override val formatting: Formatting) : Operator() { override val keyword = "&&" }
+        }
     }
 
-    data class Block(val statements: List<Statement>,
-                     override val formatting: Formatting,
-                     val formattingEnd: Formatting) : Statement, Tr() {
+    data class Block<out T: Tree>(val statements: List<T>,
+                                       override val formatting: Formatting,
+                                       val endOfBlockSuffix: String) : Statement, Tr() {
+
+        override fun terminator(): String = ""
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitBlock(this)
     }
 
-    data class Break(val label: String?,
+    data class Break(val label: Ident?,
                      override val formatting: Formatting) : Statement, Tr() {
+
+        override fun terminator(): String = ";"
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitBreak(this)
     }
@@ -133,11 +178,13 @@ sealed class Tr : Serializable, Tree {
                     val statements: List<Statement>,
                     override val formatting: Formatting) : Statement, Tr() {
 
+        override fun terminator(): String = ""
+
         override fun <R> accept(v: AstVisitor<R>): R = v.visitCase(this)
     }
 
-    data class Catch(val param: VariableDecl, // FIXME why is this not Parentheses when If is?
-                     val body: Block,
+    data class Catch(val param: Parentheses,
+                     val body: Block<Statement>,
                      override val formatting: Formatting) : Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitCatch(this)
@@ -148,26 +195,27 @@ sealed class Tr : Serializable, Tree {
             val modifiers: List<Modifier>,
             val name: Ident,
             val typeParams: List<TypeParameter>,
-            val definitions: List<Tree>,
             val extends: Tree?,
             val implements: List<Tree>,
+            val body: Block<Tree>,
             val type: Type?,
             override val formatting: Formatting) : Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitClassDecl(this)
 
-        fun fields(): List<VariableDecl> = definitions.filterIsInstance<VariableDecl>()
-        fun methods(): List<MethodDecl> = definitions.filterIsInstance<MethodDecl>()
+        fun fields(): List<VariableDecl> = body.statements.filterIsInstance<VariableDecl>()
+        fun methods(): List<MethodDecl> = body.statements.filterIsInstance<MethodDecl>()
 
         sealed class Modifier: Tr() {
+            abstract val keyword: String
             override fun <R> accept(v: AstVisitor<R>): R = v.default(null)
 
-            data class Public(override val formatting: Formatting): Modifier()
-            data class Protected(override val formatting: Formatting): Modifier()
-            data class Private(override val formatting: Formatting): Modifier()
-            data class Abstract(override val formatting: Formatting): Modifier()
-            data class Static(override val formatting: Formatting): Modifier()
-            data class Final(override val formatting: Formatting): Modifier()
+            data class Public(override val formatting: Formatting): Modifier() { override val keyword = "public" }
+            data class Protected(override val formatting: Formatting): Modifier() { override val keyword = "protected" }
+            data class Private(override val formatting: Formatting): Modifier() { override val keyword = "private" }
+            data class Abstract(override val formatting: Formatting): Modifier() { override val keyword = "abstract" }
+            data class Static(override val formatting: Formatting): Modifier() { override val keyword = "static" }
+            data class Final(override val formatting: Formatting): Modifier() { override val keyword = "final" }
         }
     }
 
@@ -212,59 +260,71 @@ sealed class Tr : Serializable, Tree {
         fun beginDiff() = JavaSourceDiff(this)
     }
 
-    data class Continue(val label: String?,
+    data class Continue(val label: Ident?,
                         override val formatting: Formatting) : Statement, Tr() {
+
+        override fun terminator(): String = ";"
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitContinue(this)
     }
 
-    data class DoWhileLoop(val condition: Parentheses,
-                           val body: Statement,
+    data class DoWhileLoop(val body: Statement,
+                           val condition: Parentheses,
                            override val formatting: Formatting) : Statement, Tr() {
+
+        override fun terminator(): String = ""
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitDoWhileLoop(this)
     }
 
-    object Empty : Statement, Expression, Tr() {
+    data class Empty(override val formatting: Formatting) : Statement, Expression, TypeTree, NameTree, Tr() {
+        override fun terminator(): String = ""
         override val type: Type? = null
-        override val formatting: Formatting = Formatting.None
         override fun <R> accept(v: AstVisitor<R>): R = v.visitEmpty(this)
     }
 
-    data class FieldAccess(val fieldName: String,
-                           val target: Expression,
+    data class FieldAccess(val target: Expression,
+                           val fieldName: Ident,
                            override val type: Type?,
-                           override val formatting: Formatting) : Expression, Tr() {
+                           override val formatting: Formatting) : Expression, NameTree, TypeTree, Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitFieldAccess(this)
     }
 
-    data class ForEachLoop(val variable: VariableDecl,
-                           val iterable: Expression,
+    data class ForEachLoop(val control: Control,
                            val body: Statement,
                            override val formatting: Formatting) : Statement, Tr() {
 
+        override fun terminator(): String = ""
+
         override fun <R> accept(v: AstVisitor<R>): R = v.visitForEachLoop(this)
+
+        data class Control(val variable: VariableDecl,
+                           val iterable: Expression,
+                           override val formatting: Formatting): Tr() {
+            override fun <R> accept(v: AstVisitor<R>): R = v.default(null)
+        }
     }
 
     data class ForLoop(val control: Control,
                        val body: Statement,
                        override val formatting: Formatting) : Statement, Tr() {
-        
+
+        override fun terminator(): String = ""
+
         override fun <R> accept(v: AstVisitor<R>): R = v.visitForLoop(this)
-        
+
         data class Control(val init: List<Statement>,
-                           val condition: Expression?,
+                           val condition: Expression,
                            val update: List<Statement>,
                            override val formatting: Formatting): Tr() {
-            
             override fun <R> accept(v: AstVisitor<R>): R = v.default(null)
         }
     }
 
     data class Ident(val name: String,
                      override val type: Type?,
-                     override val formatting: Formatting) : Expression, Tr() {
+                     override val formatting: Formatting) : Expression, NameTree, TypeTree, Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitIdentifier(this)
     }
@@ -273,6 +333,8 @@ sealed class Tr : Serializable, Tree {
                   val thenPart: Statement,
                   val elsePart: Statement?,
                   override val formatting: Formatting) : Statement, Tr() {
+
+        override fun terminator(): String = ""
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitIf(this)
     }
@@ -283,31 +345,9 @@ sealed class Tr : Serializable, Tree {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitImport(this)
 
-        fun matches(clazz: String): Boolean = when (qualid.fieldName) {
+        fun matches(clazz: String): Boolean = when (qualid.fieldName.name) {
             "*" -> qualid.target.print() == clazz.split('.').takeWhile { it[0].isLowerCase() }.joinToString(".")
             else -> qualid.print() == clazz
-        }
-
-        companion object {
-            fun build(fullyQualifiedName: String, static: Boolean = false): Import {
-                val parts = fullyQualifiedName.split('.')
-                val expr = parts.foldIndexed(Empty as Expression to "") { i, acc, part ->
-                    val (target, subpackage) = acc
-                    if (target == Empty) {
-                        Ident(part, Type.Package.build(part), Formatting.Reified.Empty) to part
-                    } else {
-                        val fullName = "$subpackage.$part"
-                        val fmt = if (i == parts.size - 1) Formatting.Reified(" ") else Formatting.Reified.Empty
-                        if (part[0].isUpperCase() || i == parts.size - 1) {
-                            FieldAccess(part, target, Type.Class.build(fullName), fmt) to fullName
-                        } else {
-                            FieldAccess(part, target, Type.Package.build(fullName), fmt) to fullName
-                        }
-                    }
-                }
-
-                return Import(expr.first as FieldAccess, static, Formatting.Infer)
-            }
         }
     }
 
@@ -319,19 +359,26 @@ sealed class Tr : Serializable, Tree {
         override fun <R> accept(v: AstVisitor<R>): R = v.visitInstanceOf(this)
     }
 
-    data class Label(val label: String,
+    data class Label(val label: Ident,
                      val statement: Statement,
                      override val formatting: Formatting) : Statement, Tr() {
+
+        override fun terminator(): String = ":"
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitLabel(this)
     }
 
     data class Lambda(val params: List<VariableDecl>,
+                      val arrow: Arrow,
                       val body: Tree,
                       override val type: Type?,
                       override val formatting: Formatting) : Expression, Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitLambda(this)
+
+        data class Arrow(override val formatting: Formatting): Tr() {
+            override fun <R> accept(v: AstVisitor<R>): R = v.default(null)
+        }
     }
 
     data class Literal(val typeTag: Type.Tag,
@@ -347,6 +394,7 @@ sealed class Tr : Serializable, Tree {
          */
         fun <T> transformValue(transform: (T) -> Any): String {
             val valueMatcher = "(.*)${Pattern.quote(value.toString())}(.*)".toRegex().find(this.print().replace("\\", ""))
+            @Suppress("UNREACHABLE_CODE")
             return when (valueMatcher) {
                 is MatchResult -> {
                     val (prefix, suffix) = valueMatcher.groupValues.drop(1)
@@ -361,33 +409,46 @@ sealed class Tr : Serializable, Tree {
     }
 
     data class MethodDecl(val annotations: List<Annotation>,
-                          val modifiers: List<Any>,
-                          val returnTypeExpr: Expression?,
+                          val modifiers: List<Modifier>,
+                          val returnTypeExpr: TypeTree,
                           val name: Ident,
-                          val params: List<VariableDecl>,
-                          val thrown: List<Expression>,
-                          val body: Block,
+                          val params: Parameters,
+                          val throws: List<Expression>,
+                          val body: Block<Statement>?,
                           val defaultValue: Expression?,
                           override val formatting: Formatting) : Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitMethod(this)
 
-        enum class Modifier {
-            Public, Protected, Private, Abstract, Static, Final
+        sealed class Modifier: Tr() {
+            abstract val keyword: String
+            override fun <R> accept(v: AstVisitor<R>): R = v.default(null)
+
+            data class Public(override val formatting: Formatting) : Modifier() { override val keyword = "public" }
+            data class Protected(override val formatting: Formatting) : Modifier() { override val keyword = "protected" }
+            data class Private(override val formatting: Formatting) : Modifier() { override val keyword = "private" }
+            data class Abstract(override val formatting: Formatting) : Modifier() { override val keyword = "abstract" }
+            data class Static(override val formatting: Formatting) : Modifier() { override val keyword = "static" }
+            data class Final(override val formatting: Formatting) : Modifier() { override val keyword = "final" }
+        }
+
+        data class Parameters(val params: List<Statement>,
+                              override val formatting: Formatting): Tr() {
+
+            override fun <R> accept(v: AstVisitor<R>): R = v.default(null)
         }
     }
 
     data class MethodInvocation(val methodSelect: Expression,
                                 val args: List<Expression>,
                                 val genericSignature: Type.Method?,
-
-            // in the case of generic signature parts, this concretizes 
-            // them relative to the call site
+                                // in the case of generic signature parts, this concretizes
+                                // them relative to the call site
                                 val resolvedSignature: Type.Method?,
-
                                 val declaringType: Type.Class?,
-
                                 override val formatting: Formatting) : Expression, Statement, Tr() {
+
+        override fun terminator(): String = ";"
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitMethodInvocation(this)
 
@@ -396,30 +457,51 @@ sealed class Tr : Serializable, Tree {
         fun returnType(): Type? = resolvedSignature?.returnType
 
         fun methodName(): String = when (methodSelect) {
-            is FieldAccess -> methodSelect.fieldName
+            is FieldAccess -> methodSelect.fieldName.name
             is Ident -> methodSelect.name
             else -> throw IllegalStateException("Unexpected method select type ${methodSelect}")
         }
     }
 
-    data class NewArray(val typeExpr: Expression,
-                        val dimensions: List<Expression>,
-                        val elements: List<Expression>,
+    data class NewArray(val typeExpr: TypeTree,
+                        val dimensions: List<Dimension>,
+                        val initializer: Initializer?,
                         override val type: Type?,
                         override val formatting: Formatting) : Expression, Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitNewArray(this)
+
+        data class Dimension(val size: Expression, override val formatting: Formatting): Tr() {
+            override fun <R> accept(v: AstVisitor<R>): R = v.default(null)
+        }
+
+        data class Initializer(val elements: List<Expression>, override val formatting: Formatting): Tr() {
+            override fun <R> accept(v: AstVisitor<R>): R = v.default(null)
+        }
     }
 
-    data class NewClass(val encl: Expression?,
-                        val typeArgs: List<Expression>,
-                        val identifier: Expression,
-                        val args: List<Expression>,
-                        val classBody: ClassDecl?, // non-null for anonymous classes
+    data class NewClass(val classIdentifier: Expression,
+                        val generics: Generics?,
+                        val args: Arguments,
+                        val classBody: Block<Tree>?, // non-null for anonymous classes
                         override val type: Type?,
                         override val formatting: Formatting) : Expression, Statement, Tr() {
 
+        override fun terminator(): String = ";"
+
         override fun <R> accept(v: AstVisitor<R>): R = v.visitNewClass(this)
+
+        data class Generics(val params: List<NameTree>,
+                            override val formatting: Formatting): Tr() {
+
+            override fun <R> accept(v: AstVisitor<R>): R = v.default(null)
+        }
+
+        data class Arguments(val args: List<Expression>,
+                              override val formatting: Formatting): Tr() {
+
+            override fun <R> accept(v: AstVisitor<R>): R = v.default(null)
+        }
     }
 
     data class Package(val expr: Expression,
@@ -428,7 +510,7 @@ sealed class Tr : Serializable, Tree {
         override fun <R> accept(v: AstVisitor<R>): R = v.visitPackage(this)
     }
 
-    data class Parentheses(val expr: Expression,
+    data class Parentheses(val expr: Tree,
                            override val type: Type?,
                            override val formatting: Formatting) : Expression, Tr() {
 
@@ -437,7 +519,7 @@ sealed class Tr : Serializable, Tree {
 
     data class Primitive(val typeTag: Type.Tag,
                          override val type: Type?,
-                         override val formatting: Formatting) : Expression, Tr() {
+                         override val formatting: Formatting) : Expression, TypeTree, Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitPrimitive(this)
     }
@@ -445,19 +527,25 @@ sealed class Tr : Serializable, Tree {
     data class Return(val expr: Expression?,
                       override val formatting: Formatting) : Statement, Tr() {
 
+        override fun terminator(): String = ";"
+
         override fun <R> accept(v: AstVisitor<R>): R = v.visitReturn(this)
     }
 
     data class Switch(val selector: Parentheses,
-                      val cases: List<Case>,
+                      val cases: Block<Case>,
                       override val formatting: Formatting) : Statement, Tr() {
+
+        override fun terminator(): String = ""
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitSwitch(this)
     }
 
     data class Synchronized(val lock: Parentheses,
-                            val body: Block,
+                            val body: Block<Statement>,
                             override val formatting: Formatting) : Statement, Tr() {
+
+        override fun terminator(): String = ""
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitSynchronized(this)
     }
@@ -471,24 +559,38 @@ sealed class Tr : Serializable, Tree {
         override fun <R> accept(v: AstVisitor<R>): R = v.visitTernary(this)
     }
 
-    data class Throw(val expr: Expression,
+    data class Throw(val exception: Expression,
                      override val formatting: Formatting) : Statement, Tr() {
+
+        override fun terminator(): String = ";"
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitThrow(this)
     }
 
-    data class Try(val resources: List<VariableDecl>,
-                   val body: Block,
-                   val catchers: List<Catch>,
-                   val finally: Block?,
+    data class Try(val resources: Resources?,
+                   val body: Block<Statement>,
+                   val catches: List<Catch>,
+                   val finally: Finally?,
                    override val formatting: Formatting) : Statement, Tr() {
 
+        override fun terminator(): String = ""
+
         override fun <R> accept(v: AstVisitor<R>): R = v.visitTry(this)
+
+        data class Resources(val decls: List<VariableDecl>,
+                             override val formatting: Formatting): Tr() {
+            override fun <R> accept(v: AstVisitor<R>): R = v.default(null)
+        }
+
+        data class Finally(val block: Block<Statement>,
+                           override val formatting: Formatting): Tr() {
+            override fun <R> accept(v: AstVisitor<R>): R = v.default(null)
+        }
     }
 
-    data class TypeParameter(val name: String,
+    data class TypeParameter(val annotations: List<Annotation>,
+                             val name: NameTree,
                              val bounds: List<Expression>,
-                             val annotations: List<Annotation>,
                              override val formatting: Formatting) : Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitTypeParameter(this)
@@ -501,6 +603,8 @@ sealed class Tr : Serializable, Tree {
                      val expr: Expression,
                      override val type: Type?,
                      override val formatting: Formatting) : Expression, Statement, Tr() {
+
+        override fun terminator(): String = ";"
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitUnary(this)
 
@@ -526,36 +630,46 @@ sealed class Tr : Serializable, Tree {
     data class VariableDecl(
             val annotations: List<Annotation>,
             val modifiers: List<Modifier>,
-            val varType: Expression,
+            val varType: TypeTree,
+            val varargs: Varargs?,
+            val dimensionsBeforeName: List<Dimension>,
             val name: Ident,
-            val operator: Operator?,
+            val dimensionsAfterName: List<Dimension>, // thanks for making it hard, Java
             val initializer: Expression?,
             val type: Type?,
             override val formatting: Formatting) : Statement, Tr() {
+        override fun terminator(): String = ";"
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitVariable(this)
 
-        data class Operator(override val formatting: Formatting): Tr() {
-            override fun <R> accept(v: AstVisitor<R>): R = v.default(null)
-        }
-        
         sealed class Modifier: Tr() {
+            abstract val keyword: String
             override fun <R> accept(v: AstVisitor<R>): R = v.default(null)
             
-            data class Public(override val formatting: Formatting): Modifier()
-            data class Protected(override val formatting: Formatting): Modifier()
-            data class Private(override val formatting: Formatting): Modifier()
-            data class Abstract(override val formatting: Formatting): Modifier()
-            data class Static(override val formatting: Formatting): Modifier()
-            data class Final(override val formatting: Formatting): Modifier()
-            data class Transient(override val formatting: Formatting): Modifier()
-            data class Volatile(override val formatting: Formatting): Modifier()
+            data class Public(override val formatting: Formatting): Modifier() { override val keyword = "public" }
+            data class Protected(override val formatting: Formatting): Modifier() { override val keyword = "protected" }
+            data class Private(override val formatting: Formatting): Modifier() { override val keyword = "private" }
+            data class Abstract(override val formatting: Formatting): Modifier() { override val keyword = "abstract" }
+            data class Static(override val formatting: Formatting): Modifier() { override val keyword = "static" }
+            data class Final(override val formatting: Formatting): Modifier() { override val keyword = "final" }
+            data class Transient(override val formatting: Formatting): Modifier() { override val keyword = "transient" }
+            data class Volatile(override val formatting: Formatting): Modifier() { override val keyword = "volatile" }
+        }
+
+        data class Varargs(override val formatting: Formatting): Tr() {
+            override fun <R> accept(v: AstVisitor<R>): R = v.default(null)
+        }
+
+        data class Dimension(val whitespace: Tr.Empty, override val formatting: Formatting): Tr() {
+            override fun <R> accept(v: AstVisitor<R>): R = v.default(null)
         }
     }
  
     data class WhileLoop(val condition: Parentheses,
                          val body: Statement,
                          override val formatting: Formatting) : Statement, Tr() {
+
+        override fun terminator(): String = ""
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitWhileLoop(this)
     }

@@ -2,22 +2,31 @@ package com.netflix.java.refactor.ast
 
 import com.netflix.java.refactor.parse.Parser
 import com.netflix.java.refactor.test.AstTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
-import kotlin.test.assertTrue
 
 abstract class ParenthesesTest(parser: Parser): AstTest(parser) {
-    
-    @Test
-    fun parentheses() {
-        val a = parse("""
+
+    val a by lazy {
+        parse("""
             public class A {
                 public void test() {
-                    int n = (0);
+                    int n = ( 0 );
                 }
             }
         """)
-        
-        val variable = a.classDecls[0].methods()[0].body.statements[0] as Tr.VariableDecl
-        assertTrue(variable.initializer is Tr.Parentheses)
+    }
+
+    val variable by lazy { (a.firstMethodStatement() as Tr.VariableDecl).initializer }
+
+    @Test
+    fun parentheses() {
+        assertTrue(variable is Tr.Parentheses)
+    }
+
+    @Test
+    fun format() {
+        assertEquals("( 0 )", variable?.print())
     }
 }

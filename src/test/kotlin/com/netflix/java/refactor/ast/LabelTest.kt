@@ -3,8 +3,8 @@ package com.netflix.java.refactor.ast
 import com.netflix.java.refactor.parse.Parser
 import com.netflix.java.refactor.test.AstTest
 import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 
 abstract class LabelTest(parser: Parser): AstTest(parser) {
     
@@ -19,8 +19,8 @@ abstract class LabelTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val labeled = a.classDecls[0].methods()[0].body.statements[0] as Tr.Label
-        assertEquals("labeled", labeled.label)
+        val labeled = a.firstMethodStatement() as Tr.Label
+        assertEquals("labeled", labeled.label.name)
         assertTrue(labeled.statement is Tr.WhileLoop)
     }
 }

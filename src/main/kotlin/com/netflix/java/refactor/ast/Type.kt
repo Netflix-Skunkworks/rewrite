@@ -18,13 +18,11 @@ sealed class Type(): Serializable {
     
     data class Package private constructor(val fullName: String, override val owner: Type?): TypeWithOwner() {
         companion object {
-            private val packagePool = HashMap<String, Package>()
-            
-            fun build(fullName: String): Package? =
+            fun build(cache: TypeCache, fullName: String): Package? =
                 if(fullName.isEmpty()) null
-                else packagePool.getOrPut(fullName) { 
+                else cache.packagePool.getOrPut(fullName) {
                     val subpackage = fullName.substringBeforeLast('.')
-                    Package(fullName, if(subpackage != fullName) build(subpackage) else null)
+                    Package(fullName, if(subpackage != fullName) build(cache, subpackage) else null)
                 }
         }
     }
@@ -38,17 +36,14 @@ sealed class Type(): Serializable {
         
         companion object {
             val Cyclic = Class("CYCLIC_TYPE_REF", null, emptyList(), null)
-            private val classPool = HashMap<String, Class>()
-            
-            fun build(fullyQualifiedName: String, members: List<Var> = emptyList(), supertype: Class? = null) =
-                classPool.getOrPut(fullyQualifiedName) {
+
+            fun build(cache: TypeCache, fullyQualifiedName: String, members: List<Var> = emptyList(), supertype: Class? = null) =
+                cache.classPool.getOrPut(fullyQualifiedName) {
                     Class(fullyQualifiedName,
-                            Package.build(fullyQualifiedName.substringBeforeLast(".")),
+                            Package.build(cache, fullyQualifiedName.substringBeforeLast(".")),
                             members,
                             supertype)
                 }
-            
-            
         }
     }
     
@@ -60,7 +55,7 @@ sealed class Type(): Serializable {
     
     data class Primitive(val typeTag: Tag): Type()
     
-    data class Var(val name: String, val type: Class?, val flags: Long): Type() {
+    data class Var(val name: String, val type: Type?, val flags: Long): Type() {
         enum class Flags(val value: Long) {
             Public(1L),
             Private(1 shl 1),

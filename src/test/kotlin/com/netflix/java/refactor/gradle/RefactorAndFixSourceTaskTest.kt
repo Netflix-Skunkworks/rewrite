@@ -7,7 +7,7 @@ import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
 import org.junit.Ignore
 import org.junit.Test
 import java.io.File
-import kotlin.test.assertEquals
+import org.junit.Assert.assertEquals
 
 class RefactorAndFixSourceTaskTest: TestKitTest() {
     @Ignore("This test pollutes the classloader, causing refactoring op test to fail")

@@ -2,9 +2,9 @@ package com.netflix.java.refactor.ast
 
 import com.netflix.java.refactor.parse.Parser
 import com.netflix.java.refactor.test.AstTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 abstract class UnaryTest(parser: Parser): AstTest(parser) {
     
@@ -27,10 +27,12 @@ abstract class UnaryTest(parser: Parser): AstTest(parser) {
             public class A {
                 int i = 0;
                 int j = ++i;
+                int k = i++;
             }
         """)
 
-        val unary = a.classDecls[0].fields()[1].initializer as Tr.Unary
-        assertEquals("++i", unary.print())
+        val (prefix, postfix) = a.classDecls[0].fields().subList(1, 3).map { it.initializer as Tr.Unary }
+        assertEquals("++i", prefix.print())
+        assertEquals("i++", postfix.print())
     }
 }

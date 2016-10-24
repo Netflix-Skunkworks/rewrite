@@ -20,8 +20,9 @@ class FindFields(val clazz: String, val includeInherited: Boolean) : AstVisitor<
 
         val fields = type.members
                 .filter { !inHierarchy || !it.hasFlags(Type.Var.Flags.Private) }
+                // FIXME will not match on arrays of this type, as they would be Type.Array
                 .filter { it.type is Type.Class }
-                .map { Field(it.name, it.type!!.fullyQualifiedName) }
+                .map { Field(it.name, it.type!!.asClass()!!.fullyQualifiedName) }
         
         return fields + (if (includeInherited) superFields(type.supertype, true) else emptyList())
     }

@@ -82,7 +82,7 @@ abstract class CompilationUnitTest(parser: Parser): AstTest(parser) {
             |package a;
             |import java.util.List;
             |
-            |public class A {}
+            |public class A { }
         """
         
         assertEquals(a.trimMargin(), parse(a).print())
