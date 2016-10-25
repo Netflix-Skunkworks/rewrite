@@ -85,7 +85,8 @@ sealed class Type(): Serializable {
         Void,
         String,
         None,
-        Wildcard
+        Wildcard,
+        Null
     }
 }
 

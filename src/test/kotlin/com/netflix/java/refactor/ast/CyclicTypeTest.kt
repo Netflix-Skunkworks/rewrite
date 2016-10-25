@@ -15,7 +15,7 @@ abstract class CyclicTypeTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val fieldType = a.classDecls[0].fields()[0].type.asArray()
+        val fieldType = a.fields()[0].type.asArray()
         assertTrue(fieldType is Type.Array)
 
         val elemType = fieldType!!.elemType.asClass()

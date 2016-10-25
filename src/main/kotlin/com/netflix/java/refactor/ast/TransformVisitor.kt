@@ -54,8 +54,11 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
 
     override fun visitMethodInvocation(meth: Tr.MethodInvocation): Tree {
         val methodSelect = visit(meth.methodSelect) as Expression
-        val args = meth.args.mapIfNecessary { visit(it) as Expression }
-        
+        val args = meth.args.let {
+            val args = it.args.mapIfNecessary { visit(it) as Expression }
+            if(it.args !== args) it.copy(args) else it
+        }
+
         return (if(methodSelect !== meth.methodSelect || args !== meth.args) {
             meth.copy(methodSelect = methodSelect, args = args)
         } else meth).transformIfNecessary(cursor)
@@ -76,10 +79,10 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
         
         val imports = cu.imports.mapIfNecessary { visit(it) as Tr.Import }
         val packageDecl = visit(cu.packageDecl) as Tr.Package?
-        val classDecls = cu.classDecls.mapIfNecessary { visit(it) as Tr.ClassDecl }
+        val classDecls = cu.typeDecls.mapIfNecessary { visit(it) as Tr.ClassDecl }
         
-        return (if(imports !== cu.imports || packageDecl !== cu.packageDecl || classDecls !== cu.classDecls) {
-            cu.copy(imports = imports, packageDecl = packageDecl, classDecls = classDecls)
+        return (if(imports !== cu.imports || packageDecl !== cu.packageDecl || classDecls !== cu.typeDecls) {
+            cu.copy(imports = imports, packageDecl = packageDecl, typeDecls = classDecls)
         } else cu).transformIfNecessary(cursor)
     }
 
@@ -108,20 +111,16 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
     }
 
     override fun visitNewClass(newClass: Tr.NewClass): Tree {
-
         val generics = newClass.generics?.let {
             val genericParams = it.params.mapIfNecessary { visit(it) as NameTree }
-            if(it.params !== genericParams) {
-                Tr.NewClass.Generics(genericParams, it.formatting)
-            } else it
+            if(it.params !== genericParams) it.copy(genericParams) else it
         }
 
         val args = newClass.args.let {
             val params = it.args.mapIfNecessary { visit(it) as Expression }
-            if(it.args !== params) {
-                Tr.NewClass.Arguments(params, it.formatting)
-            } else it
+            if(it.args !== params) it.copy(params) else it
         }
+
         val classBody = visit(newClass.classBody) as Tr.Block<*>
 
         return (if(generics !== newClass.generics || args !== newClass.args || classBody !== newClass.classBody) {
@@ -174,7 +173,7 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
             val iterable = visit(it.iterable) as Expression
 
             if(variable !== it.variable || iterable !== it.iterable) {
-                it.copy(variable = variable, iterable = iterable)
+                it.copy(variable, iterable)
             } else it
         }
 
@@ -256,9 +255,7 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
         val selector = visit(switch.selector) as Tr.Parentheses
         val caseBlock = switch.cases.let {
             val cases = it.statements.mapIfNecessary { visit(it) as Tr.Case }
-            if(it.statements !== cases) {
-                it.copy(cases)
-            } else it
+            if(it.statements !== cases) it.copy(cases) else it
         }
 
         
@@ -296,9 +293,7 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
     override fun visitTry(tryable: Tr.Try): Tree {
         val resources = tryable.resources?.let {
             val decls = it.decls.mapIfNecessary { visit(it) as Tr.VariableDecl }
-            if(it.decls !== decls) {
-                it.copy(decls)
-            } else it
+            if(it.decls !== decls) it.copy(decls) else it
         }
 
         val body = visit(tryable.body) as Tr.Block<Statement>
@@ -306,9 +301,7 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
 
         val finally = tryable.finally?.let {
             val block = visit(tryable.finally) as Tr.Block<Statement>
-            if(it.block !== block) {
-                it.copy(block)
-            } else it
+            if(it.block !== block) it.copy(block) else it
         }
         
         return (if(resources !== tryable.resources || body !== tryable.body || catches !== tryable.catches ||
@@ -376,9 +369,7 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
 
         val dimension = arrayAccess.dimension.let {
             val index = visit(arrayAccess.dimension.index) as Expression
-            if(it.index !== index) {
-                it.copy(index)
-            } else it
+            if(it.index !== index) it.copy(index) else it
         }
      
         return (if(indexed !== arrayAccess.indexed || dimension !== arrayAccess.dimension) {

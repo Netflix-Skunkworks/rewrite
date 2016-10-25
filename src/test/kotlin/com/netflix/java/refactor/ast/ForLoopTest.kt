@@ -81,7 +81,7 @@ abstract class ForLoopTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val forLoop = a.classDecls[0].methods()[0].body!!.statements[1] as Tr.ForLoop
+        val forLoop = a.typeDecls[0].methods()[0].body!!.statements[1] as Tr.ForLoop
         assertEquals("for ( ; i < 10 ; i++ ) {}", forLoop.print())
     }
 
@@ -96,7 +96,7 @@ abstract class ForLoopTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val forLoop = a.classDecls[0].methods()[0].body!!.statements[1] as Tr.ForLoop
+        val forLoop = a.typeDecls[0].methods()[0].body!!.statements[1] as Tr.ForLoop
         assertEquals("for(; i < 10; i++) {}", forLoop.print())
     }
 }

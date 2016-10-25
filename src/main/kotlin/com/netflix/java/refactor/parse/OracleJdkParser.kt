@@ -27,7 +27,9 @@ class OracleJdkParser(classpath: List<Path>? = null) : Parser(classpath) {
 
     private val compiler = JavaCompiler(context)
 
-    private val logger = LoggerFactory.getLogger(OracleJdkParser::class.java)
+    companion object {
+        private val logger = LoggerFactory.getLogger(OracleJdkParser::class.java)
+    }
 
     init {
         // otherwise the JavacParser will use EmptyEndPosTable, effectively setting -1 as the end position
@@ -79,6 +81,8 @@ class OracleJdkParser(classpath: List<Path>? = null) : Parser(classpath) {
         enter.main(compilationUnits)
     }
 
-    private fun toIntermediateAst(cu: JCTree.JCCompilationUnit, path: Path, source: String): Tr.CompilationUnit =
-        OracleJdkParserVisitor(path, source).scan(cu, Formatting.Reified.Empty) as Tr.CompilationUnit
+    private fun toIntermediateAst(cu: JCTree.JCCompilationUnit, path: Path, source: String): Tr.CompilationUnit {
+        logger.trace("Building AST for {}", path.toAbsolutePath().fileName)
+        return OracleJdkParserVisitor(path, source).scan(cu, Formatting.Reified.Empty) as Tr.CompilationUnit
+    }
 }

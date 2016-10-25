@@ -35,7 +35,7 @@ class MethodMatcher(signature: String) {
         val targetType = meth.declaringType?.fullyQualifiedName ?: return false
         return targetTypePattern.matches(targetType) && 
                 methodNamePattern.matches(meth.methodName()) &&
-                argumentPattern.matches(meth.args.map { 
+                argumentPattern.matches(meth.args.args.map {
                     val type = it.type
                     when(type) {
                         is Type.Class -> type.fullyQualifiedName

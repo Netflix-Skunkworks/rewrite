@@ -94,24 +94,24 @@ class ChangeMethodInvocation(signature: String, val tx: RefactorTransaction) : R
                 if(paramNames != null) {
                     var argPos = 0
                     reorders.forEachIndexed { paramPos, reorder ->
-                        if (invocation.args.size <= argPos) {
+                        if (invocation.args.args.size <= argPos) {
                             // this is a weird case, there are not enough arguments in the invocation to satisfy the reordering specification
                             // TODO what to do?
                             return@forEachIndexed
                         }
 
                         if (paramNames[paramPos] != reorder) {
-                            var swaps = invocation.args.filterIndexed { j, swap -> paramNames[Math.min(j, paramNames.size-1)] == reorder }
+                            var swaps = invocation.args.args.filterIndexed { j, swap -> paramNames[Math.min(j, paramNames.size-1)] == reorder }
 
                             // when no source is attached, we must define names first
                             if(swaps.isEmpty()) {
                                 val pos = refactorArguments?.argumentNames?.indexOf(reorder) ?: -1
-                                if (pos >= 0 && pos < invocation.args.size) {
+                                if (pos >= 0 && pos < invocation.args.args.size) {
                                     swaps = if(pos < refactorArguments!!.argumentNames!!.size - 1) {
-                                        listOf(invocation.args[pos])
+                                        listOf(invocation.args.args[pos])
                                     } else {
                                         // this is a varargs argument, grab them all
-                                        invocation.args.drop(pos)
+                                        invocation.args.args.drop(pos)
                                     }
                                 }
                             }
@@ -128,7 +128,7 @@ class ChangeMethodInvocation(signature: String, val tx: RefactorTransaction) : R
                     // TODO what do we do when the method symbol is not present?
                 }
             } else {
-                invocation.args.forEachIndexed { i, arg ->
+                invocation.args.args.forEachIndexed { i, arg ->
                     arg.changesToArgument(i)?.let { changes ->
                         fixes.add(arg.replace(changes))
                     }

@@ -4,7 +4,7 @@ import kotlin.properties.Delegates
 
 open class AstVisitor<R> {
     var cu: Tr.CompilationUnit by Delegates.notNull()
-    lateinit var default: (Tree?) -> R
+    var default: (Tree?) -> R
 
     constructor(default: R) {
         this.default = { default }
@@ -54,9 +54,13 @@ open class AstVisitor<R> {
     open fun visitFieldAccess(field: Tr.FieldAccess): R = visit(field.target)
 
     open fun visitClassDecl(classDecl: Tr.ClassDecl): R =
-            visit(classDecl.body)
+            visit(classDecl.annotations)
+                    .andThen(classDecl.modifiers)
+                    .andThen(classDecl.name)
+                    .andThen(classDecl.typeParams)
                     .andThen(classDecl.implements)
                     .andThen(classDecl.extends)
+                    .andThen(classDecl.body)
 
     open fun visitMethodInvocation(meth: Tr.MethodInvocation): R =
             visit(meth.methodSelect).andThen(meth.args)
@@ -71,7 +75,7 @@ open class AstVisitor<R> {
         return reduce(
                 visit(cu.imports)
                         .andThen(cu.packageDecl)
-                        .andThen(cu.classDecls),
+                        .andThen(cu.typeDecls),
                 visitEnd()
         )
     }
@@ -204,4 +208,15 @@ open class AstVisitor<R> {
                     .andThen(lambda.body)
 
     open fun visitEnd() = default(null)
+
+    open fun visitEnum(enum: Tr.EnumValue): R =
+            visit(enum.name)
+                    .andThen(enum.initializer)
+
+    open fun visitEnumClass(enumClass: Tr.EnumClass): R =
+            visit(enumClass.annotations)
+                    .andThen(enumClass.modifiers)
+                    .andThen(enumClass.name)
+                    .andThen(enumClass.implements)
+                    .andThen(enumClass.body)
 }

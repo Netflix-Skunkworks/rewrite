@@ -25,7 +25,7 @@ abstract class CompilationUnitTest(parser: Parser): AstTest(parser) {
             class B{}
         """)
 
-        assertEquals(2, a.classDecls.size)
+        assertEquals(2, a.typeDecls.size)
     }
 
     @Test

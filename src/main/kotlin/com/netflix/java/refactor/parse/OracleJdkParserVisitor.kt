@@ -9,6 +9,7 @@ import com.sun.tools.javac.code.Symbol
 import com.sun.tools.javac.code.TypeTag
 import com.sun.tools.javac.tree.EndPosTable
 import com.sun.tools.javac.tree.JCTree
+import org.slf4j.LoggerFactory
 import java.lang.IllegalArgumentException
 import java.lang.IllegalStateException
 import java.nio.file.Path
@@ -19,7 +20,7 @@ import javax.lang.model.type.TypeKind
 import kotlin.properties.Delegates
 
 class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tree, Formatting.Reified>() {
-    typealias JdkTree = com.sun.source.tree.Tree
+    private typealias JdkTree = com.sun.source.tree.Tree
 
     private val WS_DELIM = { t: JdkTree -> sourceMatching("\\s+") }
     private val COMMA_DELIM = { t: JdkTree -> sourceBefore(",") }
@@ -28,8 +29,12 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
 
     private val typeCache = TypeCache()
 
-    var endPosTable: EndPosTable by Delegates.notNull()
-    var cursor: Int = 0
+    private var endPosTable: EndPosTable by Delegates.notNull()
+    private var cursor: Int = 0
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(OracleJdkParserVisitor::class.java)
+    }
 
     override fun visitAnnotation(node: AnnotationTree, fmt: Formatting.Reified): Tree {
         skip("@")
@@ -73,29 +78,28 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
 
         val opPrefix = Formatting.Reified(sourceMatching("\\s+"))
         val op = when ((node as JCTree.JCBinary).tag) {
-            JCTree.Tag.PLUS -> Tr.Binary.Operator.Addition(opPrefix)
-            JCTree.Tag.MINUS -> Tr.Binary.Operator.Subtraction(opPrefix)
-            JCTree.Tag.DIV -> Tr.Binary.Operator.Division(opPrefix)
-            JCTree.Tag.MUL -> Tr.Binary.Operator.Multiplication(opPrefix)
-            JCTree.Tag.MOD -> Tr.Binary.Operator.Modulo(opPrefix)
-            JCTree.Tag.AND -> Tr.Binary.Operator.And(opPrefix)
-            JCTree.Tag.OR -> Tr.Binary.Operator.Or(opPrefix)
-            JCTree.Tag.BITAND -> Tr.Binary.Operator.BitAnd(opPrefix)
-            JCTree.Tag.BITOR -> Tr.Binary.Operator.BitOr(opPrefix)
-            JCTree.Tag.BITXOR -> Tr.Binary.Operator.BitXor(opPrefix)
-            JCTree.Tag.SL -> Tr.Binary.Operator.LeftShift(opPrefix)
-            JCTree.Tag.SR -> Tr.Binary.Operator.RightShift(opPrefix)
-            JCTree.Tag.USR -> Tr.Binary.Operator.UnsignedRightShift(opPrefix)
-            JCTree.Tag.LT -> Tr.Binary.Operator.LessThan(opPrefix)
-            JCTree.Tag.GT -> Tr.Binary.Operator.GreaterThan(opPrefix)
-            JCTree.Tag.LE -> Tr.Binary.Operator.LessThanOrEqual(opPrefix)
-            JCTree.Tag.GE -> Tr.Binary.Operator.GreaterThanOrEqual(opPrefix)
-            JCTree.Tag.EQ -> Tr.Binary.Operator.Equal(opPrefix)
-            JCTree.Tag.NE -> Tr.Binary.Operator.NotEqual(opPrefix)
+            JCTree.Tag.PLUS -> { skip("+"); Tr.Binary.Operator.Addition(opPrefix) }
+            JCTree.Tag.MINUS -> { skip("-"); Tr.Binary.Operator.Subtraction(opPrefix) }
+            JCTree.Tag.DIV -> { skip("/"); Tr.Binary.Operator.Division(opPrefix) }
+            JCTree.Tag.MUL -> { skip("*"); Tr.Binary.Operator.Multiplication(opPrefix) }
+            JCTree.Tag.MOD -> { skip("%"); Tr.Binary.Operator.Modulo(opPrefix) }
+            JCTree.Tag.AND -> { skip("&&"); Tr.Binary.Operator.And(opPrefix) }
+            JCTree.Tag.OR -> { skip("||"); Tr.Binary.Operator.Or(opPrefix) }
+            JCTree.Tag.BITAND -> { skip("&"); Tr.Binary.Operator.BitAnd(opPrefix) }
+            JCTree.Tag.BITOR -> { skip("|"); Tr.Binary.Operator.BitOr(opPrefix) }
+            JCTree.Tag.BITXOR -> { skip("^"); Tr.Binary.Operator.BitXor(opPrefix) }
+            JCTree.Tag.SL -> { skip("<<"); Tr.Binary.Operator.LeftShift(opPrefix) }
+            JCTree.Tag.SR -> { skip(">>"); Tr.Binary.Operator.RightShift(opPrefix) }
+            JCTree.Tag.USR -> { skip(">>>"); Tr.Binary.Operator.UnsignedRightShift(opPrefix) }
+            JCTree.Tag.LT -> { skip("<"); Tr.Binary.Operator.LessThan(opPrefix) }
+            JCTree.Tag.GT -> { skip(">"); Tr.Binary.Operator.GreaterThan(opPrefix) }
+            JCTree.Tag.LE -> { skip("<="); Tr.Binary.Operator.LessThanOrEqual(opPrefix) }
+            JCTree.Tag.GE -> { skip(">="); Tr.Binary.Operator.GreaterThanOrEqual(opPrefix) }
+            JCTree.Tag.EQ -> { skip("=="); Tr.Binary.Operator.Equal(opPrefix) }
+            JCTree.Tag.NE -> { skip("!="); Tr.Binary.Operator.NotEqual(opPrefix) }
             else -> throw IllegalArgumentException("Unexpected binary tag ${node.tag}")
         }
 
-        skip(op.keyword)
         val right = node.rightOperand.convert<Expression>()
 
         return Tr.Binary(left, op, right, node.type(), fmt)
@@ -128,7 +132,16 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
                 else -> throw IllegalStateException("Unexpected statement type ${t.javaClass}")
             })
         }
-        return Tr.Block<Statement>(node.statements.convertAll(statementDelim, statementDelim), fmt, sourceBefore("}"))
+
+        val statements = node
+                .statements
+                .filter {
+                    // filter out synthetic super() invocations and the like
+                    it.endPos() > 0
+                }
+                .convertAll<Statement>(statementDelim, statementDelim)
+
+        return Tr.Block<Statement>(statements, fmt, sourceBefore("}"))
     }
 
     override fun visitBreak(node: BreakTree, fmt: Formatting.Reified): Tree {
@@ -162,27 +175,14 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
     }
 
     override fun visitClass(node: ClassTree, fmt: Formatting.Reified): Tree {
-        val annotations = node.modifiers.annotations.convertAll<Tr.Annotation>(NO_DELIM, NO_DELIM)
-
-        val modifiers = node.modifiers.flags.mapIndexed { i, mod ->
-            val modPrefix = sourceMatching("\\s+")
-            cursor += mod.name.length
-            val modFormat = Formatting.Reified(modPrefix, sourceMatching("\\s+class").substringBefore("class"))
-            when (mod) {
-                Modifier.PUBLIC -> Tr.ClassDecl.Modifier.Public(modFormat)
-                Modifier.PROTECTED -> Tr.ClassDecl.Modifier.Protected(modFormat)
-                Modifier.PRIVATE -> Tr.ClassDecl.Modifier.Private(modFormat)
-                Modifier.ABSTRACT -> Tr.ClassDecl.Modifier.Abstract(modFormat)
-                Modifier.STATIC -> Tr.ClassDecl.Modifier.Static(modFormat)
-                Modifier.FINAL -> Tr.ClassDecl.Modifier.Final(modFormat)
-                else -> throw IllegalArgumentException("Unexpected modifier $mod")
-            }
+        if(node.modifiers.hasFlag(Flags.ENUM)) {
+            return visitEnumClass(node, fmt)
         }
 
+        val annotations = node.modifiers.annotations.convertAll<Tr.Annotation>(NO_DELIM, NO_DELIM)
+        val modifiers = typeModifiers(node.modifiers, "class")
         val name = Tr.Ident((node as JCTree.JCClassDecl).simpleName.toString(), node.type(),
-                Formatting.Reified(sourceMatching("\\s+")))
-        cursor += node.simpleName.toString().length
-
+                Formatting.Reified(sourceBefore(node.simpleName.toString())))
         val typeParams = node.typeParameters.convertAll<Tr.TypeParameter>(COMMA_DELIM, { sourceBefore(">") }, "<", ">")
         val extends = node.extendsClause.convertOrNull<Tree>()
         val implements = node.implementsClause.convertAll<Tree>(COMMA_DELIM, NO_DELIM)
@@ -190,12 +190,11 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
         val memberDelim = { t: JdkTree -> if(t is JCTree.JCVariableDecl) sourceBefore(";") else "" }
 
         val bodyPrefix = sourceBefore("{")
-
         val body = Tr.Block<Tree>(
                 node.members
                         // we don't care about the compiler-inserted default constructor,
                         // since it will never be subject to refactoring
-                        .filter { it !is JCTree.JCMethodDecl || it.modifiers.flags and Flags.GENERATEDCONSTR == 0L }
+                        .filter { it !is JCTree.JCMethodDecl || !it.modifiers.hasFlag(Flags.GENERATEDCONSTR) }
                         .convertAll(memberDelim, memberDelim),
                 Formatting.Reified(bodyPrefix),
                 sourceBefore("}")
@@ -230,20 +229,19 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
 
         val opPrefix = Formatting.Reified(sourceMatching("\\s+"))
         val op = when (node.tag) {
-            JCTree.Tag.PLUS_ASG -> Tr.AssignOp.Operator.Addition(opPrefix)
-            JCTree.Tag.MINUS_ASG -> Tr.AssignOp.Operator.Subtraction(opPrefix)
-            JCTree.Tag.DIV_ASG -> Tr.AssignOp.Operator.Division(opPrefix)
-            JCTree.Tag.MUL_ASG -> Tr.AssignOp.Operator.Multiplication(opPrefix)
-            JCTree.Tag.MOD_ASG -> Tr.AssignOp.Operator.Modulo(opPrefix)
-            JCTree.Tag.BITAND_ASG -> Tr.AssignOp.Operator.BitAnd(opPrefix)
-            JCTree.Tag.BITOR_ASG -> Tr.AssignOp.Operator.BitOr(opPrefix)
-            JCTree.Tag.BITXOR_ASG -> Tr.AssignOp.Operator.BitXor(opPrefix)
-            JCTree.Tag.SL_ASG -> Tr.AssignOp.Operator.LeftShift(opPrefix)
-            JCTree.Tag.SR_ASG -> Tr.AssignOp.Operator.RightShift(opPrefix)
-            JCTree.Tag.USR_ASG -> Tr.AssignOp.Operator.UnsignedRightShift(opPrefix)
+            JCTree.Tag.PLUS_ASG -> { skip("+="); Tr.AssignOp.Operator.Addition(opPrefix) }
+            JCTree.Tag.MINUS_ASG -> { skip("-="); Tr.AssignOp.Operator.Subtraction(opPrefix) }
+            JCTree.Tag.DIV_ASG -> { skip("/="); Tr.AssignOp.Operator.Division(opPrefix) }
+            JCTree.Tag.MUL_ASG -> { skip("*="); Tr.AssignOp.Operator.Multiplication(opPrefix) }
+            JCTree.Tag.MOD_ASG -> { skip("%="); Tr.AssignOp.Operator.Modulo(opPrefix) }
+            JCTree.Tag.BITAND_ASG -> { skip("&="); Tr.AssignOp.Operator.BitAnd(opPrefix) }
+            JCTree.Tag.BITOR_ASG -> { skip("|="); Tr.AssignOp.Operator.BitOr(opPrefix) }
+            JCTree.Tag.BITXOR_ASG -> { skip("^="); Tr.AssignOp.Operator.BitXor(opPrefix) }
+            JCTree.Tag.SL_ASG -> { skip("<<="); Tr.AssignOp.Operator.LeftShift(opPrefix) }
+            JCTree.Tag.SR_ASG -> { skip(">>="); Tr.AssignOp.Operator.RightShift(opPrefix) }
+            JCTree.Tag.USR_ASG -> { skip(">>>="); Tr.AssignOp.Operator.UnsignedRightShift(opPrefix) }
             else -> throw IllegalArgumentException("Unexpected compound assignment tag ${node.tag}")
         }
-        skip(op.keyword)
 
         return Tr.AssignOp(
                 left,
@@ -299,14 +297,77 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
         )
     }
 
+    fun visitEnumClass(node: ClassTree, fmt: Formatting.Reified): Tree {
+        val annotations = node.modifiers.annotations.convertAll<Tr.Annotation>(NO_DELIM, NO_DELIM)
+        val modifiers = typeModifiers(node.modifiers, "enum")
+        val name = Tr.Ident((node as JCTree.JCClassDecl).simpleName.toString(), node.type(),
+                Formatting.Reified(sourceBefore(node.simpleName.toString())))
+        val implements = node.implementsClause.convertAll<Tree>(COMMA_DELIM, NO_DELIM)
+
+        val memberDelim = { t: JdkTree -> if(t is JCTree.JCVariableDecl) sourceBefore(";") else "" }
+
+        val bodyPrefix = sourceBefore("{")
+
+        // enum values are required by the grammar to occur before any ordinary field, constructor, or method members
+        val enumValues = node.members
+                .filterIsInstance<JCTree.JCVariableDecl>()
+                .filter { it.modifiers.hasFlag(Flags.ENUM) }
+                .convertAll<Tree>(COMMA_DELIM, {
+                    // this semicolon is required when there are non-value members, but can still
+                    // be present when there are not
+                    sourceMatching("\\s+;")
+                })
+
+        val members = node.members
+                // we don't care about the compiler-inserted default constructor,
+                // since it will never be subject to refactoring
+                .filter {
+                    when(it) {
+                        is JCTree.JCMethodDecl -> !it.modifiers.hasFlag(Flags.GENERATEDCONSTR)
+                        is JCTree.JCVariableDecl -> !it.modifiers.hasFlag(Flags.ENUM)
+                        else -> true
+                    }
+                }
+                .convertAll<Tree>(memberDelim, memberDelim)
+
+        val body = Tr.Block<Tree>(enumValues + members, Formatting.Reified(bodyPrefix), sourceBefore("}"))
+
+        return Tr.EnumClass(annotations, modifiers, name, implements, body, node.type(), fmt)
+    }
+
+    fun visitEnumVariable(node: VariableTree, fmt: Formatting.Reified): Tree {
+        skip(node.name.toString())
+        val name = Tr.Ident(node.name.toString(), node.type(), Formatting.Reified.Empty)
+
+        val initPrefix = sourceMatching("\\s*\\(")
+        val initializer = if(initPrefix.isNotEmpty()) {
+            val args = (node.initializer as JCTree.JCNewClass).args.convertAll<Expression>(COMMA_DELIM, { sourceBefore(")") })
+            if((node.initializer as JCTree.JCNewClass).args.isEmpty())
+                skip(")")
+            Tr.EnumValue.Arguments(args, Formatting.Reified(initPrefix.trimEnd('(')))
+        } else null
+
+        return Tr.EnumValue(name, initializer, fmt)
+    }
+
     override fun visitForLoop(node: ForLoopTree, fmt: Formatting.Reified): Tree {
         skip("for")
         val ctrlPrefix = sourceBefore("(")
 
-        val init = node.initializer.convertStatements(COMMA_DELIM, SEMI_DELIM)
+        fun List<JdkTree>.convertAllOrEmpty(innerSuffix: (JdkTree) -> String = { "" },
+                                                    suffix: (JdkTree) -> String = { "" }): List<Statement> {
+            return when (size) {
+                0 -> listOf(Tr.Empty(Formatting.Reified("", suffix(object : JCTree.JCSkip() {}))))
+                else -> mapIndexed { i, tree ->
+                    tree.convert<Statement>(if (i == size - 1) suffix else innerSuffix)
+                }
+            }
+        }
+
+        val init = node.initializer.convertAllOrEmpty(COMMA_DELIM, SEMI_DELIM)
         val condition = node.condition.convertOrNull<Expression>(SEMI_DELIM) ?:
                 Tr.Empty(Formatting.Reified("", sourceBefore(";")))
-        val update = node.update.convertStatements(COMMA_DELIM, { sourceBefore(")") })
+        val update = node.update.convertAllOrEmpty(COMMA_DELIM, { sourceBefore(")") })
 
         return Tr.ForLoop(
                 Tr.ForLoop.Control(init, condition, update, Formatting.Reified(ctrlPrefix)),
@@ -396,9 +457,15 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
             else -> throw IllegalArgumentException("Unexpected method select type $this")
         }
 
+        val convertedSelect = meth.meth.convert<Expression>()
+
+        val argsPrefix = sourceBefore("(")
+        val args = Tr.MethodInvocation.Arguments(meth.args.convertAll(COMMA_DELIM, { sourceBefore(")") }),
+                Formatting.Reified(argsPrefix))
+
         return Tr.MethodInvocation(
-                meth.meth.convert(),
-                meth.args.convertAll(COMMA_DELIM, { sourceBefore(")") }),
+                convertedSelect,
+                args,
                 methSymbol.type().asMethod(),
                 select?.type.type().asMethod(),
                 methSymbol?.owner?.type().asClass(),
@@ -407,6 +474,8 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
     }
 
     override fun visitMethod(node: MethodTree, fmt: Formatting.Reified): Tree {
+        logger.trace("Visiting method {}", node.name)
+
         val annotations = node.modifiers.annotations.convertAll<Tr.Annotation>(NO_DELIM, NO_DELIM)
         val modifiers = node.modifiers.flags.mapIndexed { i, mod ->
             val modFormat = Formatting.Reified(sourceMatching("\\s+"))
@@ -421,8 +490,16 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
                 else -> throw IllegalArgumentException("Unexpected modifier $mod")
             }
         }
-        val returnType = node.returnType.convert<TypeTree>()
-        val name = Tr.Ident(node.name.toString(), null, Formatting.Reified(sourceBefore(node.name.toString())))
+        val returnType = node.returnType.convertOrNull<TypeTree>()
+
+        val name = if(node.name.toString() == "<init>") {
+            val owner = ((node as JCTree.JCMethodDecl).sym.owner as Symbol.ClassSymbol).name.toString()
+            val constructor = Tr.Ident(owner, null, Formatting.Reified(sourceBefore(owner)))
+            skip(owner)
+            constructor
+        } else {
+            Tr.Ident(node.name.toString(), null, Formatting.Reified(sourceBefore(node.name.toString())))
+        }
 
         val paramFmt = Formatting.Reified(sourceBefore("("))
         val params = if(node.parameters.isNotEmpty()) {
@@ -434,6 +511,8 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
         skipPattern("\\s+throws")
         val throws = node.throws.convertAll<Expression>(COMMA_DELIM, NO_DELIM)
 
+        val body = node.body.convertOrNull<Tr.Block<Statement>>()
+
         return Tr.MethodDecl(
                 annotations,
                 modifiers,
@@ -441,7 +520,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
                 name,
                 params,
                 throws,
-                node.body.convertOrNull(),
+                body,
                 node.defaultValue.convertOrNull { sourceBefore(";") },
                 fmt
         )
@@ -482,7 +561,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
 
         val initializer = if(node.initializers != null) {
             val initPrefix = sourceBefore("{")
-            Tr.NewArray.Initializer(node.initializers.convertExpressions({ sourceBefore(",") }, { sourceBefore("}") }),
+            Tr.NewArray.Initializer(node.initializers.convertExpressionsOrEmpty({ sourceBefore(",") }, { sourceBefore("}") }),
                     Formatting.Reified(initPrefix))
         } else null
 
@@ -508,7 +587,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
 
         val argPrefix = sourceBefore("(")
         val args = Tr.NewClass.Arguments(
-                node.arguments.convertExpressions(COMMA_DELIM, { sourceBefore(")") }),
+                node.arguments.convertExpressionsOrEmpty(COMMA_DELIM, { sourceBefore(")") }),
                 Formatting.Reified(argPrefix))
 
         return Tr.NewClass(
@@ -653,7 +732,13 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
     }
 
     override fun visitVariable(node: VariableTree, fmt: Formatting.Reified): Tree? {
+        logger.trace("Visiting variable {}", node.name.toString())
+
         if(node.name.toString() == "<error>") return null
+
+        if(node.modifiers.hasFlag(Flags.ENUM)) {
+            return visitEnumVariable(node, fmt)
+        }
 
         val annotations = node.modifiers.annotations.convertAll<Tr.Annotation>(NO_DELIM, NO_DELIM)
 
@@ -744,7 +829,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
 
     @Suppress("UNCHECKED_CAST")
     private fun <T : Tree> JdkTree.convert(suffix: (JdkTree) -> String = { "" }): T {
-        val prefix = source.substring(cursor, (this as JCTree).startPosition)
+        val prefix = source.substring(cursor, Math.max((this as JCTree).startPosition, cursor))
         cursor += prefix.length
         val t = scan(this, Formatting.Reified(prefix)) as T
         (t.formatting as Formatting.Reified).suffix = suffix(this)
@@ -768,9 +853,9 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
         return mapped
     }
 
-    private fun List<JdkTree>.convertExpressions(innerSuffix: (JdkTree) -> String = { "" },
-                                                 suffix: (JdkTree) -> String = { "" }): List<Expression> {
-        return if(this.size == 0) {
+    private fun List<JdkTree>.convertExpressionsOrEmpty(innerSuffix: (JdkTree) -> String = { "" },
+                                                        suffix: (JdkTree) -> String = { "" }): List<Expression> {
+        return if(this.isEmpty()) {
             listOf(Tr.Empty(Formatting.Reified.Empty))
         } else {
             mapIndexed { i, tree ->
@@ -779,12 +864,19 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
         }
     }
 
-    private fun List<JdkTree>.convertStatements(innerSuffix: (JdkTree) -> String = { "" },
-                                                suffix: (JdkTree) -> String = { "" }): List<Statement> {
-        return when (size) {
-            0 -> listOf(Tr.Empty(Formatting.Reified("", suffix(object : JCTree.JCSkip() {}))))
-            else -> mapIndexed { i, tree ->
-                tree.convert<Statement>(if (i == size - 1) suffix else innerSuffix)
+    private fun typeModifiers(mods: ModifiersTree, typeKeyword: String): List<Tr.TypeModifier> {
+        return mods.flags.mapIndexed { i, mod ->
+            val modPrefix = sourceMatching("\\s+")
+            cursor += mod.name.length
+            val modFormat = Formatting.Reified(modPrefix, sourceMatching("\\s+$typeKeyword").substringBefore(typeKeyword))
+            when (mod) {
+                Modifier.PUBLIC -> Tr.TypeModifier.Public(modFormat)
+                Modifier.PROTECTED -> Tr.TypeModifier.Protected(modFormat)
+                Modifier.PRIVATE -> Tr.TypeModifier.Private(modFormat)
+                Modifier.ABSTRACT -> Tr.TypeModifier.Abstract(modFormat)
+                Modifier.STATIC -> Tr.TypeModifier.Static(modFormat)
+                Modifier.FINAL -> Tr.TypeModifier.Final(modFormat)
+                else -> throw IllegalArgumentException("Unexpected modifier $mod")
             }
         }
     }
@@ -863,6 +955,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
             TypeTag.VOID -> Type.Tag.Void
             TypeTag.NONE -> Type.Tag.None
             TypeTag.CLASS -> Type.Tag.String
+            TypeTag.BOT -> Type.Tag.Null
             else -> throw IllegalArgumentException("Unknown type tag $this")
         }
     }
@@ -915,5 +1008,27 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
     // Only exists as a function to make it easier to debug unexpected cursor shifts
     private fun cursor(n: Int) {
         cursor = n
+    }
+
+    private fun ModifiersTree.hasFlag(flag: Number): Boolean =
+            (this as JCTree.JCModifiers).flags and flag.toLong() != 0L
+
+    /**
+     * Because Flags.asModifierSet() only matches on certain flags... (debugging utility only)
+     */
+    @Suppress("unused")
+    private fun ModifiersTree.listFlags(): List<String> {
+        val allFlags = Flags::class.java.declaredFields
+                .filter {
+                    it.isAccessible = true
+                    it.get(null) is Number && it.name.matches("[A-Z_]+".toRegex())
+                }
+                .map { it.name to it.get(null) as Number }
+
+        return allFlags.fold(emptyList<String>()) { all, f ->
+            if(f.second.toLong() and (this as JCTree.JCModifiers).flags != 0L)
+                all + f.first
+            else all
+        }
     }
 }

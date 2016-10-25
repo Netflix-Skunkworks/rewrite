@@ -15,7 +15,7 @@ abstract class ClassDeclTest(parser: Parser): AstTest(parser) {
             class B {}
         """)
 
-        assertEquals(listOf("A", "B"), a.classDecls.map { it.name.name }.sorted())
+        assertEquals(listOf("A", "B"), a.typeDecls.map { it.name.name }.sorted())
     }
     
     @Test
@@ -27,7 +27,7 @@ abstract class ClassDeclTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        assertEquals(1, a.classDecls[0].fields().size)
+        assertEquals(1, a.typeDecls[0].fields().size)
     }
 
     @Test
@@ -38,7 +38,7 @@ abstract class ClassDeclTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        assertEquals(1, a.classDecls[0].methods().size)
+        assertEquals(1, a.typeDecls[0].methods().size)
     }
     
     @Test
@@ -46,7 +46,7 @@ abstract class ClassDeclTest(parser: Parser): AstTest(parser) {
         val b = "public interface B {}"
         val a = "public class A implements B {}"
         
-        assertEquals(1, parse(a, whichDependsOn = b).classDecls[0].implements.size)
+        assertEquals(1, parse(a, whichDependsOn = b).typeDecls[0].implements.size)
     }
 
     @Test
@@ -54,6 +54,7 @@ abstract class ClassDeclTest(parser: Parser): AstTest(parser) {
         val b = "public class B {}"
         val a = "public class A extends B {}"
 
-        assertNotNull(parse(a, whichDependsOn = b).classDecls[0].extends)
+        val aClass = parse(a, whichDependsOn = b).typeDecls[0] as Tr.ClassDecl
+        assertNotNull(aClass.extends)
     }
 }

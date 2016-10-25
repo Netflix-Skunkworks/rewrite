@@ -13,7 +13,14 @@ class PrintVisitor : AstVisitor<String>("") {
 
     fun visitStatements(statements: Collection<Tree>): String {
         return statements.fold("") { s, stat ->
-            s + visit(stat) + if(stat is Statement) { stat.terminator() } else ""
+            s + visit(stat) +
+                when(stat) {
+                    is Tr.Assign, is Tr.AssignOp, is Tr.Break, is Tr.Continue, is Tr.MethodInvocation -> ";"
+                    is Tr.NewClass, is Tr.Return, is Tr.Throw, is Tr.Unary, is Tr.VariableDecl -> ";"
+                    is Tr.Label -> ":"
+                    else -> ""
+                }
+
         }
     }
 
@@ -37,11 +44,47 @@ class PrintVisitor : AstVisitor<String>("") {
     }
 
     override fun visitAssignOp(assign: Tr.AssignOp): String {
-        return assign.fmt("${visit(assign.variable)}${assign.operator.fmt(assign.operator.keyword)}${visit(assign.assignment)}")
+        val keyword = when(assign.operator) {
+            is Tr.AssignOp.Operator.Addition -> "+="
+            is Tr.AssignOp.Operator.Subtraction -> "-="
+            is Tr.AssignOp.Operator.Multiplication -> "*="
+            is Tr.AssignOp.Operator.Division -> "/="
+            is Tr.AssignOp.Operator.Modulo -> "%="
+            is Tr.AssignOp.Operator.BitAnd -> "&="
+            is Tr.AssignOp.Operator.BitOr -> "|="
+            is Tr.AssignOp.Operator.BitXor -> "^="
+            is Tr.AssignOp.Operator.LeftShift -> "<<="
+            is Tr.AssignOp.Operator.RightShift -> ">>="
+            is Tr.AssignOp.Operator.UnsignedRightShift -> ">>>="
+        }
+
+        return assign.fmt("${visit(assign.variable)}${assign.operator.fmt(keyword)}${visit(assign.assignment)}")
     }
 
     override fun visitBinary(binary: Tr.Binary): String {
-        return binary.fmt("${visit(binary.left)}${binary.operator.fmt(binary.operator.keyword)}${visit(binary.right)}")
+        val keyword = when(binary.operator) {
+            is Tr.Binary.Operator.Addition -> "+"
+            is Tr.Binary.Operator.Subtraction -> "-"
+            is Tr.Binary.Operator.Multiplication -> "*"
+            is Tr.Binary.Operator.Division -> "/"
+            is Tr.Binary.Operator.Modulo -> "%"
+            is Tr.Binary.Operator.LessThan -> "<"
+            is Tr.Binary.Operator.GreaterThan -> ">"
+            is Tr.Binary.Operator.LessThanOrEqual -> "<="
+            is Tr.Binary.Operator.GreaterThanOrEqual -> ">="
+            is Tr.Binary.Operator.Equal -> "=="
+            is Tr.Binary.Operator.NotEqual -> "!="
+            is Tr.Binary.Operator.BitAnd -> "&"
+            is Tr.Binary.Operator.BitOr -> "|"
+            is Tr.Binary.Operator.BitXor -> "^"
+            is Tr.Binary.Operator.LeftShift -> "<<"
+            is Tr.Binary.Operator.RightShift -> ">>"
+            is Tr.Binary.Operator.UnsignedRightShift -> ">>>"
+            is Tr.Binary.Operator.Or -> "||"
+            is Tr.Binary.Operator.And -> "&&"
+        }
+
+        return binary.fmt("${visit(binary.left)}${binary.operator.fmt(keyword)}${visit(binary.right)}")
     }
 
     override fun visitBlock(block: Tr.Block<Tree>): String {
@@ -62,13 +105,20 @@ class PrintVisitor : AstVisitor<String>("") {
 
     override fun visitClassDecl(classDecl: Tr.ClassDecl): String {
         val typeParams = if(classDecl.typeParams.isNotEmpty()) "<${visit(classDecl.typeParams)}>" else ""
-        val modifiers = classDecl.modifiers.fold("") { s, mod -> s + mod.fmt(mod.keyword) }
+        val modifiers = classDecl.modifiers.fold("") { s, mod -> s + mod.fmt(when(mod) {
+            is Tr.TypeModifier.Public -> "public"
+            is Tr.TypeModifier.Protected -> "protected"
+            is Tr.TypeModifier.Private -> "private"
+            is Tr.TypeModifier.Abstract -> "abstract"
+            is Tr.TypeModifier.Static -> "static"
+            is Tr.TypeModifier.Final -> "final"
+        }) }
         return classDecl.fmt("${visit(classDecl.annotations)}${modifiers}class${visit(classDecl.name)}$typeParams" +
                 "${visit(classDecl.extends)}${visit(classDecl.implements)}${visit(classDecl.body)}")
     }
 
     override fun visitCompilationUnit(cu: Tr.CompilationUnit): String {
-        return cu.fmt("${visit(cu.packageDecl, ";")}${visit(cu.imports, ";", ";")}${visit(cu.classDecls)}")
+        return cu.fmt("${visit(cu.packageDecl, ";")}${visit(cu.imports, ";", ";")}${visit(cu.typeDecls)}")
     }
 
     override fun visitContinue(continueStatement: Tr.Continue): String {
@@ -80,6 +130,33 @@ class PrintVisitor : AstVisitor<String>("") {
     }
 
     override fun visitEmpty(empty: Tr.Empty): String = empty.fmt("")
+
+    override fun visitEnum(enum: Tr.EnumValue): String {
+        val initializer = if(enum.initializer != null) {
+            enum.initializer.fmt("(${visit(enum.initializer.args, ",")})")
+        } else ""
+
+        return enum.fmt("${visit(enum.name)}$initializer")
+    }
+
+    override fun visitEnumClass(enumClass: Tr.EnumClass): String {
+        val modifiers = enumClass.modifiers.fold("") { s, mod -> s + mod.fmt(when(mod) {
+            is Tr.TypeModifier.Public -> "public"
+            is Tr.TypeModifier.Protected -> "protected"
+            is Tr.TypeModifier.Private -> "private"
+            is Tr.TypeModifier.Abstract -> "abstract"
+            is Tr.TypeModifier.Static -> "static"
+            is Tr.TypeModifier.Final -> "final"
+        }) }
+
+        val body = enumClass.body.let {
+            val values = visit(enumClass.values(), ",", if(enumClass.members().isNotEmpty()) ";" else "")
+            it.fmt("{$values${visitStatements(enumClass.members())}${it.endOfBlockSuffix}}")
+        }
+
+        return enumClass.fmt("${visit(enumClass.annotations)}${modifiers}enum${visit(enumClass.name)}" +
+                "${visit(enumClass.implements)}$body")
+    }
 
     override fun visitFieldAccess(field: Tr.FieldAccess): String {
         return field.fmt("${visit(field.target)}.${visit(field.fieldName)}")
@@ -137,13 +214,26 @@ class PrintVisitor : AstVisitor<String>("") {
             Type.Tag.String -> "\"$v\""
             Type.Tag.None -> ""
             Type.Tag.Wildcard -> "*"
+            Type.Tag.Null -> "null"
         })
     }
 
     override fun visitMethod(method: Tr.MethodDecl): String {
-        val modifiers = method.modifiers.fold("") { s, mod -> s + mod.fmt(mod.keyword) }
+        val modifiers = method.modifiers.fold("") { s, mod -> s + mod.fmt(when(mod) {
+            is Tr.MethodDecl.Modifier.Public -> "public"
+            is Tr.MethodDecl.Modifier.Protected -> "protected"
+            is Tr.MethodDecl.Modifier.Private -> "private"
+            is Tr.MethodDecl.Modifier.Abstract -> "abstract"
+            is Tr.MethodDecl.Modifier.Static -> "static"
+            is Tr.MethodDecl.Modifier.Final -> "final"
+        }) }
         val params = method.params.fmt("(${visit(method.params.params, ",")}") + ")"
         return method.fmt("${visit(method.annotations)}$modifiers${visit(method.returnTypeExpr)}${visit(method.name)}$params${visit(method.throws)}${visit(method.body)}")
+    }
+
+    override fun visitMethodInvocation(meth: Tr.MethodInvocation): String {
+        val args = meth.args.fmt("(${visit(meth.args.args, ",")})")
+        return meth.fmt("${visit(meth.methodSelect)}$args")
     }
 
     override fun visitNewArray(newArray: Tr.NewArray): String {
@@ -178,8 +268,9 @@ class PrintVisitor : AstVisitor<String>("") {
             Type.Tag.Short -> "short"
             Type.Tag.Void -> "void"
             Type.Tag.String -> "String"
-            Type.Tag.None -> throw IllegalStateException("Unable to print None primitive")
             Type.Tag.Wildcard -> "*"
+            Type.Tag.None -> throw IllegalStateException("Unable to print None primitive")
+            Type.Tag.Null -> throw IllegalStateException("Unable to print Null primitive")
         })
     }
 
@@ -229,7 +320,16 @@ class PrintVisitor : AstVisitor<String>("") {
     }
 
     override fun visitVariable(variable: Tr.VariableDecl): String {
-        val modifiers = variable.modifiers.fold("") { s, mod -> s + mod.fmt(mod.keyword) }
+        val modifiers = variable.modifiers.fold("") { s, mod -> s + mod.fmt(when(mod) {
+            is Tr.VariableDecl.Modifier.Public -> "public"
+            is Tr.VariableDecl.Modifier.Protected -> "protected"
+            is Tr.VariableDecl.Modifier.Private -> "private"
+            is Tr.VariableDecl.Modifier.Abstract -> "abstract"
+            is Tr.VariableDecl.Modifier.Static -> "static"
+            is Tr.VariableDecl.Modifier.Final -> "final"
+            is Tr.VariableDecl.Modifier.Transient -> "transient"
+            is Tr.VariableDecl.Modifier.Volatile -> "volatile"
+        }) }
 
         val init = when(variable.initializer) {
             is Expression -> "=${visit(variable.initializer)}"

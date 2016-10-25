@@ -17,7 +17,7 @@ abstract class LambdaTest(parser: Parser): AstTest(parser) {
         """)
     }
 
-    val lambda by lazy { a.classDecls[0].fields()[0].initializer as Tr.Lambda }
+    val lambda by lazy { a.fields()[0].initializer as Tr.Lambda }
 
     @Test
     fun lambda() {

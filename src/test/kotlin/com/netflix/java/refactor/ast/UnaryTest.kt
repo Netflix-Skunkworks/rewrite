@@ -16,7 +16,7 @@ abstract class UnaryTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val unary = a.classDecls[0].fields()[0].initializer as Tr.Unary
+        val unary = a.fields()[0].initializer as Tr.Unary
         assertTrue(unary.operator is Tr.Unary.Operator.Not)
         assertTrue(unary.expr is Tr.Parentheses)
     }
@@ -31,7 +31,7 @@ abstract class UnaryTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val (prefix, postfix) = a.classDecls[0].fields().subList(1, 3).map { it.initializer as Tr.Unary }
+        val (prefix, postfix) = a.typeDecls[0].fields().subList(1, 3).map { it.initializer as Tr.Unary }
         assertEquals("++i", prefix.print())
         assertEquals("i++", postfix.print())
     }

@@ -44,8 +44,8 @@ abstract class AstTest(var parser: Parser) {
     }
 
     fun Tr.CompilationUnit.firstMethodStatement() =
-            classDecls[0].methods()[0].body!!.statements[0]
+            typeDecls[0].methods()[0].body!!.statements[0]
 
     fun Tr.CompilationUnit.fields(ns: IntRange = 0..0) =
-            classDecls[0].fields().subList(ns.start, ns.endInclusive + 1)
+            typeDecls[0].fields().subList(ns.start, ns.endInclusive + 1)
 }
