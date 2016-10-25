@@ -399,6 +399,7 @@ sealed class Tr : Serializable, Tree {
 
     data class MethodDecl(val annotations: List<Annotation>,
                           val modifiers: List<Modifier>,
+                          val typeParameters: TypeParameters?,
                           val returnTypeExpr: TypeTree?, // null for constructors
                           val name: Ident,
                           val params: Parameters,
@@ -418,8 +419,8 @@ sealed class Tr : Serializable, Tree {
             data class Final(override val formatting: Formatting) : Modifier()
         }
 
-        data class Parameters(val params: List<Statement>,
-                              override val formatting: Formatting): Tr()
+        data class Parameters(val params: List<Statement>, override val formatting: Formatting): Tr()
+        data class TypeParameters(val params: List<TypeParameter>, override val formatting: Formatting): Tr()
     }
 
     data class MethodInvocation(val methodSelect: Expression,

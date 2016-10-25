@@ -54,6 +54,7 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
 
     override fun visitMethodInvocation(meth: Tr.MethodInvocation): Tree {
         val methodSelect = visit(meth.methodSelect) as Expression
+
         val args = meth.args.let {
             val args = it.args.mapIfNecessary { visit(it) as Expression }
             if(it.args !== args) it.copy(args) else it
@@ -101,12 +102,18 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
         val throws = method.throws.mapIfNecessary { visit(it) as Expression }
         val defaultValue = visit(method.defaultValue) as Expression?
 
+        val typeParams = method.typeParameters?.let {
+            val generics = it.params.mapIfNecessary { visit(it) as Tr.TypeParameter }
+            if(it.params !== generics) it.copy(generics) else it
+        }
+
         @Suppress("UNCHECKED_CAST")
         val body = visit(method.body) as Tr.Block<Statement>
         
         return (if(params !== method.params.params || throws !== method.throws || defaultValue !== method.defaultValue ||
-                    body !== method.body) {
-            method.copy(params = method.params.copy(params), throws = throws, defaultValue = defaultValue, body = body)
+                    body !== method.body || typeParams !== method.typeParameters) {
+            method.copy(params = method.params.copy(params), throws = throws, defaultValue = defaultValue, body = body,
+                    typeParameters = typeParams)
         } else method).transformIfNecessary(cursor)
     }
 

@@ -459,6 +459,20 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
 
         val convertedSelect = meth.meth.convert<Expression>()
 
+//        val typeParams = if(node.typeParameters.isNotEmpty()) {
+//            val genericPrefix = sourceBefore("<")
+//            val genericParams = node.typeParameters.convertAll<Tr.TypeParameter>(COMMA_DELIM, { sourceBefore(">") })
+//                    .map {
+//                        when (it.name) {
+//                            is Tr.Ident -> it.name.copy(formatting = it.formatting)
+//                            is Tr.FieldAccess -> it.name.copy(formatting = it.formatting)
+//                            else -> throw IllegalStateException("Unexpected type parameter type ${it.javaClass}")
+//                        } as NameTree
+//                    }
+//
+//            Tr.MethodDecl.TypeParameters(genericParams, Formatting.Reified(genericPrefix))
+//        } else null
+
         val argsPrefix = sourceBefore("(")
         val args = Tr.MethodInvocation.Arguments(meth.args.convertAll(COMMA_DELIM, { sourceBefore(")") }),
                 Formatting.Reified(argsPrefix))
@@ -490,6 +504,14 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
                 else -> throw IllegalArgumentException("Unexpected modifier $mod")
             }
         }
+
+        // see https://docs.oracle.com/javase/tutorial/java/generics/methods.html
+        val typeParams = if(node.typeParameters.isNotEmpty()) {
+            val genericPrefix = sourceBefore("<")
+            Tr.MethodDecl.TypeParameters(node.typeParameters.convertAll(COMMA_DELIM, { sourceBefore(">") }),
+                    Formatting.Reified(genericPrefix))
+        } else null
+
         val returnType = node.returnType.convertOrNull<TypeTree>()
 
         val name = if(node.name.toString() == "<init>") {
@@ -516,6 +538,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
         return Tr.MethodDecl(
                 annotations,
                 modifiers,
+                typeParams,
                 returnType,
                 name,
                 params,
@@ -687,7 +710,10 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
     override fun visitTypeParameter(node: TypeParameterTree, fmt: Formatting.Reified): Tree {
         val annotations = node.annotations.convertAll<Tr.Annotation>(NO_DELIM, NO_DELIM)
         val name = TreeBuilder.buildName(typeCache, node.name.toString(), Formatting.Reified(sourceBefore(node.name.toString())))
-        val bounds = node.bounds.convertAll<Expression>(COMMA_DELIM, { sourceBefore(">") }, "<", ">")
+
+        // see https://docs.oracle.com/javase/tutorial/java/generics/bounded.html
+        val bounds = node.bounds.convertAll<Expression>({ sourceBefore("&") }, NO_DELIM)
+
         return Tr.TypeParameter(annotations, name, bounds, fmt)
     }
 

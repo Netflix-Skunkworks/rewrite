@@ -227,8 +227,11 @@ class PrintVisitor : AstVisitor<String>("") {
             is Tr.MethodDecl.Modifier.Static -> "static"
             is Tr.MethodDecl.Modifier.Final -> "final"
         }) }
+
+        val typeParams = method.typeParameters?.let { it.fmt("<${visit(it.params, ",")}>") } ?: ""
         val params = method.params.fmt("(${visit(method.params.params, ",")}") + ")"
-        return method.fmt("${visit(method.annotations)}$modifiers${visit(method.returnTypeExpr)}${visit(method.name)}$params${visit(method.throws)}${visit(method.body)}")
+
+        return method.fmt("${visit(method.annotations)}$modifiers$typeParams${visit(method.returnTypeExpr)}${visit(method.name)}$params${visit(method.throws)}${visit(method.body)}")
     }
 
     override fun visitMethodInvocation(meth: Tr.MethodInvocation): String {
@@ -304,6 +307,14 @@ class PrintVisitor : AstVisitor<String>("") {
         } ?: ""
 
         return tryable.fmt("try$resources${visit(tryable.body)}${visit(tryable.catches)}$finally")
+    }
+
+    override fun visitTypeParameter(typeParameter: Tr.TypeParameter): String {
+        val bounds = if(typeParameter.bounds.isNotEmpty()) {
+            "extends${visit(typeParameter.bounds, "&")}"
+        } else ""
+
+        return typeParameter.fmt("${visit(typeParameter.annotations, "")}${visit(typeParameter.name)}$bounds")
     }
 
     override fun visitUnary(unary: Tr.Unary): String {

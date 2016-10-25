@@ -24,8 +24,8 @@ abstract class MethodDeclTest(parser: Parser): AstTest(parser) {
     fun methodDecl() {
         val a = parse("""
             public class A {
-                public <P> P foo(P p, String s, String... args) {
-                    return p;
+                public <P, R> R foo(P p, String s, String... args) {
+                    return null;
                 }
             }
         """)
@@ -34,19 +34,19 @@ abstract class MethodDeclTest(parser: Parser): AstTest(parser) {
         assertEquals("foo", meth.name.name)
         assertEquals(3, meth.params.params.size)
         assertEquals(1, meth.body!!.statements.size)
-        assertEquals("P", ((meth.returnTypeExpr as Tr.Ident).type as Type.GenericTypeVariable).name)
+        assertEquals("R", ((meth.returnTypeExpr as Tr.Ident).type as Type.GenericTypeVariable).name)
     }
     
     @Test
     fun format() {
         val a = parse("""
             public class A {
-                public <P> P foo(P p, String s, String ... args) { return p; }
+                public < P > P foo(P p, String s, String ... args) { return p; }
             }
         """)
 
         val meth = a.typeDecls[0].methods()[0]
-        assertEquals("public <P> P foo(P p, String s, String ... args) { return p; }", meth.print())
+        assertEquals("public < P > P foo(P p, String s, String ... args) { return p; }", meth.print())
     }
 
     @Test
