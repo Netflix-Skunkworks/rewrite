@@ -447,41 +447,45 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
     }
 
     override fun visitMethodInvocation(node: MethodInvocationTree, fmt: Formatting.Reified): Tree {
-        val meth = node as JCTree.JCMethodInvocation
-        val select = meth.methodSelect
-
-        val methSymbol = when (select) {
+        val jcSelect = (node as JCTree.JCMethodInvocation).methodSelect
+        val methSymbol = when (jcSelect) {
             null -> null
-            is JCTree.JCIdent -> select.sym
-            is JCTree.JCFieldAccess -> select.sym
+            is JCTree.JCIdent -> jcSelect.sym
+            is JCTree.JCFieldAccess -> jcSelect.sym
             else -> throw IllegalArgumentException("Unexpected method select type $this")
         }
 
-        val convertedSelect = meth.meth.convert<Expression>()
+        val jcMeth = node.meth
+        val select = when(jcMeth) {
+            is JCTree.JCFieldAccess -> jcMeth.selected.convert<Expression> { sourceBefore(".") }
+            is JCTree.JCIdent -> null
+            else -> throw IllegalStateException("Unexpected method select type ${jcMeth.javaClass}")
+        }
 
-//        val typeParams = if(node.typeParameters.isNotEmpty()) {
-//            val genericPrefix = sourceBefore("<")
-//            val genericParams = node.typeParameters.convertAll<Tr.TypeParameter>(COMMA_DELIM, { sourceBefore(">") })
-//                    .map {
-//                        when (it.name) {
-//                            is Tr.Ident -> it.name.copy(formatting = it.formatting)
-//                            is Tr.FieldAccess -> it.name.copy(formatting = it.formatting)
-//                            else -> throw IllegalStateException("Unexpected type parameter type ${it.javaClass}")
-//                        } as NameTree
-//                    }
-//
-//            Tr.MethodDecl.TypeParameters(genericParams, Formatting.Reified(genericPrefix))
-//        } else null
+        // generic type parameters can only exist on qualified targets
+        val typeParams = if(node.typeargs.isNotEmpty()) {
+            val genericPrefix = sourceBefore("<")
+            val genericParams = node.typeargs.convertAll<NameTree>(COMMA_DELIM, { sourceBefore(">") })
+            Tr.MethodInvocation.TypeParameters(genericParams, Formatting.Reified(genericPrefix))
+        } else null
+
+        val name = when(jcMeth) {
+            is JCTree.JCFieldAccess ->  Tr.Ident(jcMeth.name.toString(), null, Formatting.Reified(sourceBefore(jcMeth.name.toString())))
+            is JCTree.JCIdent -> jcMeth.convert<Tr.Ident>()
+            else -> throw IllegalStateException("Unexpected method select type ${jcMeth.javaClass}")
+        }
 
         val argsPrefix = sourceBefore("(")
-        val args = Tr.MethodInvocation.Arguments(meth.args.convertAll(COMMA_DELIM, { sourceBefore(")") }),
+        val args = Tr.MethodInvocation.Arguments(node.args.convertAll(COMMA_DELIM, { sourceBefore(")") }),
                 Formatting.Reified(argsPrefix))
 
         return Tr.MethodInvocation(
-                convertedSelect,
+                select,
+                typeParams,
+                name,
                 args,
                 methSymbol.type().asMethod(),
-                select?.type.type().asMethod(),
+                jcSelect?.type.type().asMethod(),
                 methSymbol?.owner?.type().asClass(),
                 fmt
         )

@@ -63,7 +63,7 @@ open class AstVisitor<R> {
                     .andThen(classDecl.body)
 
     open fun visitMethodInvocation(meth: Tr.MethodInvocation): R =
-            visit(meth.methodSelect).andThen(meth.args)
+            visit(meth.select).andThen(meth.args)
 
     open fun visitVariable(variable: Tr.VariableDecl): R =
             visit(variable.varType)

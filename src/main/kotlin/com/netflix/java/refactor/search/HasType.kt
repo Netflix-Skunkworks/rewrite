@@ -10,7 +10,7 @@ class HasType(val clazz: String): AstVisitor<Boolean>(false) {
         ident.type is Type.Class && ident.type.fullyQualifiedName == clazz
 
     override fun visitMethodInvocation(meth: Tr.MethodInvocation): Boolean {
-        if(meth.methodSelect is Tr.Ident) {
+        if(meth.select is Tr.Ident) {
             // statically imported type
             return meth.declaringType?.fullyQualifiedName == clazz
         }

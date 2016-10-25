@@ -212,7 +212,7 @@ class OracleJdkParserVisitorOld(val path: Path, val source: String): TreeScanner
     @Done
     override fun visitMethodInvocation(node: MethodInvocationTree, fmt: Formatting): Tree {
         val meth = node as JCTree.JCMethodInvocation
-        val select = meth.methodSelect
+        val select = meth.select
 
         val methSymbol = when (select) {
             null -> null

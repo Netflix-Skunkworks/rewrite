@@ -236,7 +236,9 @@ class PrintVisitor : AstVisitor<String>("") {
 
     override fun visitMethodInvocation(meth: Tr.MethodInvocation): String {
         val args = meth.args.fmt("(${visit(meth.args.args, ",")})")
-        return meth.fmt("${visit(meth.methodSelect)}$args")
+        val typeParams = meth.typeParameters?.let { it.fmt("<${visit(it.params, ",")}>") } ?: ""
+        val selectSeparator = if(meth.select != null) "." else ""
+        return meth.fmt("${visit(meth.select)}$selectSeparator$typeParams${visit(meth.name)}$args")
     }
 
     override fun visitNewArray(newArray: Tr.NewArray): String {

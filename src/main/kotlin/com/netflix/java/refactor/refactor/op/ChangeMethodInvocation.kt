@@ -70,7 +70,7 @@ class ChangeMethodInvocation(signature: String, val tx: RefactorTransaction) : R
     }
 
     fun refactorMethod(invocation: Tr.MethodInvocation): List<RefactorFix> {
-        val meth = invocation.methodSelect
+        val meth = invocation.select
         val fixes = ArrayList<RefactorFix>()
 
         if (refactorName is String) {
@@ -137,7 +137,7 @@ class ChangeMethodInvocation(signature: String, val tx: RefactorTransaction) : R
 
             refactorArguments?.insertions?.forEach { insertion ->
 //                if(invocation.args.isEmpty()) {
-//                    val argStart = source.text.indexOf('(', invocation.methodSelect.pos.endInclusive) + 1
+//                    val argStart = source.text.indexOf('(', invocation.select.pos.endInclusive) + 1
 //                    fixes.add(insertAt(argStart, "${if(insertion.pos > 0) ", " else ""}${insertion.value}"))
 //                }
 //                else if(invocation.args.size <= insertion.pos) {

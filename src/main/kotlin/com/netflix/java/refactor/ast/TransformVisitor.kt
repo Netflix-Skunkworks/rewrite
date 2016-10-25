@@ -53,15 +53,15 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
     }
 
     override fun visitMethodInvocation(meth: Tr.MethodInvocation): Tree {
-        val methodSelect = visit(meth.methodSelect) as Expression
+        val methodSelect = visit(meth.select) as Expression
 
         val args = meth.args.let {
             val args = it.args.mapIfNecessary { visit(it) as Expression }
             if(it.args !== args) it.copy(args) else it
         }
 
-        return (if(methodSelect !== meth.methodSelect || args !== meth.args) {
-            meth.copy(methodSelect = methodSelect, args = args)
+        return (if(methodSelect !== meth.select || args !== meth.args) {
+            meth.copy(select = methodSelect, args = args)
         } else meth).transformIfNecessary(cursor)
     }
 

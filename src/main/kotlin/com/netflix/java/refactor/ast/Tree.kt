@@ -423,7 +423,9 @@ sealed class Tr : Serializable, Tree {
         data class TypeParameters(val params: List<TypeParameter>, override val formatting: Formatting): Tr()
     }
 
-    data class MethodInvocation(val methodSelect: Expression,
+    data class MethodInvocation(val select: Expression?,
+                                val typeParameters: TypeParameters?,
+                                val name: Ident,
                                 val args: Arguments,
                                 val genericSignature: Type.Method?,
                                 // in the case of generic signature parts, this concretizes
@@ -438,13 +440,14 @@ sealed class Tr : Serializable, Tree {
 
         fun returnType(): Type? = resolvedSignature?.returnType
 
-        fun methodName(): String = when (methodSelect) {
-            is FieldAccess -> methodSelect.fieldName.name
-            is Ident -> methodSelect.name
-            else -> throw IllegalStateException("Unexpected method select type ${methodSelect}")
+        fun methodName(): String = when (select) {
+            is FieldAccess -> select.fieldName.name
+            is Ident -> select.name
+            else -> throw IllegalStateException("Unexpected method select type ${select}")
         }
 
         data class Arguments(val args: List<Expression>, override val formatting: Formatting): Tr()
+        data class TypeParameters(val params: List<NameTree>, override val formatting: Formatting): Tr()
     }
 
     data class NewArray(val typeExpr: TypeTree,

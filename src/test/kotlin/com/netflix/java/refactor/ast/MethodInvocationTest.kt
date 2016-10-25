@@ -34,7 +34,7 @@ abstract class MethodInvocationTest(parser: Parser) : AstTest(parser) {
     @Test
     fun methodInvocation() {
         // check assumptions about the call site
-        assertEquals("foo", inv.methodSelect.print())
+        assertEquals("foo", inv.name.print())
         assertEquals("java.lang.Integer", inv.returnType().asClass()?.fullyQualifiedName)
         assertEquals(listOf(Type.Tag.Int, Type.Tag.Int, Type.Tag.Int),
                 inv.args.args.filterIsInstance<Tr.Literal>().map { it.typeTag })
@@ -76,7 +76,7 @@ abstract class MethodInvocationTest(parser: Parser) : AstTest(parser) {
 
     @Test
     fun staticMethodInvocation() {
-        assertEquals("staticFoo", staticInv.methodSelect.print())
+        assertEquals("staticFoo", staticInv.name.print())
         assertEquals("A", staticInv.declaringType?.fullyQualifiedName)
     }
 
