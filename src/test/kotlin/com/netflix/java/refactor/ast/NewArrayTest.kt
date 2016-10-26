@@ -62,4 +62,20 @@ abstract class NewArrayTest(parser: Parser): AstTest(parser) {
         val newArr = a.typeDecls[0].fields()[1].initializer as Tr.NewArray
         assertEquals("new int [ ] [ ] { m, m, m }", newArr.print())
     }
+
+    @Test
+    fun arrayAsAnnotationParameter() {
+        val produces = """
+            import java.lang.annotation.*;
+            @Target({ElementType.TYPE})
+            public @interface Produces {
+                String[] value() default "*/*";
+            }
+        """
+
+        val a = parse("""@Produces({"something"}) class A {}""", whichDependOn = produces)
+        val arr = a.typeDecls[0].annotations[0].args!!.args[0] as Tr.NewArray
+
+        assertNull(arr.typeExpr)
+    }
 }

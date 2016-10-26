@@ -574,9 +574,9 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
                 while(elementType is JCTree.JCArrayTypeTree) {
                     elementType = elementType.elemtype
                 }
-                elementType.convert<TypeTree>()
+                elementType.convertOrNull<TypeTree>()
             }
-            else -> jcVarType.convert<TypeTree>()
+            else -> jcVarType.convertOrNull<TypeTree>()
         }
 
         val dimensions = if(node.dimensions.isNotEmpty()) {

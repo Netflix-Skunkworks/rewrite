@@ -57,6 +57,7 @@ abstract class SwitchTest(parser: Parser): AstTest(parser) {
     fun format() {
         val a = parse("""
             |public class A {
+            |    int n;
             |    public void test() {
             |        switch(n) {
             |        default: break;

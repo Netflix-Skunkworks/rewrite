@@ -451,7 +451,7 @@ sealed class Tr : Serializable, Tree {
         data class TypeParameters(val params: List<NameTree>, override val formatting: Formatting): Tr()
     }
 
-    data class NewArray(val typeExpr: TypeTree,
+    data class NewArray(val typeExpr: TypeTree?, // null in the case of an array as an annotation parameter
                         val dimensions: List<Dimension>,
                         val initializer: Initializer?,
                         override val type: Type?,
