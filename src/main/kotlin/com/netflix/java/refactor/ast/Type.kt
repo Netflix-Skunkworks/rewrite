@@ -27,10 +27,10 @@ sealed class Type(): Serializable {
         }
     }
     
-    data class Class private constructor(val fullyQualifiedName: String, 
-                     override val owner: Type?,
-                     val members: List<Var>,
-                     val supertype: Class?): TypeWithOwner() {
+    data class Class private constructor(val fullyQualifiedName: String,
+                                         override val owner: Type?,
+                                         val members: List<Var>,
+                                         val supertype: Class?): TypeWithOwner() {
         
         fun isCyclicRef() = this == Cyclic
         

@@ -21,7 +21,7 @@ class OracleJdkParser(classpath: List<Path>? = null) : Parser(classpath) {
     val context = Context()
 
     // Both of these must be declared before compiler, so that compiler doesn't attempt to register alternate
-    // instances with contest
+    // instances with context
     private val compilerLog = object : Log(context) {}
     private val pfm = JavacPathFileManager(context, true, Charset.defaultCharset())
 
@@ -37,7 +37,9 @@ class OracleJdkParser(classpath: List<Path>? = null) : Parser(classpath) {
         compiler.genEndPos = true
         compilerLog.setWriters(PrintWriter(object : Writer() {
             override fun write(cbuf: CharArray, off: Int, len: Int) {
-                logger.info(String(cbuf.slice(off..(off + len)).toCharArray()))
+                val log = String(cbuf.slice(off..(off + len - 1)).toCharArray())
+                if(log.isNotBlank())
+                    logger.warn(log)
             }
 
             override fun flush() {

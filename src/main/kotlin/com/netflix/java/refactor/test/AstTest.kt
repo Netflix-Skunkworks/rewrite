@@ -13,8 +13,6 @@ abstract class AstTest(var parser: Parser) {
     @JvmField @Rule
     val temp = TemporaryFolder()
 
-
-    
     fun parse(source: String, whichDependsOn: String) =
         parse(source, listOf(whichDependsOn))
     
