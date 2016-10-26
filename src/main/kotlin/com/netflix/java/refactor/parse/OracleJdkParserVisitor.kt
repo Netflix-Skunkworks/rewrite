@@ -398,7 +398,8 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
         val then = node.thenStatement.convert<Statement>()
 
         val elsePart = if(node.elseStatement is JCTree.JCStatement) {
-            scan(node.elseStatement, Formatting.Reified(sourceBefore("else"))) as Statement
+            val elsePrefix = sourceBefore("else")
+            Tr.If.Else(node.elseStatement.convert<Statement>(), Formatting.Reified(elsePrefix))
         } else null
 
         return Tr.If(ifPart, then, elsePart, fmt)

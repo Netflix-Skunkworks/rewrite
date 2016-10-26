@@ -183,6 +183,11 @@ class PrintVisitor : AstVisitor<String>("") {
         return ident.fmt(ident.name)
     }
 
+    override fun visitIf(iff: Tr.If): String {
+        val elsePart = iff.elsePart?.let { it.fmt("else${visit(iff.elsePart.statement)}") } ?: ""
+        return iff.fmt("if${visit(iff.ifCondition)}${visit(iff.thenPart)}$elsePart")
+    }
+
     override fun visitImport(import: Tr.Import): String {
         return if (import.static)
             import.fmt("import static${visit(import.qualid)}")
@@ -381,7 +386,7 @@ class PrintVisitor : AstVisitor<String>("") {
         return if (this == null || code == null)
             ""
         else {
-            //println("${this.javaClass.simpleName} = [" + formatting.prefix() + "," + code + "," + formatting.suffix() + "]")
+            println("${this.javaClass.simpleName} = [" + formatting.prefix() + "," + code + "," + formatting.suffix() + "]")
             formatting.prefix() + code + formatting.suffix()
         }
     }

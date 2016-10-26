@@ -165,7 +165,11 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
     override fun visitIf(iff: Tr.If): Tree {
         val ifCondition = visit(iff.ifCondition) as Tr.Parentheses
         val thenPart = visit(iff.thenPart) as Statement
-        val elsePart = visit(iff.elsePart) as Statement?
+
+        val elsePart = iff.elsePart?.let {
+            val statement = visit(it.statement) as Statement
+            if(it.statement !== statement) it.copy(statement) else it
+        }
 
         return (if(ifCondition !== iff.ifCondition || thenPart !== iff.thenPart || elsePart !== iff.elsePart) {
             iff.copy(ifCondition = ifCondition, thenPart = thenPart, elsePart = elsePart)

@@ -328,10 +328,12 @@ sealed class Tr : Serializable, Tree {
 
     data class If(val ifCondition: Parentheses,
                   val thenPart: Statement,
-                  val elsePart: Statement?,
+                  val elsePart: Else?,
                   override val formatting: Formatting) : Statement, Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitIf(this)
+
+        data class Else(val statement: Statement, override val formatting: Formatting): Tr()
     }
 
     data class Import(val qualid: FieldAccess,
