@@ -386,7 +386,7 @@ class PrintVisitor : AstVisitor<String>("") {
         return if (this == null || code == null)
             ""
         else {
-            println("${this.javaClass.simpleName} = [" + formatting.prefix() + "," + code + "," + formatting.suffix() + "]")
+//            println("${this.javaClass.simpleName} = [" + formatting.prefix() + "," + code + "," + formatting.suffix() + "]")
             formatting.prefix() + code + formatting.suffix()
         }
     }

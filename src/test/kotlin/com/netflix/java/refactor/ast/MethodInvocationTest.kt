@@ -16,20 +16,22 @@ abstract class MethodInvocationTest(parser: Parser) : AstTest(parser) {
                 Integer n = staticFoo ( 0 );
                 Integer o = generic ( 0, 1, 2 );
                 Integer p = this. < Integer > generic ( 0, 1, 2 );
+                Integer q = staticFoo ( );
 
-                public static int staticFoo(int arg) { return arg; }
+                public static int staticFoo(int... args) { return arg; }
                 public Integer foo(Integer n, Integer... ns) { return n; }
                 public <T> T generic(T n, T... ns) { return n; }
             }
         """)
     }
 
-    val allInvs by lazy { a.fields(0..3).map { it.initializer as Tr.MethodInvocation } }
+    val allInvs by lazy { a.fields(0..4).map { it.initializer as Tr.MethodInvocation } }
 
     val inv by lazy { allInvs[0] }
     val staticInv by lazy { allInvs[1] }
     val genericInv by lazy { allInvs[2] }
     val explicitGenericInv by lazy { allInvs[3] }
+    val parameterlessStaticInv by lazy { allInvs[4] }
 
     @Test
     fun methodInvocation() {
@@ -85,6 +87,7 @@ abstract class MethodInvocationTest(parser: Parser) : AstTest(parser) {
         assertEquals("foo ( 0, 1, 2 )", inv.print())
         assertEquals("staticFoo ( 0 )", staticInv.print())
         assertEquals("this. < Integer > generic ( 0, 1, 2 )", explicitGenericInv.print())
+        assertEquals("staticFoo ( )", parameterlessStaticInv.print())
     }
 
     @Test

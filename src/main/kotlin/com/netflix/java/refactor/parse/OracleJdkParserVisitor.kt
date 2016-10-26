@@ -229,7 +229,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
                 SourceFile.fromText(path.toString(), source),
                 packageDecl,
                 node.imports.convertAll(SEMI_DELIM, SEMI_DELIM),
-                node.typeDecls.filterIsInstance<JCTree.JCClassDecl>().convertAll(WS_DELIM, NO_DELIM),
+                node.typeDecls.filterIsInstance<JCTree.JCClassDecl>().convertAll(WS_DELIM, { source.substring(cursor) }),
                 fmt
         )
     }
@@ -487,7 +487,12 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
         }
 
         val argsPrefix = sourceBefore("(")
-        val args = Tr.MethodInvocation.Arguments(node.args.convertAll(COMMA_DELIM, { sourceBefore(")") }),
+        val args = Tr.MethodInvocation.Arguments(
+                if(node.args.isEmpty()) {
+                    listOf(Tr.Empty(Formatting.Reified(sourceBefore(")"))))
+                } else {
+                    node.args.convertExpressionsOrEmpty(COMMA_DELIM, { sourceBefore(")") })
+                },
                 Formatting.Reified(argsPrefix))
 
         return Tr.MethodInvocation(

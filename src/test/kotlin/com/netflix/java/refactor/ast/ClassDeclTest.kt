@@ -2,9 +2,9 @@ package com.netflix.java.refactor.ast
 
 import com.netflix.java.refactor.parse.Parser
 import com.netflix.java.refactor.test.AstTest
-import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Test
 
 abstract class ClassDeclTest(parser: Parser): AstTest(parser) {
     
@@ -65,5 +65,11 @@ abstract class ClassDeclTest(parser: Parser): AstTest(parser) {
 
         val aClass = parse(a, whichDependsOn = b).typeDecls[0]
         assertEquals(a, aClass.print())
+    }
+
+    @Test
+    fun trailingLastTypeDeclaration() {
+        val a = parse("public class A {}/**/")
+        assertEquals("/**/", (a.typeDecls[0].formatting as Formatting.Reified).suffix)
     }
 }
