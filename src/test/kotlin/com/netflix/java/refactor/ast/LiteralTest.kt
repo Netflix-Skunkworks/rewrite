@@ -55,4 +55,19 @@ abstract class LiteralTest(parser: Parser): AstTest(parser) {
         val literal = a.fields()[0].initializer as Tr.Literal
         assertEquals("4L", literal.transformValue<Long> { it * 2 })
     }
+
+    @Test
+    fun format() {
+        val a = parse("""
+            public class A {
+                Long l = 0l;
+                Long m = 0L;
+            }
+        """)
+
+        val (lower, upper) = a.fields(0..1).map { it.initializer as Tr.Literal }
+
+        assertEquals("0L", upper.printTrimmed())
+        assertEquals("0l", lower.printTrimmed())
+    }
 }

@@ -377,6 +377,8 @@ sealed class Tr : Serializable, Tree {
 
     data class Literal(val typeTag: Type.Tag,
                        val value: Any?,
+                       // see casing specification at http://docs.oracle.com/javase/specs/jls/se7/html/jls-3.html#jls-3.10
+                       val upperCaseSuffix: Boolean,
                        override val type: Type?,
                        override val formatting: Formatting) : Expression, Tr() {
 

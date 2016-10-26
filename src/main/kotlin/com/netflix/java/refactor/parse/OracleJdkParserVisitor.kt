@@ -445,6 +445,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
         return Tr.Literal(
                 (node as JCTree.JCLiteral).typetag.tag(),
                 node.value,
+                source[node.endPos()-1].isUpperCase(),
                 node.type(),
                 fmt
         )

@@ -209,6 +209,8 @@ class PrintVisitor : AstVisitor<String>("") {
 
     override fun visitLiteral(literal: Tr.Literal): String {
         val v = literal.value
+        fun suffix(c: String) = if(literal.upperCaseSuffix) c.toUpperCase() else c.toLowerCase()
+
         return literal.fmt(when(literal.typeTag) {
             Type.Tag.Boolean -> when(v) {
                 0 -> "false"
@@ -217,10 +219,10 @@ class PrintVisitor : AstVisitor<String>("") {
             }
             Type.Tag.Byte -> v.toString()
             Type.Tag.Char -> v.toString()
-            Type.Tag.Double -> "${v}d"
-            Type.Tag.Float -> "${v}f"
+            Type.Tag.Double -> "$v${suffix("d")}"
+            Type.Tag.Float -> "$v${suffix("f")}"
             Type.Tag.Int -> v.toString()
-            Type.Tag.Long -> "${v}L"
+            Type.Tag.Long -> "$v${suffix("L")}"
             Type.Tag.Short -> v.toString()
             Type.Tag.Void -> v.toString()
             Type.Tag.String -> "\"$v\""
