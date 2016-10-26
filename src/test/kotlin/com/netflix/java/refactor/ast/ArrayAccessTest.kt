@@ -30,6 +30,6 @@ abstract class ArrayAccessTest(parser: Parser): AstTest(parser) {
 
     @Test
     fun format() {
-        assertEquals("n[0]", arrAccess.print())
+        assertEquals("n[0]", arrAccess.printTrimmed())
     }
 }

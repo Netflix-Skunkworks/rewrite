@@ -13,7 +13,8 @@ interface Tree {
 
     fun <R> accept(v: AstVisitor<R>): R = v.default(null)
     fun format(): Tree = throw NotImplementedError()
-    fun print() = PrintVisitor().visit(this).trimIndent()
+    fun printTrimmed() = print().trimIndent()
+    fun print() = PrintVisitor().visit(this)
 }
 
 interface Statement : Tree
@@ -343,8 +344,8 @@ sealed class Tr : Serializable, Tree {
         override fun <R> accept(v: AstVisitor<R>): R = v.visitImport(this)
 
         fun matches(clazz: String): Boolean = when (qualid.name.name) {
-            "*" -> qualid.target.print() == clazz.split('.').takeWhile { it[0].isLowerCase() }.joinToString(".")
-            else -> qualid.print() == clazz
+            "*" -> qualid.target.printTrimmed() == clazz.split('.').takeWhile { it[0].isLowerCase() }.joinToString(".")
+            else -> qualid.printTrimmed() == clazz
         }
     }
 
@@ -386,7 +387,7 @@ sealed class Tr : Serializable, Tree {
          * e.g. the "" around String, the L at the end of a long, etc.
          */
         fun <T> transformValue(transform: (T) -> Any): String {
-            val valueMatcher = "(.*)${Pattern.quote(value.toString())}(.*)".toRegex().find(this.print().replace("\\", ""))
+            val valueMatcher = "(.*)${Pattern.quote(value.toString())}(.*)".toRegex().find(this.printTrimmed().replace("\\", ""))
             @Suppress("UNREACHABLE_CODE")
             return when (valueMatcher) {
                 is MatchResult -> {
@@ -407,7 +408,7 @@ sealed class Tr : Serializable, Tree {
                           val returnTypeExpr: TypeTree?, // null for constructors
                           val name: Ident,
                           val params: Parameters,
-                          val throws: List<Expression>,
+                          val throws: Throws?,
                           val body: Block<Statement>?,
                           val defaultValue: Expression?,
                           override val formatting: Formatting) : Tr() {
@@ -424,6 +425,7 @@ sealed class Tr : Serializable, Tree {
         }
 
         data class Parameters(val params: List<Statement>, override val formatting: Formatting): Tr()
+        data class Throws(val exceptions: List<NameTree>, override val formatting: Formatting): Tr()
     }
 
     data class MethodInvocation(val select: Expression?,

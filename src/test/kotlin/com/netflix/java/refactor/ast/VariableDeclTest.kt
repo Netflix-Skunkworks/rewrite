@@ -61,7 +61,7 @@ abstract class VariableDeclTest(parser: Parser): AstTest(parser) {
         """)
         
         val varDecl = a.fields()[0]
-        assertEquals("public static int n = 0", varDecl.print())
+        assertEquals("public static int n = 0", varDecl.printTrimmed())
     }
 
     @Test
@@ -77,9 +77,9 @@ abstract class VariableDeclTest(parser: Parser): AstTest(parser) {
 
         val (n, s, n2, s2) = a.fields(0..3)
 
-        assertEquals("int n [ ]", n.print())
-        assertEquals("String s [ ] [ ]", s.print())
-        assertEquals("int [ ] n2", n2.print())
-        assertEquals("String [ ] [ ] s2", s2.print())
+        assertEquals("int n [ ]", n.printTrimmed())
+        assertEquals("String s [ ] [ ]", s.printTrimmed())
+        assertEquals("int [ ] n2", n2.printTrimmed())
+        assertEquals("String [ ] [ ] s2", s2.printTrimmed())
     }
 }

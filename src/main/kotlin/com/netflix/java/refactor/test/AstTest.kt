@@ -38,7 +38,7 @@ abstract class AstTest(var parser: Parser) {
     }
 
     fun assertRefactored(cu: Tr.CompilationUnit, refactored: String) {
-        assertEquals(refactored.trimMargin(), cu.print())
+        assertEquals(refactored.trimMargin(), cu.printTrimmed())
     }
 
     fun Tr.CompilationUnit.firstMethodStatement() =

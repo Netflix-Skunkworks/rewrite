@@ -52,6 +52,6 @@ abstract class BreakTest(parser: Parser): AstTest(parser) {
         """)
 
         val whileLoop = (a.firstMethodStatement() as Tr.Label).statement as Tr.WhileLoop
-        assertEquals("break labeled", whileLoop.body.print())
+        assertEquals("break labeled", whileLoop.body.printTrimmed())
     }
 }

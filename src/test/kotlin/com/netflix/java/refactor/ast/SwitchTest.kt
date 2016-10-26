@@ -71,7 +71,7 @@ abstract class SwitchTest(parser: Parser): AstTest(parser) {
             |switch(n) {
             |default: break;
             |}
-        """.trimMargin(), switch.print())
+        """.trimMargin(), switch.printTrimmed())
     }
     
     @Test

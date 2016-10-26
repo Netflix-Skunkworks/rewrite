@@ -77,7 +77,7 @@ abstract class TryTest(parser: Parser): AstTest(parser) {
 
         val tryable = a.firstMethodStatement() as Tr.Try
         assertEquals("try(FileInputStream fis = new FileInputStream(f)) { }",
-                tryable.print())
+                tryable.printTrimmed())
     }
 
     @Test
@@ -96,6 +96,6 @@ abstract class TryTest(parser: Parser): AstTest(parser) {
         """)
 
         val tryable = a.firstMethodStatement() as Tr.Try
-        assertEquals("try {\n}\ncatch(Throwable t) {\n}\nfinally {\n}", tryable.print())
+        assertEquals("try {\n}\ncatch(Throwable t) {\n}\nfinally {\n}", tryable.printTrimmed())
     }
 }

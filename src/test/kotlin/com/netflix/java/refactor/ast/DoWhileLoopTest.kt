@@ -27,6 +27,6 @@ abstract class DoWhileLoopTest(parser: Parser): AstTest(parser) {
 
     @Test
     fun format() {
-        assertEquals("do { } while ( true )", whileLoop.print())
+        assertEquals("do { } while ( true )", whileLoop.printTrimmed())
     }
 }

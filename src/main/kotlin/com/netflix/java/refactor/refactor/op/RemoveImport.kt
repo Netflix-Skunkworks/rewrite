@@ -20,16 +20,16 @@ class RemoveImport(val clazz: String) : RefactorTreeVisitor() {
 
     override fun visitImport(import: Tr.Import): List<RefactorFix> {
         if (import.static) {
-            if (import.qualid.target.print() == clazz) {
+            if (import.qualid.target.printTrimmed() == clazz) {
                 if (import.qualid.name.name == "*")
                     staticStarImport = import
                 else
                     staticNamedImports.add(import)
             }
         } else {
-            if (import.qualid.print() == clazz) {
+            if (import.qualid.printTrimmed() == clazz) {
                 namedImport = import
-            } else if (import.qualid.name.name == "*" && clazz.startsWith(import.qualid.target.print())) {
+            } else if (import.qualid.name.name == "*" && clazz.startsWith(import.qualid.target.printTrimmed())) {
                 starImport = import
             }
         }

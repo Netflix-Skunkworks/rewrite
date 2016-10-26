@@ -30,6 +30,6 @@ abstract class AssignOpTest(parser: Parser): AstTest(parser) {
 
     @Test
     fun format() {
-        assertEquals("n += 1", assign.print())
+        assertEquals("n += 1", assign.printTrimmed())
     }
 }

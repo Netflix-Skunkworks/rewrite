@@ -22,18 +22,19 @@ abstract class EnumTest(parser: Parser): AstTest(parser) {
         val a = parse(aSrc)
 
         assertTrue(a.typeDecls[0] is Tr.EnumClass)
-        assertEquals("ONE(1)", (a.typeDecls[0] as Tr.EnumClass).values()[0].print())
+        assertEquals("ONE(1)", (a.typeDecls[0] as Tr.EnumClass).values()[0].printTrimmed())
+        assertEquals(aSrc, a.printTrimmed())
     }
 
     @Test
     fun enumWithoutParameters() {
         val aSrc = "public enum A { ONE, TWO }"
-        assertEquals(aSrc, parse(aSrc).typeDecls[0].print())
+        assertEquals(aSrc, parse(aSrc).typeDecls[0].printTrimmed())
     }
 
     @Test
     fun enumWithEmptyParameters() {
         val aSrc = "public enum A { ONE(), TWO() }"
-        assertEquals(aSrc, parse(aSrc).typeDecls[0].print())
+        assertEquals(aSrc, parse(aSrc).typeDecls[0].printTrimmed())
     }
 }

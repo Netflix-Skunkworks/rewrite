@@ -28,6 +28,6 @@ abstract class BlockTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        assertEquals("{  }", a.typeDecls[0].methods()[0].body!!.print())
+        assertEquals("{  }", a.typeDecls[0].methods()[0].body!!.printTrimmed())
     }
 }

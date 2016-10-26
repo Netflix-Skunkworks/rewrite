@@ -32,7 +32,7 @@ abstract class RefactorTreeVisitor: AstVisitor<List<RefactorFix>>({ emptyList() 
     }
 
     fun Tree?.matches(fullyQualifiedClassName: String?) = when(this) {
-        is Tree -> matches(this.print(), fullyQualifiedClassName)
+        is Tree -> matches(this.printTrimmed(), fullyQualifiedClassName)
         else -> false
     }
 

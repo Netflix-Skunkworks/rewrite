@@ -10,7 +10,7 @@ class TreeBuilderTest {
     fun buildFullyQualifiedClassName() {
         val name = TreeBuilder.buildName(cache, "java.util.List", Formatting.Reified.Empty) as Tr.FieldAccess
 
-        assertEquals("java.util.List", name.print())
+        assertEquals("java.util.List", name.printTrimmed())
         assertEquals("List", name.name.name)
     }
 
@@ -18,7 +18,7 @@ class TreeBuilderTest {
     fun buildFullyQualifiedInnerClassName() {
         val name = TreeBuilder.buildName(cache, "a.Outer.Inner", Formatting.Reified.Empty) as Tr.FieldAccess
 
-        assertEquals("a.Outer.Inner", name.print())
+        assertEquals("a.Outer.Inner", name.printTrimmed())
         assertEquals("Inner", name.name.name)
         assertEquals("a.Outer.Inner", name.type.asClass()?.fullyQualifiedName)
 
@@ -31,7 +31,7 @@ class TreeBuilderTest {
     fun buildStaticImport() {
         val name = TreeBuilder.buildName(cache, "a.A.*", Formatting.Reified.Empty) as Tr.FieldAccess
 
-        assertEquals("a.A.*", name.print())
+        assertEquals("a.A.*", name.printTrimmed())
         assertEquals("*", name.name.name)
     }
 }

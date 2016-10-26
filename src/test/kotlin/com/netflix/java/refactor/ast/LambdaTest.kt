@@ -27,6 +27,6 @@ abstract class LambdaTest(parser: Parser): AstTest(parser) {
 
     @Test
     fun format() {
-        assertEquals("(String s) -> \"\"", lambda.print())
+        assertEquals("(String s) -> \"\"", lambda.printTrimmed())
     }
 }

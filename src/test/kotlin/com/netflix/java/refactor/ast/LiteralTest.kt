@@ -18,7 +18,7 @@ abstract class LiteralTest(parser: Parser): AstTest(parser) {
         val literal = a.fields()[0].initializer as Tr.Literal
         assertEquals(0, literal.value)
         assertEquals(Type.Tag.Int, literal.typeTag)
-        assertEquals("0", literal.print())
+        assertEquals("0", literal.printTrimmed())
     }
     
     @Test
@@ -41,7 +41,7 @@ abstract class LiteralTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        assertEquals("null", a.fields()[0].initializer?.print())
+        assertEquals("null", a.fields()[0].initializer?.printTrimmed())
     }
 
     @Test

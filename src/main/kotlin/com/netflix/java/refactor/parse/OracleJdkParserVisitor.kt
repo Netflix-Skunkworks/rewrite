@@ -325,7 +325,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
                 .convertAll<Tree>(COMMA_DELIM, {
                     // this semicolon is required when there are non-value members, but can still
                     // be present when there are not
-                    sourceMatching("\\s+;")
+                    sourceMatching("\\s*;").trimEnd(';')
                 })
 
         val members = node.members
@@ -550,8 +550,11 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
             Tr.MethodDecl.Parameters(listOf(Tr.Empty(Formatting.Reified(sourceBefore(")")))), paramFmt)
         }
 
-        skipPattern("\\s+throws")
-        val throws = node.throws.convertAll<Expression>(COMMA_DELIM, NO_DELIM)
+
+        val throws = if(node.throws.isNotEmpty()) {
+            val throwsPrefix = sourceBefore("throws")
+            Tr.MethodDecl.Throws(node.throws.convertAll<NameTree>(COMMA_DELIM, NO_DELIM), Formatting.Reified(throwsPrefix))
+        } else null
 
         val body = node.body.convertOrNull<Tr.Block<Statement>>()
 

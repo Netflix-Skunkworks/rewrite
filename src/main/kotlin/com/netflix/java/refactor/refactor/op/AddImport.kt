@@ -26,7 +26,7 @@ class AddImport(val clazz: String, val staticMethod: String? = null): RefactorTr
         else {
             if (import.matches(clazz)) {
                 coveredByExistingImport = true
-            } else if (import.qualid.target.print() == packageOwner(clazz) && importedType == "*") {
+            } else if (import.qualid.target.printTrimmed() == packageOwner(clazz) && importedType == "*") {
                 coveredByExistingImport = true
             }
         }
@@ -65,7 +65,7 @@ class AddImport(val clazz: String, val staticMethod: String? = null): RefactorTr
             if(!addingStaticImport() && import.static)
                 return@lastOrNull false
             
-            val comp = packageComparator.compare(import.qualid.target.print(), 
+            val comp = packageComparator.compare(import.qualid.target.printTrimmed(),
                     if(addingStaticImport()) clazz else packageOwner(clazz))
             if(comp == 0) {
                 if(import.qualid.name.toString().compareTo(

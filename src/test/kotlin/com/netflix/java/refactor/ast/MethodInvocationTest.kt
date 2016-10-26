@@ -18,7 +18,7 @@ abstract class MethodInvocationTest(parser: Parser) : AstTest(parser) {
                 Integer p = this. < Integer > generic ( 0, 1, 2 );
                 Integer q = staticFoo ( );
 
-                public static int staticFoo(int... args) { return arg; }
+                public static int staticFoo(int... args) { return 0; }
                 public Integer foo(Integer n, Integer... ns) { return n; }
                 public <T> T generic(T n, T... ns) { return n; }
             }
@@ -36,7 +36,7 @@ abstract class MethodInvocationTest(parser: Parser) : AstTest(parser) {
     @Test
     fun methodInvocation() {
         // check assumptions about the call site
-        assertEquals("foo", inv.name.print())
+        assertEquals("foo", inv.name.printTrimmed())
         assertEquals("java.lang.Integer", inv.returnType().asClass()?.fullyQualifiedName)
         assertEquals(listOf(Type.Tag.Int, Type.Tag.Int, Type.Tag.Int),
                 inv.args.args.filterIsInstance<Tr.Literal>().map { it.typeTag })
@@ -78,16 +78,16 @@ abstract class MethodInvocationTest(parser: Parser) : AstTest(parser) {
 
     @Test
     fun staticMethodInvocation() {
-        assertEquals("staticFoo", staticInv.name.print())
+        assertEquals("staticFoo", staticInv.name.printTrimmed())
         assertEquals("A", staticInv.declaringType?.fullyQualifiedName)
     }
 
     @Test
     fun format() {
-        assertEquals("foo ( 0, 1, 2 )", inv.print())
-        assertEquals("staticFoo ( 0 )", staticInv.print())
-        assertEquals("this. < Integer > generic ( 0, 1, 2 )", explicitGenericInv.print())
-        assertEquals("staticFoo ( )", parameterlessStaticInv.print())
+        assertEquals("foo ( 0, 1, 2 )", inv.printTrimmed())
+        assertEquals("staticFoo ( 0 )", staticInv.printTrimmed())
+        assertEquals("this. < Integer > generic ( 0, 1, 2 )", explicitGenericInv.printTrimmed())
+        assertEquals("staticFoo ( )", parameterlessStaticInv.printTrimmed())
     }
 
     @Test

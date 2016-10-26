@@ -66,7 +66,7 @@ data class ChangeField(val clazz: String, val tx: RefactorTransaction) : Refacto
             // unfortunately name is not represented with a JCTree, so we have to resort to extraordinary measures...
             val original = decl.name.toString()
             
-//            val start = (decl.formatting as Formatting.Persisted).pos.start + decl.print().substringBefore(original).length
+//            val start = (decl.formatting as Formatting.Persisted).pos.start + decl.printTrimmed().substringBefore(original).length
             
 //            fixes.add(replace(start..start+original.length, refactorName!!))
         }

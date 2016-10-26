@@ -28,6 +28,6 @@ abstract class InstanceOfTest(parser: Parser): AstTest(parser) {
 
     @Test
     fun format() {
-        assertEquals("o instanceof String", instanceof.print())
+        assertEquals("o instanceof String", instanceof.printTrimmed())
     }
 }

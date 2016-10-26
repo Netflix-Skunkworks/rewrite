@@ -11,7 +11,7 @@ class FindMethods(signature: String): AstVisitor<List<Method>>(emptyList()) {
     
     override fun visitMethodInvocation(meth: Tr.MethodInvocation): List<Method> {
         if(matcher.matches(meth)) {
-            return listOf(Method(meth.toString(), meth.print()))
+            return listOf(Method(meth.toString(), meth.printTrimmed()))
         }
         return super.visitMethodInvocation(meth)
     }

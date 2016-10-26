@@ -53,7 +53,7 @@ abstract class ForLoopTest(parser: Parser): AstTest(parser) {
         """)
 
         val forLoop = a.firstMethodStatement() as Tr.ForLoop
-        assertEquals("for ( int i = 0 ; i < 10 ; i++ ) {\n}", forLoop.print())
+        assertEquals("for ( int i = 0 ; i < 10 ; i++ ) {\n}", forLoop.printTrimmed())
     }
 
     @Test
@@ -67,7 +67,7 @@ abstract class ForLoopTest(parser: Parser): AstTest(parser) {
         """)
 
         val forLoop = a.firstMethodStatement() as Tr.ForLoop
-        assertEquals("for ( ; ; ) {}", forLoop.print())
+        assertEquals("for ( ; ; ) {}", forLoop.printTrimmed())
     }
 
     @Test
@@ -82,7 +82,7 @@ abstract class ForLoopTest(parser: Parser): AstTest(parser) {
         """)
 
         val forLoop = a.typeDecls[0].methods()[0].body!!.statements[1] as Tr.ForLoop
-        assertEquals("for ( ; i < 10 ; i++ ) {}", forLoop.print())
+        assertEquals("for ( ; i < 10 ; i++ ) {}", forLoop.printTrimmed())
     }
 
     @Test
@@ -97,6 +97,6 @@ abstract class ForLoopTest(parser: Parser): AstTest(parser) {
         """)
 
         val forLoop = a.typeDecls[0].methods()[0].body!!.statements[1] as Tr.ForLoop
-        assertEquals("for(; i < 10; i++) {}", forLoop.print())
+        assertEquals("for(; i < 10; i++) {}", forLoop.printTrimmed())
     }
 }

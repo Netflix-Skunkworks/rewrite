@@ -31,6 +31,6 @@ abstract class BinaryTest(parser: Parser): AstTest(parser) {
         """)
 
         val bin = a.fields()[0].initializer as Tr.Binary
-        assertEquals("0 + 1", bin.print())
+        assertEquals("0 + 1", bin.printTrimmed())
     }
 }

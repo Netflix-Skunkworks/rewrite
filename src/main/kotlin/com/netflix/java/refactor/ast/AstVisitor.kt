@@ -170,7 +170,7 @@ open class AstVisitor<R> {
                     .andThen(method.returnTypeExpr)
                     .andThen(method.name)
                     .andThen(method.params.params)
-                    .andThen(method.throws)
+                    .andThen(method.throws?.exceptions)
                     .andThen(method.body)
                     .andThen(method.defaultValue)
 

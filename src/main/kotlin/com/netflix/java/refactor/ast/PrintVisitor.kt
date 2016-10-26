@@ -243,7 +243,11 @@ class PrintVisitor : AstVisitor<String>("") {
         val typeParams = method.typeParameters?.let { it.fmt("<${visit(it.params, ",")}>") } ?: ""
         val params = method.params.fmt("(${visit(method.params.params, ",")}") + ")"
 
-        return method.fmt("${visit(method.annotations)}$modifiers$typeParams${visit(method.returnTypeExpr)}${visit(method.name)}$params${visit(method.throws)}${visit(method.body)}")
+        val throws = method.throws?.let {
+            it.fmt("throws${visit(method.throws.exceptions, ",")}")
+        } ?: ""
+
+        return method.fmt("${visit(method.annotations)}$modifiers$typeParams${visit(method.returnTypeExpr)}${visit(method.name)}$params$throws${visit(method.body)}")
     }
 
     override fun visitMethodInvocation(meth: Tr.MethodInvocation): String {
@@ -290,8 +294,8 @@ class PrintVisitor : AstVisitor<String>("") {
             Type.Tag.Void -> "void"
             Type.Tag.String -> "String"
             Type.Tag.Wildcard -> "*"
-            Type.Tag.None -> throw IllegalStateException("Unable to print None primitive")
-            Type.Tag.Null -> throw IllegalStateException("Unable to print Null primitive")
+            Type.Tag.None -> throw IllegalStateException("Unable to printTrimmed None primitive")
+            Type.Tag.Null -> throw IllegalStateException("Unable to printTrimmed Null primitive")
         })
     }
 

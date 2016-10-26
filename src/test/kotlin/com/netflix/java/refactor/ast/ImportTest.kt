@@ -60,7 +60,7 @@ abstract class ImportTest(parser: Parser): AstTest(parser) {
         
         // FIXME scan is getting called too late, so currentPath is missing path elements
         
-        assertEquals("import java.util.List", a.imports[0].print())
-        assertEquals("import static java.util.Collections.*", a.imports[1].print())
+        assertEquals("import java.util.List", a.imports[0].printTrimmed())
+        assertEquals("import static java.util.Collections.*", a.imports[1].printTrimmed())
     }
 }

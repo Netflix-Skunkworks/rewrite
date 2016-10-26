@@ -29,6 +29,6 @@ abstract class SynchronizedTest(parser: Parser): AstTest(parser) {
 
     @Test
     fun format() {
-        assertEquals("synchronized(n) {\n}", sync.print())
+        assertEquals("synchronized(n) {\n}", sync.printTrimmed())
     }
 }

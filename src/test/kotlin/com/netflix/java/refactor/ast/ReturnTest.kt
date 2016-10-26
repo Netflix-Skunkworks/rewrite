@@ -46,6 +46,6 @@ abstract class ReturnTest(parser: Parser): AstTest(parser) {
         """)
 
         val rtn = a.firstMethodStatement() as Tr.Return
-        assertEquals("return 0", rtn.print())
+        assertEquals("return 0", rtn.printTrimmed())
     }
 }

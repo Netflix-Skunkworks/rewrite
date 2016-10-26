@@ -41,12 +41,12 @@ abstract class MethodDeclTest(parser: Parser): AstTest(parser) {
     fun format() {
         val a = parse("""
             public class A {
-                public < P > P foo(P p, String s, String ... args) { return p; }
+                public < P > P foo(P p, String s, String ... args)  throws Exception { return p; }
             }
         """)
 
         val meth = a.typeDecls[0].methods()[0]
-        assertEquals("public < P > P foo(P p, String s, String ... args) { return p; }", meth.print())
+        assertEquals("public < P > P foo(P p, String s, String ... args)  throws Exception { return p; }", meth.printTrimmed())
     }
 
     @Test
@@ -59,6 +59,6 @@ abstract class MethodDeclTest(parser: Parser): AstTest(parser) {
         """)
 
         val meth = a.typeDecls[0].methods()[0]
-        assertEquals("public A() { }", meth.print())
+        assertEquals("public A() { }", meth.printTrimmed())
     }
 }

@@ -29,6 +29,6 @@ abstract class ThrowTest(parser: Parser): AstTest(parser) {
 
     @Test
     fun format() {
-        assertEquals("throw new UnsupportedOperationException()", thrown.print())
+        assertEquals("throw new UnsupportedOperationException()", thrown.printTrimmed())
     }
 }

@@ -196,7 +196,12 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
 
     override fun visitMethod(method: Tr.MethodDecl): Tree {
         val params = method.params.params.mapIfNecessary { visit(it) as Tr.VariableDecl }
-        val throws = method.throws.mapIfNecessary { visit(it) as Expression }
+
+        val throws = method.throws?.let {
+            val exceptions = it.exceptions.mapIfNecessary { visit(it) as NameTree }
+            if(it.exceptions !== exceptions) it.copy(exceptions) else it
+        }
+
         val defaultValue = visit(method.defaultValue) as Expression?
 
         val typeParams = method.typeParameters?.let {

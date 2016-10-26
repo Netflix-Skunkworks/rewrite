@@ -28,6 +28,6 @@ abstract class ForEachLoopTest(parser: Parser): AstTest(parser) {
 
     @Test
     fun format() {
-        assertEquals("for(Integer n: new Integer[] { 0, 1 }) {\n}", forEachLoop.print())
+        assertEquals("for(Integer n: new Integer[] { 0, 1 }) {\n}", forEachLoop.printTrimmed())
     }
 }

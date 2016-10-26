@@ -29,6 +29,6 @@ abstract class AnnotationTest(parser: Parser): AstTest(parser) {
         
         val ann = a.typeDecls[0].annotations[0]
         
-        assertEquals("@SuppressWarnings(\"ALL\")", ann.print())
+        assertEquals("@SuppressWarnings(\"ALL\")", ann.printTrimmed())
     }
 }

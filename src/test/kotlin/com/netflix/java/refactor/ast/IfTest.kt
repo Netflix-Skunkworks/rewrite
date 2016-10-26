@@ -60,6 +60,6 @@ abstract class IfTest(parser: Parser): AstTest(parser) {
             |}
             |else {
             |}
-        """.trimMargin(), iff.print())
+        """.trimMargin(), iff.printTrimmed())
     }
 }

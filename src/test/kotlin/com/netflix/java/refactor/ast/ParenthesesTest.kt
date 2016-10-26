@@ -27,6 +27,6 @@ abstract class ParenthesesTest(parser: Parser): AstTest(parser) {
 
     @Test
     fun format() {
-        assertEquals("( 0 )", variable?.print())
+        assertEquals("( 0 )", variable?.printTrimmed())
     }
 }

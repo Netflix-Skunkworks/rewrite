@@ -85,6 +85,6 @@ abstract class CompilationUnitTest(parser: Parser): AstTest(parser) {
             |public class A { }
         """
         
-        assertEquals(a.trimMargin(), parse(a).print())
+        assertEquals(a.trimMargin(), parse(a).printTrimmed())
     }
 }

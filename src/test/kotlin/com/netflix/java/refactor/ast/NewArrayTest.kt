@@ -47,7 +47,7 @@ abstract class NewArrayTest(parser: Parser): AstTest(parser) {
         """)
 
         val newArr = a.fields()[0].initializer as Tr.NewArray
-        assertEquals("new int [ 0 ] [ 1 ]", newArr.print())
+        assertEquals("new int [ 0 ] [ 1 ]", newArr.printTrimmed())
     }
 
     @Test
@@ -60,7 +60,7 @@ abstract class NewArrayTest(parser: Parser): AstTest(parser) {
         """)
 
         val newArr = a.typeDecls[0].fields()[1].initializer as Tr.NewArray
-        assertEquals("new int [ ] [ ] { m, m, m }", newArr.print())
+        assertEquals("new int [ ] [ ] { m, m, m }", newArr.printTrimmed())
     }
 
     @Test

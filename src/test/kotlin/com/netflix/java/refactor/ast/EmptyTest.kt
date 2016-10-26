@@ -25,6 +25,6 @@ abstract class EmptyTest(parser: Parser): AstTest(parser) {
 
     @Test
     fun format() {
-        assertEquals("", a.firstMethodStatement().print())
+        assertEquals("", a.firstMethodStatement().printTrimmed())
     }
 }

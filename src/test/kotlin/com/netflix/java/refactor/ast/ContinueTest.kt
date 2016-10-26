@@ -52,6 +52,6 @@ abstract class ContinueTest(parser: Parser): AstTest(parser) {
         """)
 
         val whileLoop = (a.firstMethodStatement() as Tr.Label).statement as Tr.WhileLoop
-        assertEquals("continue labeled", whileLoop.body.print())
+        assertEquals("continue labeled", whileLoop.body.printTrimmed())
     }
 }

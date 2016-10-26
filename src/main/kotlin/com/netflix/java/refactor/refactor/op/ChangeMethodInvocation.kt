@@ -201,7 +201,7 @@ class ChangeArgumentScanner(val refactor: RefactorArgument) : RefactorTreeVisito
 
         // prefix and suffix hold the special characters surrounding the values of primitive-ish types,
         // e.g. the "" around String, the L at the end of a long, etc.
-        val valueMatcher = "(.*)${Pattern.quote(value)}(.*)".toRegex().find(literal.print().replace("\\", ""))
+        val valueMatcher = "(.*)${Pattern.quote(value)}(.*)".toRegex().find(literal.printTrimmed().replace("\\", ""))
         return when(valueMatcher) {
             is MatchResult -> {
                 val (prefix, suffix) = valueMatcher.groupValues.drop(1)
