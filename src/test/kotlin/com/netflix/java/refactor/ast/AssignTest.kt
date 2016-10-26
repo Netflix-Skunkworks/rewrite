@@ -31,7 +31,7 @@ abstract class AssignTest(parser: Parser): AstTest(parser) {
             public class A {}
         """)
         
-        val assign = a.typeDecls[0].annotations[0].args[0] as Tr.Assign
+        val assign = a.typeDecls[0].annotations[0].args!!.args[0] as Tr.Assign
         
         assertEquals("value = \"ALL\"", assign.print())
     }

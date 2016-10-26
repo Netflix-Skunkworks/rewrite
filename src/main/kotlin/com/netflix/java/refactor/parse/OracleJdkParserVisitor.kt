@@ -40,19 +40,23 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
         skip("@")
         val name = node.annotationType.convert<NameTree>()
 
-        if(node.arguments.size > 0)
-            skip("(")
-
-        val args: List<Expression> = if(node.arguments.size == 1) {
-            val arg = node.arguments[0] as JCTree.JCAssign
-            listOf(if(arg.endPos() < 0) {
-                // this is the "value" argument, but without an explicit "value = ..."
-                arg.rhs.convert { sourceBefore(")") }
+        val args = if(node.arguments.size > 0) {
+            val argsPrefix = sourceBefore("(")
+            val args: List<Expression> = if (node.arguments.size == 1) {
+                val arg = node.arguments[0] as JCTree.JCAssign
+                listOf(if (arg.endPos() < 0) {
+                    // this is the "value" argument, but without an explicit "value = ..."
+                    arg.rhs.convert { sourceBefore(")") }
+                } else {
+                    // this is either an explicit "value" argument or is assigning some other property
+                    arg.convert { sourceBefore(")") }
+                })
             } else {
-                // this is either an explicit "value" argument or is assigning some other property
-                arg.convert { sourceBefore(")") }
-            })
-        } else node.arguments.convertAll(COMMA_DELIM, { sourceBefore(")") })
+                node.arguments.convertAll(COMMA_DELIM, { sourceBefore(")") })
+            }
+
+            Tr.Annotation.Arguments(args, Formatting.Reified(argsPrefix))
+        } else null
 
         return Tr.Annotation(name, args, node.type(), fmt)
     }
@@ -183,7 +187,13 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
         val modifiers = typeModifiers(node.modifiers, "class")
         val name = Tr.Ident((node as JCTree.JCClassDecl).simpleName.toString(), node.type(),
                 Formatting.Reified(sourceBefore(node.simpleName.toString())))
-        val typeParams = node.typeParameters.convertAll<Tr.TypeParameter>(COMMA_DELIM, { sourceBefore(">") }, "<", ">")
+
+        val typeParams = if(node.typeParameters.isNotEmpty()) {
+            val genericPrefix = sourceBefore("<")
+            Tr.TypeParameters(node.typeParameters.convertAll(COMMA_DELIM, { sourceBefore(">") }),
+                    Formatting.Reified(genericPrefix))
+        } else null
+
         val extends = node.extendsClause.convertOrNull<Tree>()
         val implements = node.implementsClause.convertAll<Tree>(COMMA_DELIM, NO_DELIM)
 
@@ -512,7 +522,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
         // see https://docs.oracle.com/javase/tutorial/java/generics/methods.html
         val typeParams = if(node.typeParameters.isNotEmpty()) {
             val genericPrefix = sourceBefore("<")
-            Tr.MethodDecl.TypeParameters(node.typeParameters.convertAll(COMMA_DELIM, { sourceBefore(">") }),
+            Tr.TypeParameters(node.typeParameters.convertAll(COMMA_DELIM, { sourceBefore(">") }),
                     Formatting.Reified(genericPrefix))
         } else null
 
@@ -597,42 +607,42 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
 
     override fun visitNewClass(node: NewClassTree, fmt: Formatting.Reified): Tree {
         skip("new")
-
-        val ident = node.identifier
-        val (classIdentifier, generics) = when(ident) {
-            is JCTree.JCTypeApply -> {
-                val classIdentifier = ident.clazz.convert<Expression>()
-                val genericPrefix = sourceBefore("<")
-                val generics = Tr.NewClass.Generics(ident.arguments.convertAll<NameTree>(COMMA_DELIM, { sourceBefore(">") }),
-                        Formatting.Reified(genericPrefix))
-                classIdentifier to generics
-            }
-            else -> {
-                ident.convert<Expression>() to null
-            }
-        }
+        val clazz = node.identifier.convert<TypeTree>()
 
         val argPrefix = sourceBefore("(")
         val args = Tr.NewClass.Arguments(
                 node.arguments.convertExpressionsOrEmpty(COMMA_DELIM, { sourceBefore(")") }),
                 Formatting.Reified(argPrefix))
 
-        return Tr.NewClass(
-                classIdentifier,
-                generics,
-                args,
-                node.classBody?.let {
-                    val bodyPrefix = sourceBefore("{")
+        val body = node.classBody?.let {
+            val bodyPrefix = sourceBefore("{")
 
-                    val members = it.members
-                        // we don't care about the compiler-inserted default constructor,
-                        // since it will never be subject to refactoring
-                        .filter { it !is JCTree.JCMethodDecl || it.modifiers.flags and Flags.GENERATEDCONSTR == 0L }
-                        .convertAll<Tree>(NO_DELIM, NO_DELIM)
+            val members = it.members
+                    // we don't care about the compiler-inserted default constructor,
+                    // since it will never be subject to refactoring
+                    .filter { it !is JCTree.JCMethodDecl || it.modifiers.flags and Flags.GENERATEDCONSTR == 0L }
+                    .convertAll<Tree>(NO_DELIM, NO_DELIM)
 
-                    Tr.Block(members, Formatting.Reified(bodyPrefix), sourceBefore("}"))
-                },
-                (node as JCTree.JCNewClass).type.type(),
+            Tr.Block(members, Formatting.Reified(bodyPrefix), sourceBefore("}"))
+        }
+
+        return Tr.NewClass(clazz, args, body, (node as JCTree.JCNewClass).type.type(), fmt)
+    }
+
+    override fun visitParameterizedType(node: ParameterizedTypeTree, fmt: Formatting.Reified): Tree {
+        val clazz = node.type.convert<NameTree>()
+
+        val typeArgPrefix = sourceBefore("<")
+        val typeArgs = if(node.typeArguments.isEmpty()) {
+            // raw type, see http://docs.oracle.com/javase/tutorial/java/generics/rawTypes.html
+            listOf(Tr.Empty(Formatting.Reified(sourceBefore(">"))))
+        } else {
+            node.typeArguments.convertAll<NameTree>(COMMA_DELIM, { sourceBefore(">") })
+        }
+
+        return Tr.ParameterizedType(
+                clazz,
+                Tr.ParameterizedType.TypeArguments(typeArgs, Formatting.Reified(typeArgPrefix)),
                 fmt
         )
     }
@@ -871,17 +881,8 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
     private fun <T : Tree> JdkTree.convertOrNull(suffix: (JdkTree) -> String = { "" }): T? =
             if (this is JdkTree) convert<T>(suffix) else null
 
-    private fun <T: Tree> List<JdkTree>.convertAll(innerSuffix: (JdkTree) -> String,
-                                                   suffix: (JdkTree) -> String,
-                                                   skipStart: String? = null,
-                                                   skipEnd: String? = null): List<T> {
-        skip(skipStart)
-        val mapped: List<T> = mapIndexed { i, tree ->
-            tree.convert<T>(if (i == size - 1) suffix else innerSuffix)
-        }
-        skip(skipEnd)
-        return mapped
-    }
+    private fun <T: Tree> List<JdkTree>.convertAll(innerSuffix: (JdkTree) -> String, suffix: (JdkTree) -> String): List<T> =
+            mapIndexed { i, tree -> tree.convert<T>(if (i == size - 1) suffix else innerSuffix) }
 
     private fun List<JdkTree>.convertExpressionsOrEmpty(innerSuffix: (JdkTree) -> String = { "" },
                                                         suffix: (JdkTree) -> String = { "" }): List<Expression> {

@@ -57,4 +57,13 @@ abstract class ClassDeclTest(parser: Parser): AstTest(parser) {
         val aClass = parse(a, whichDependsOn = b).typeDecls[0] as Tr.ClassDecl
         assertNotNull(aClass.extends)
     }
+
+    @Test
+    fun format() {
+        val b = "public class B<T> {}"
+        val a = "@Deprecated public class A < T > extends B < T > {}"
+
+        val aClass = parse(a, whichDependsOn = b).typeDecls[0]
+        assertEquals(a, aClass.print())
+    }
 }

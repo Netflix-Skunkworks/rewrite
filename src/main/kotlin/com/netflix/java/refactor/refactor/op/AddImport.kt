@@ -13,7 +13,7 @@ class AddImport(val clazz: String, val staticMethod: String? = null): RefactorTr
 
     override fun visitImport(import: Tr.Import): List<RefactorFix> {
         imports.add(import)
-        val importedType = import.qualid.fieldName.name
+        val importedType = import.qualid.name.name
         
         if (addingStaticImport()) {
             if (import.matches(clazz) && importedType == staticMethod) {
@@ -68,7 +68,7 @@ class AddImport(val clazz: String, val staticMethod: String? = null): RefactorTr
             val comp = packageComparator.compare(import.qualid.target.print(), 
                     if(addingStaticImport()) clazz else packageOwner(clazz))
             if(comp == 0) {
-                if(import.qualid.fieldName.toString().compareTo(
+                if(import.qualid.name.toString().compareTo(
                         if(addingStaticImport()) staticMethod!! else className(clazz)) < 0) 
                     true 
                 else false

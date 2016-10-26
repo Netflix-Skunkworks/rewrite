@@ -49,26 +49,48 @@ open class AstVisitor<R> {
                 r
             } ?: default(null)
 
-    open fun visitImport(import: Tr.Import): R = visit(import.qualid)
+    open fun visitAnnotation(annotation: Tr.Annotation): R =
+            visit(annotation.annotationType)
+                    .andThen(annotation.args?.args)
 
-    open fun visitFieldAccess(field: Tr.FieldAccess): R = visit(field.target)
+    open fun visitArrayAccess(arrayAccess: Tr.ArrayAccess): R =
+            visit(arrayAccess.indexed)
+                    .andThen(arrayAccess.dimension.index)
+
+    open fun visitAssign(assign: Tr.Assign): R =
+            visit(assign.variable)
+                    .andThen(assign.assignment)
+
+    open fun visitAssignOp(assign: Tr.AssignOp): R =
+            visit(assign.variable)
+                    .andThen(assign.assignment)
+
+    open fun visitBinary(binary: Tr.Binary): R =
+            visit(binary.left)
+                    .andThen(binary.right)
+
+    open fun visitBlock(block: Tr.Block<Tree>): R =
+            visit(block.statements)
+
+    open fun visitBreak(breakStatement: Tr.Break): R =
+            visit(breakStatement.label)
+
+    open fun visitCase(case: Tr.Case): R =
+            visit(case.pattern)
+                    .andThen(case.statements)
+
+    open fun visitCatch(catch: Tr.Catch): R =
+            visit(catch.param)
+                    .andThen(catch.body)
 
     open fun visitClassDecl(classDecl: Tr.ClassDecl): R =
             visit(classDecl.annotations)
                     .andThen(classDecl.modifiers)
                     .andThen(classDecl.name)
-                    .andThen(classDecl.typeParams)
-                    .andThen(classDecl.implements)
+                    .andThen(classDecl.typeParams?.params)
                     .andThen(classDecl.extends)
+                    .andThen(classDecl.implements)
                     .andThen(classDecl.body)
-
-    open fun visitMethodInvocation(meth: Tr.MethodInvocation): R =
-            visit(meth.select).andThen(meth.args)
-
-    open fun visitVariable(variable: Tr.VariableDecl): R =
-            visit(variable.varType)
-                    .andThen(variable.name)
-                    .andThen(variable.initializer)
 
     open fun visitCompilationUnit(cu: Tr.CompilationUnit): R {
         this.cu = cu
@@ -80,32 +102,31 @@ open class AstVisitor<R> {
         )
     }
 
-    open fun visitIdentifier(ident: Tr.Ident): R = default(ident)
+    open fun visitContinue(continueStatement: Tr.Continue): R =
+            visit(continueStatement.label)
 
-    open fun visitBlock(block: Tr.Block<Tree>): R = visit(block.statements)
+    open fun visitDoWhileLoop(doWhileLoop: Tr.DoWhileLoop): R =
+            visit(doWhileLoop.condition)
+                    .andThen(doWhileLoop.body)
 
-    open fun visitMethod(method: Tr.MethodDecl): R =
-            visit(method.params)
-                    .andThen(method.returnTypeExpr)
-                    .andThen(method.throws)
-                    .andThen(method.defaultValue)
-                    .andThen(method.body)
+    open fun visitEmpty(empty: Tr.Empty): R = default(empty)
 
-    open fun visitNewClass(newClass: Tr.NewClass): R =
-            visit(newClass.classIdentifier)
-                    .andThen(newClass.generics?.params)
-                    .andThen(newClass.args.args)
-                    .andThen(newClass.classBody)
+    open fun visitEnd() = default(null)
 
-    open fun visitPrimitive(primitive: Tr.Primitive): R = default(primitive)
+    open fun visitEnumValue(enum: Tr.EnumValue): R =
+            visit(enum.name)
+                    .andThen(enum.initializer?.args)
 
-    open fun visitLiteral(literal: Tr.Literal): R = default(literal)
+    open fun visitEnumClass(enumClass: Tr.EnumClass): R =
+            visit(enumClass.annotations)
+                    .andThen(enumClass.modifiers)
+                    .andThen(enumClass.name)
+                    .andThen(enumClass.implements)
+                    .andThen(enumClass.body)
 
-    open fun visitBinary(binary: Tr.Binary): R =
-            visit(binary.left)
-                    .andThen(binary.right)
-
-    open fun visitUnary(unary: Tr.Unary): R = visit(unary.expr)
+    open fun visitFieldAccess(field: Tr.FieldAccess): R =
+            visit(field.target)
+                    .andThen(field.name)
 
     open fun visitForLoop(forLoop: Tr.ForLoop) =
             visit(forLoop.control.init)
@@ -118,47 +139,85 @@ open class AstVisitor<R> {
                     .andThen(forEachLoop.control.iterable)
                     .andThen(forEachLoop.body)
 
+    open fun visitIdentifier(ident: Tr.Ident): R = default(ident)
+
     open fun visitIf(iff: Tr.If): R =
             visit(iff.ifCondition)
                     .andThen(iff.thenPart)
                     .andThen(iff.elsePart)
 
-    open fun visitTernary(ternary: Tr.Ternary): R =
-            visit(ternary.condition)
-                    .andThen(ternary.truePart)
-                    .andThen(ternary.falsePart)
+    open fun visitImport(import: Tr.Import): R =
+            visit(import.qualid)
 
-    open fun visitWhileLoop(whileLoop: Tr.WhileLoop): R =
-            visit(whileLoop.condition)
-                    .andThen(whileLoop.body)
+    open fun visitInstanceOf(instanceOf: Tr.InstanceOf): R =
+            visit(instanceOf.expr)
+                    .andThen(instanceOf.clazz)
 
-    open fun visitDoWhileLoop(doWhileLoop: Tr.DoWhileLoop): R =
-            visit(doWhileLoop.condition)
-                    .andThen(doWhileLoop.body)
+    open fun visitLabel(label: Tr.Label): R =
+            visit(label.label)
+                    .andThen(label.statement)
 
-    open fun visitBreak(breakStatement: Tr.Break): R = default(breakStatement)
+    open fun visitLambda(lambda: Tr.Lambda): R =
+            visit(lambda.params)
+                    .andThen(lambda.body)
 
-    open fun visitContinue(continueStatement: Tr.Continue): R = default(continueStatement)
+    open fun visitLiteral(literal: Tr.Literal): R = default(literal)
 
-    open fun visitLabel(label: Tr.Label): R = visit(label.statement)
+    open fun visitMethod(method: Tr.MethodDecl): R =
+            visit(method.annotations)
+                    .andThen(method.modifiers)
+                    .andThen(method.typeParameters?.params)
+                    .andThen(method.returnTypeExpr)
+                    .andThen(method.name)
+                    .andThen(method.params.params)
+                    .andThen(method.throws)
+                    .andThen(method.body)
+                    .andThen(method.defaultValue)
 
-    open fun visitReturn(retrn: Tr.Return): R = visit(retrn.expr)
+    open fun visitMethodInvocation(meth: Tr.MethodInvocation): R =
+            visit(meth.select)
+                    .andThen(meth.typeParameters?.params)
+                    .andThen(meth.name)
+                    .andThen(meth.args.args)
 
-    open fun visitCase(case: Tr.Case): R =
-            visit(case.pattern)
-                    .andThen(case.statements)
+    open fun visitNewArray(newArray: Tr.NewArray): R =
+            visit(newArray.typeExpr)
+                    .andThen(newArray.dimensions.map { it.size })
+                    .andThen(newArray.initializer?.elements)
+
+    open fun visitNewClass(newClass: Tr.NewClass): R =
+            visit(newClass.clazz)
+                    .andThen(newClass.args.args)
+                    .andThen(newClass.classBody)
+
+    open fun visitPackage(pkg: Tr.Package): R =
+            visit(pkg.expr)
+
+    open fun visitParameterizedType(type: Tr.ParameterizedType): R =
+            visit(type.clazz)
+                    .andThen(type.typeArguments?.args)
+
+    open fun visitParentheses(parens: Tr.Parentheses): R =
+            visit(parens.expr)
+
+    open fun visitPrimitive(primitive: Tr.Primitive): R =
+            default(primitive)
+
+    open fun visitReturn(retrn: Tr.Return): R =
+            visit(retrn.expr)
 
     open fun visitSwitch(switch: Tr.Switch): R =
             visit(switch.selector)
                     .andThen(switch.cases)
 
-    open fun visitAssign(assign: Tr.Assign): R =
-            visit(assign.variable)
-                    .andThen(assign.assignment)
+    open fun visitSynchronized(synch: Tr.Synchronized): R =
+            visit(synch.lock)
+                    .andThen(synch.body)
 
-    open fun visitAssignOp(assign: Tr.AssignOp): R =
-            visit(assign.variable)
-                    .andThen(assign.assignment)
+    open fun visitTernary(ternary: Tr.Ternary): R =
+            visit(ternary.condition)
+                    .andThen(ternary.truePart)
+                    .andThen(ternary.falsePart)
 
     open fun visitThrow(thrown: Tr.Throw): R = visit(thrown.exception)
 
@@ -169,54 +228,23 @@ open class AstVisitor<R> {
                     .andThen(tryable.finally?.block)
 
     open fun visitTypeParameter(typeParameter: Tr.TypeParameter): R =
-            visit(typeParameter.bounds)
-                    .andThen(typeParameter.annotations)
+            visit(typeParameter.annotations)
+                    .andThen(typeParameter.name)
+                    .andThen(typeParameter.bounds)
 
-    open fun visitCatch(catch: Tr.Catch): R =
-            visit(catch.param)
-                    .andThen(catch.body)
+    open fun visitTypeParameters(typeParameters: Tr.TypeParameters): R =
+            visit(typeParameters.params)
 
-    open fun visitSynchronized(synch: Tr.Synchronized): R =
-            visit(synch.lock)
-                    .andThen(synch.body)
+    open fun visitUnary(unary: Tr.Unary): R = visit(unary.expr)
 
-    open fun visitEmpty(empty: Tr.Empty): R = default(empty)
+    open fun visitVariable(variable: Tr.VariableDecl): R =
+            visit(variable.annotations)
+                    .andThen(variable.modifiers)
+                    .andThen(variable.varType)
+                    .andThen(variable.name)
+                    .andThen(variable.initializer)
 
-    open fun visitPackage(pkg: Tr.Package): R = visit(pkg.expr)
-
-    open fun visitParentheses(parens: Tr.Parentheses): R = visit(parens.expr)
-
-    open fun visitInstanceOf(instanceOf: Tr.InstanceOf): R =
-            visit(instanceOf.expr)
-                    .andThen(instanceOf.clazz)
-
-    open fun visitNewArray(newArray: Tr.NewArray): R =
-            visit(newArray.typeExpr)
-                    .andThen(newArray.dimensions)
-                    .andThen(newArray.initializer?.elements)
-
-    open fun visitAnnotation(annotation: Tr.Annotation): R =
-            visit(annotation.annotationType)
-                    .andThen(annotation.args)
-
-    open fun visitArrayAccess(arrayAccess: Tr.ArrayAccess): R =
-            visit(arrayAccess.indexed)
-                    .andThen(arrayAccess.dimension)
-
-    open fun visitLambda(lambda: Tr.Lambda): R =
-            visit(lambda.params)
-                    .andThen(lambda.body)
-
-    open fun visitEnd() = default(null)
-
-    open fun visitEnum(enum: Tr.EnumValue): R =
-            visit(enum.name)
-                    .andThen(enum.initializer)
-
-    open fun visitEnumClass(enumClass: Tr.EnumClass): R =
-            visit(enumClass.annotations)
-                    .andThen(enumClass.modifiers)
-                    .andThen(enumClass.name)
-                    .andThen(enumClass.implements)
-                    .andThen(enumClass.body)
+    open fun visitWhileLoop(whileLoop: Tr.WhileLoop): R =
+            visit(whileLoop.condition)
+                    .andThen(whileLoop.body)
 }

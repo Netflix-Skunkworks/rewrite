@@ -21,7 +21,7 @@ class RemoveImport(val clazz: String) : RefactorTreeVisitor() {
     override fun visitImport(import: Tr.Import): List<RefactorFix> {
         if (import.static) {
             if (import.qualid.target.print() == clazz) {
-                if (import.qualid.fieldName.name == "*")
+                if (import.qualid.name.name == "*")
                     staticStarImport = import
                 else
                     staticNamedImports.add(import)
@@ -29,7 +29,7 @@ class RemoveImport(val clazz: String) : RefactorTreeVisitor() {
         } else {
             if (import.qualid.print() == clazz) {
                 namedImport = import
-            } else if (import.qualid.fieldName.name == "*" && clazz.startsWith(import.qualid.target.print())) {
+            } else if (import.qualid.name.name == "*" && clazz.startsWith(import.qualid.target.print())) {
                 starImport = import
             }
         }
@@ -70,7 +70,7 @@ class RemoveImport(val clazz: String) : RefactorTreeVisitor() {
             staticImportFixes.add(staticStarImport!!.delete())
         }
         staticNamedImports.forEach { staticImport ->
-            val method = staticImport.qualid.fieldName.name
+            val method = staticImport.qualid.name.name
             if(referencedMethods.none { ref -> ref.methodName() == method })
                 staticImportFixes.add(staticImport.delete())
         }

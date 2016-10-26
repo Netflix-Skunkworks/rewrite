@@ -77,7 +77,7 @@ class ChangeMethodInvocation(signature: String, val tx: RefactorTransaction) : R
             when (meth) {
                 is Tr.FieldAccess -> {
 //                    val nameStart = meth.target.pos.endInclusive + 1
-//                    fixes.add(RefactorFix(nameStart..nameStart + meth.fieldName.length, refactorName!!, source))
+//                    fixes.add(RefactorFix(nameStart..nameStart + meth.name.length, refactorName!!, source))
                 }
                 is Tr.Ident -> meth.replace(refactorName!!)
             }
@@ -110,7 +110,7 @@ class ChangeMethodInvocation(signature: String, val tx: RefactorTransaction) : R
                                     swaps = if(pos < refactorArguments!!.argumentNames!!.size - 1) {
                                         listOf(invocation.args.args[pos])
                                     } else {
-                                        // this is a varargs argument, grab them all
+                                        // this is a varArgs argument, grab them all
                                         invocation.args.args.drop(pos)
                                     }
                                 }

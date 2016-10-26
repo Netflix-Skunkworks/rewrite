@@ -28,7 +28,7 @@ interface Expression : Tree {
 interface NameTree : Tree
 
 /**
- * A tree identifying a type (e.g. a simple or fully qualified class name, a primitive, or an array)
+ * A tree identifying a type (e.g. a simple or fully qualified class name, a primitive, array, or parameterized type)
  */
 interface TypeTree: Tree
 
@@ -66,11 +66,13 @@ sealed class Formatting {
 sealed class Tr : Serializable, Tree {
 
     data class Annotation(var annotationType: NameTree,
-                          var args: List<Expression>,
+                          var args: Arguments?,
                           override val type: Type?,
                           override val formatting: Formatting) : Expression, Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitAnnotation(this)
+
+        data class Arguments(val args: List<Expression>, override val formatting: Formatting): Tr()
     }
 
     data class ArrayAccess(val indexed: Expression,
@@ -155,8 +157,8 @@ sealed class Tr : Serializable, Tree {
     }
 
     data class Block<out T: Tree>(val statements: List<T>,
-                                       override val formatting: Formatting,
-                                       val endOfBlockSuffix: String) : Statement, Tr() {
+                                  override val formatting: Formatting,
+                                  val endOfBlockSuffix: String) : Statement, Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitBlock(this)
     }
@@ -185,7 +187,7 @@ sealed class Tr : Serializable, Tree {
             override val annotations: List<Annotation>,
             override val modifiers: List<TypeModifier>,
             override val name: Ident,
-            val typeParams: List<TypeParameter>,
+            val typeParams: TypeParameters?,
             val extends: Tree?,
             override val implements: List<Tree>,
             override val body: Block<Tree>,
@@ -260,7 +262,7 @@ sealed class Tr : Serializable, Tree {
     data class EnumValue(val name: Ident,
                          val initializer: Arguments?,
                          override val formatting: Formatting): Statement, Tr() {
-        override fun <R> accept(v: AstVisitor<R>): R = v.visitEnum(this)
+        override fun <R> accept(v: AstVisitor<R>): R = v.visitEnumValue(this)
 
         data class Arguments(val args: List<Expression>, override val formatting: Formatting): Tr()
     }
@@ -287,7 +289,7 @@ sealed class Tr : Serializable, Tree {
     }
 
     data class FieldAccess(val target: Expression,
-                           val fieldName: Ident,
+                           val name: Ident,
                            override val type: Type?,
                            override val formatting: Formatting) : Expression, NameTree, TypeTree, Tr() {
 
@@ -338,7 +340,7 @@ sealed class Tr : Serializable, Tree {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitImport(this)
 
-        fun matches(clazz: String): Boolean = when (qualid.fieldName.name) {
+        fun matches(clazz: String): Boolean = when (qualid.name.name) {
             "*" -> qualid.target.print() == clazz.split('.').takeWhile { it[0].isLowerCase() }.joinToString(".")
             else -> qualid.print() == clazz
         }
@@ -420,7 +422,6 @@ sealed class Tr : Serializable, Tree {
         }
 
         data class Parameters(val params: List<Statement>, override val formatting: Formatting): Tr()
-        data class TypeParameters(val params: List<TypeParameter>, override val formatting: Formatting): Tr()
     }
 
     data class MethodInvocation(val select: Expression?,
@@ -441,7 +442,7 @@ sealed class Tr : Serializable, Tree {
         fun returnType(): Type? = resolvedSignature?.returnType
 
         fun methodName(): String = when (select) {
-            is FieldAccess -> select.fieldName.name
+            is FieldAccess -> select.name.name
             is Ident -> select.name
             else -> throw IllegalStateException("Unexpected method select type ${select}")
         }
@@ -462,8 +463,7 @@ sealed class Tr : Serializable, Tree {
         data class Initializer(val elements: List<Expression>, override val formatting: Formatting): Tr()
     }
 
-    data class NewClass(val classIdentifier: Expression,
-                        val generics: Generics?,
+    data class NewClass(val clazz: TypeTree,
                         val args: Arguments,
                         val classBody: Block<Tree>?, // non-null for anonymous classes
                         override val type: Type?,
@@ -471,7 +471,6 @@ sealed class Tr : Serializable, Tree {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitNewClass(this)
 
-        data class Generics(val params: List<NameTree>, override val formatting: Formatting): Tr()
         data class Arguments(val args: List<Expression>, override val formatting: Formatting): Tr()
     }
 
@@ -479,6 +478,16 @@ sealed class Tr : Serializable, Tree {
                        override val formatting: Formatting) : Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitPackage(this)
+    }
+
+    data class ParameterizedType(val clazz: NameTree,
+                                 val typeArguments: TypeArguments?,
+                                 override val formatting: Formatting): TypeTree, Tr() {
+
+        override fun <R> accept(v: AstVisitor<R>): R = v.visitParameterizedType(this)
+
+        data class TypeArguments(val args: List<NameTree>,
+                                 override val formatting: Formatting): Tr()
     }
 
     data class Parentheses(val expr: Tree,
@@ -559,6 +568,10 @@ sealed class Tr : Serializable, Tree {
         override fun <R> accept(v: AstVisitor<R>): R = v.visitTypeParameter(this)
     }
 
+    data class TypeParameters(val params: List<TypeParameter>, override val formatting: Formatting): Tr() {
+        override fun <R> accept(v: AstVisitor<R>): R = v.visitTypeParameters(this)
+    }
+
     /**
      * Increment and decrement operations are valid statements, other operations are not
      */
@@ -590,7 +603,7 @@ sealed class Tr : Serializable, Tree {
             val annotations: List<Annotation>,
             val modifiers: List<Modifier>,
             val varType: TypeTree,
-            val varargs: Varargs?,
+            val varArgs: Varargs?,
             val dimensionsBeforeName: List<Dimension>,
             val name: Ident,
             val dimensionsAfterName: List<Dimension>, // thanks for making it hard, Java

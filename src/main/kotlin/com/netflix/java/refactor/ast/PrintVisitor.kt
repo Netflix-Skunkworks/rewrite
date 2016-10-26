@@ -31,7 +31,10 @@ class PrintVisitor : AstVisitor<String>("") {
     }
 
     override fun visitAnnotation(annotation: Tr.Annotation): String {
-        return annotation.fmt("@${visit(annotation.annotationType)}(${visit(annotation.args)})")
+        val args = annotation.args?.let {
+            it.fmt("(${visit(it.args, ",")})")
+        } ?: ""
+        return annotation.fmt("@${visit(annotation.annotationType)}$args")
     }
 
     override fun visitArrayAccess(arrayAccess: Tr.ArrayAccess): String {
@@ -104,15 +107,19 @@ class PrintVisitor : AstVisitor<String>("") {
     }
 
     override fun visitClassDecl(classDecl: Tr.ClassDecl): String {
-        val typeParams = if(classDecl.typeParams.isNotEmpty()) "<${visit(classDecl.typeParams)}>" else ""
-        val modifiers = classDecl.modifiers.fold("") { s, mod -> s + mod.fmt(when(mod) {
-            is Tr.TypeModifier.Public -> "public"
-            is Tr.TypeModifier.Protected -> "protected"
-            is Tr.TypeModifier.Private -> "private"
-            is Tr.TypeModifier.Abstract -> "abstract"
-            is Tr.TypeModifier.Static -> "static"
-            is Tr.TypeModifier.Final -> "final"
-        }) }
+        val typeParams = classDecl.typeParams?.let { it.fmt("<${visit(it.params)}>") } ?: ""
+
+        val modifiers = classDecl.modifiers.fold("") { s, mod ->
+            s + mod.fmt(when(mod) {
+                is Tr.TypeModifier.Public -> "public"
+                is Tr.TypeModifier.Protected -> "protected"
+                is Tr.TypeModifier.Private -> "private"
+                is Tr.TypeModifier.Abstract -> "abstract"
+                is Tr.TypeModifier.Static -> "static"
+                is Tr.TypeModifier.Final -> "final"
+            })
+        }
+
         return classDecl.fmt("${visit(classDecl.annotations)}${modifiers}class${visit(classDecl.name)}$typeParams" +
                 "${visit(classDecl.extends)}${visit(classDecl.implements)}${visit(classDecl.body)}")
     }
@@ -131,7 +138,7 @@ class PrintVisitor : AstVisitor<String>("") {
 
     override fun visitEmpty(empty: Tr.Empty): String = empty.fmt("")
 
-    override fun visitEnum(enum: Tr.EnumValue): String {
+    override fun visitEnumValue(enum: Tr.EnumValue): String {
         val initializer = if(enum.initializer != null) {
             enum.initializer.fmt("(${visit(enum.initializer.args, ",")})")
         } else ""
@@ -159,7 +166,7 @@ class PrintVisitor : AstVisitor<String>("") {
     }
 
     override fun visitFieldAccess(field: Tr.FieldAccess): String {
-        return field.fmt("${visit(field.target)}.${visit(field.fieldName)}")
+        return field.fmt("${visit(field.target)}.${visit(field.name)}")
     }
 
     override fun visitForLoop(forLoop: Tr.ForLoop): String {
@@ -250,15 +257,19 @@ class PrintVisitor : AstVisitor<String>("") {
     }
 
     override fun visitNewClass(newClass: Tr.NewClass): String {
-        val generics = if(newClass.generics == null) "" else {
-            newClass.generics.fmt("<${visit(newClass.generics.params, ",")}>")
-        }
         val args = newClass.args.fmt("(${visit(newClass.args.args, ",")})")
-        return newClass.fmt("new${visit(newClass.classIdentifier)}$generics$args${visit(newClass.classBody)}")
+        return newClass.fmt("new${visit(newClass.clazz)}$args${visit(newClass.classBody)}")
     }
 
     override fun visitPackage(pkg: Tr.Package): String {
         return pkg.fmt("package${visit(pkg.expr)}")
+    }
+
+    override fun visitParameterizedType(type: Tr.ParameterizedType): String {
+        val typeParams = type.typeArguments?.let {
+            it.fmt("<${visit(it.args, ",")}>")
+        } ?: ""
+        return type.fmt("${visit(type.clazz)}$typeParams")
     }
 
     override fun visitPrimitive(primitive: Tr.Primitive): String {
@@ -349,8 +360,8 @@ class PrintVisitor : AstVisitor<String>("") {
             else -> ""
         }
 
-        val varargs = when(variable.varargs) {
-            is Tr.VariableDecl.Varargs -> variable.varargs.fmt("...")
+        val varargs = when(variable.varArgs) {
+            is Tr.VariableDecl.Varargs -> variable.varArgs.fmt("...")
             else -> ""
         }
 

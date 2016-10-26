@@ -17,7 +17,7 @@ abstract class AnnotationTest(parser: Parser): AstTest(parser) {
         val ann = a.typeDecls[0].annotations[0]
         
         assertEquals("java.lang.SuppressWarnings", ann.type.asClass()?.fullyQualifiedName)
-        assertEquals("ALL", ann.args.filterIsInstance<Tr.Literal>().firstOrNull()?.value)
+        assertEquals("ALL", ann.args!!.args.filterIsInstance<Tr.Literal>().firstOrNull()?.value)
     }
     
     @Test
