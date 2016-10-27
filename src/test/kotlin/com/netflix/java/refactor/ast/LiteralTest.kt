@@ -70,4 +70,16 @@ abstract class LiteralTest(parser: Parser): AstTest(parser) {
         assertEquals("0L", upper.printTrimmed())
         assertEquals("0l", lower.printTrimmed())
     }
+
+    @Test
+    fun formatEscapedString() {
+        val a = parse("""
+            public class A {
+                String s = "\"";
+            }
+        """)
+
+        val s = a.fields()[0].initializer as Tr.Literal
+        assertEquals("\"\\\"\"", s.printTrimmed())
+    }
 }

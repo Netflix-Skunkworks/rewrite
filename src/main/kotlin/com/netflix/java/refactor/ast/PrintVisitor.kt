@@ -1,5 +1,6 @@
 package com.netflix.java.refactor.ast
 
+import org.apache.commons.lang.StringEscapeUtils
 import java.lang.IllegalStateException
 
 class PrintVisitor : AstVisitor<String>("") {
@@ -219,7 +220,7 @@ class PrintVisitor : AstVisitor<String>("") {
             Type.Tag.Long -> "$v${suffix("L")}"
             Type.Tag.Short -> v.toString()
             Type.Tag.Void -> v.toString()
-            Type.Tag.String -> "\"$v\""
+            Type.Tag.String -> "\"${StringEscapeUtils.escapeJava(v.toString())}\""
             Type.Tag.None -> ""
             Type.Tag.Wildcard -> "*"
             Type.Tag.Null -> "null"
