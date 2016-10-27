@@ -34,9 +34,9 @@ open class AstVisitor<R> {
             } else default(tree)
 
     private fun R.andThen(nodes: Iterable<Tree>?): R =
-            if (nodes != null) reduce(visit(nodes), this) else this
+            if (nodes != null) reduce(this, visit(nodes)) else this
 
-    private fun R.andThen(node: Tree?): R = if (node != null) reduce(visit(node), this) else this
+    private fun R.andThen(node: Tree?): R = if (node != null) reduce(this, visit(node)) else this
 
     fun visit(nodes: Iterable<Tree>?): R =
             nodes?.let {

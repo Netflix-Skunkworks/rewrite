@@ -83,19 +83,18 @@ abstract class TryTest(parser: Parser): AstTest(parser) {
     @Test
     fun formatTryCatchFinally() {
         val a = parse("""
-            |public class A {
-            |    public void test() {
-            |        try {
-            |        }
-            |        catch(Throwable t) {
-            |        }
-            |        finally {
-            |        }
-            |    }
-            |}
+            public class A {
+                public void test() {
+                    try {}
+                    catch(Exception e) {}
+                    catch(RuntimeException e) {}
+                    catch(Throwable t) {}
+                    finally {}
+                }
+            }
         """)
 
         val tryable = a.firstMethodStatement() as Tr.Try
-        assertEquals("try {\n}\ncatch(Throwable t) {\n}\nfinally {\n}", tryable.printTrimmed())
+        assertEquals("try {}\ncatch(Exception e) {}\ncatch(RuntimeException e) {}\ncatch(Throwable t) {}\nfinally {}", tryable.printTrimmed())
     }
 }
