@@ -72,6 +72,24 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
         return Tr.ArrayAccess(indexed, dimension, node.type(), fmt)
     }
 
+    override fun visitArrayType(node: ArrayTypeTree, fmt: Formatting.Reified): Tree {
+        var typeIdent = node.type
+        var dimCount = 1
+        while(typeIdent is ArrayTypeTree) {
+            dimCount++
+            typeIdent = typeIdent.type
+        }
+
+        val elemType = typeIdent.convert<TypeTree>()
+
+        val dimensions = (1..dimCount).map {
+            val dimPrefix = sourceBefore("[")
+            Tr.ArrayType.Dimension(Tr.Empty(Formatting.Reified(sourceBefore("]"))), Formatting.Reified(dimPrefix))
+        }
+
+        return Tr.ArrayType(elemType, dimensions, fmt)
+    }
+
     override fun visitAssignment(node: AssignmentTree, fmt: Formatting.Reified): Tree {
         val variable = node.variable.convert<NameTree> { sourceBefore("=") }
         val assignment = node.expression.convert<Expression>()

@@ -46,6 +46,14 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
         } else arrayAccess).transformIfNecessary(cursor)
     }
 
+    override fun visitArrayType(arrayType: Tr.ArrayType): Tree? {
+        val elementType = visit(arrayType.elementType) as TypeTree
+
+        return (if(elementType !== arrayType.elementType) {
+            arrayType.copy(elementType = elementType)
+        } else arrayType).transformIfNecessary(cursor)
+    }
+
     override fun visitAssign(assign: Tr.Assign): Tree {
         val variable = visit(assign.variable) as NameTree
         val assignment = visit(assign.assignment) as Expression

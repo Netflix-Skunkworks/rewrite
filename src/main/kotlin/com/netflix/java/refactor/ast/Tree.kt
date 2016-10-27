@@ -74,6 +74,15 @@ sealed class Tr : Serializable, Tree {
         data class Dimension(val index: Expression, override val formatting: Formatting): Tr()
     }
 
+    data class ArrayType(val elementType: TypeTree,
+                         val dimensions: List<Dimension>,
+                         override val formatting: Formatting): TypeTree, Tr() {
+
+        override fun <R> accept(v: AstVisitor<R>): R = v.visitArrayType(this)
+
+        data class Dimension(val inner: Empty, override val formatting: Formatting): Tr()
+    }
+
     data class Assign(val variable: NameTree,
                       val assignment: Expression,
                       override val type: Type?,

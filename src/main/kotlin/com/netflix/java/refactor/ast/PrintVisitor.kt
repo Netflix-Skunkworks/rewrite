@@ -42,6 +42,11 @@ class PrintVisitor : AstVisitor<String>("") {
         return arrayAccess.fmt("${visit(arrayAccess.indexed)}$dimension")
     }
 
+    override fun visitArrayType(arrayType: Tr.ArrayType): String {
+        val dim = arrayType.dimensions.fold("") { s, d -> s + d.fmt("[${visit(d.inner)}]") }
+        return arrayType.fmt("${visit(arrayType.elementType)}$dim")
+    }
+
     override fun visitAssign(assign: Tr.Assign): String {
         return assign.fmt("${visit(assign.variable)}=${visit(assign.assignment)}")
     }

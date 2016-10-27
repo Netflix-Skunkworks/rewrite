@@ -57,6 +57,9 @@ open class AstVisitor<R> {
             visit(arrayAccess.indexed)
                     .andThen(arrayAccess.dimension.index)
 
+    open fun visitArrayType(arrayType: Tr.ArrayType): R =
+            visit(arrayType.elementType)
+
     open fun visitAssign(assign: Tr.Assign): R =
             visit(assign.variable)
                     .andThen(assign.assignment)
