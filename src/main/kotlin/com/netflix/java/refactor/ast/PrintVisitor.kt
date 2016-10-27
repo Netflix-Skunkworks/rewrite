@@ -259,9 +259,10 @@ class PrintVisitor : AstVisitor<String>("") {
     }
 
     override fun visitNewArray(newArray: Tr.NewArray): String {
+        val typeExpr = newArray.typeExpr?.let { "new${visit(newArray.typeExpr)}" } ?: ""
         val dimensions = newArray.dimensions.fold("") { s, dim -> s + dim.fmt("[${visit(dim.size)}]") }
         val init = newArray.initializer?.let { it.fmt("{${visit(it.elements, ",")}}") } ?: ""
-        return newArray.fmt("new${visit(newArray.typeExpr)}$dimensions$init")
+        return newArray.fmt("$typeExpr$dimensions$init")
     }
 
     override fun visitNewClass(newClass: Tr.NewClass): String {

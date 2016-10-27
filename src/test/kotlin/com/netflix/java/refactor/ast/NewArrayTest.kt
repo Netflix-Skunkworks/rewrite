@@ -64,7 +64,7 @@ abstract class NewArrayTest(parser: Parser): AstTest(parser) {
     }
 
     @Test
-    fun arrayAsAnnotationParameter() {
+    fun newArrayShortcut() {
         val produces = """
             import java.lang.annotation.*;
             @Target({ElementType.TYPE})
@@ -77,5 +77,6 @@ abstract class NewArrayTest(parser: Parser): AstTest(parser) {
         val arr = a.typeDecls[0].annotations[0].args!!.args[0] as Tr.NewArray
 
         assertNull(arr.typeExpr)
+        assertEquals("""{"something"}""", arr.printTrimmed())
     }
 }
