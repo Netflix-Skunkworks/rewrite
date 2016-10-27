@@ -398,6 +398,7 @@ sealed class Tr : Serializable, Tree {
         override fun <R> accept(v: AstVisitor<R>): R = v.visitMethod(this)
 
         sealed class Modifier: Tr() {
+            data class Default(override val formatting: Formatting): Modifier()
             data class Public(override val formatting: Formatting) : Modifier()
             data class Protected(override val formatting: Formatting) : Modifier()
             data class Private(override val formatting: Formatting) : Modifier()

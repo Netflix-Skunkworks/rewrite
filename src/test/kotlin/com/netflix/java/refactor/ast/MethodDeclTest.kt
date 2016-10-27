@@ -50,6 +50,18 @@ abstract class MethodDeclTest(parser: Parser): AstTest(parser) {
     }
 
     @Test
+    fun formatDefaultMethod() {
+        val a = parse("""
+            public interface A {
+                default int foo() { return 0; }
+            }
+        """)
+
+        val meth = a.typeDecls[0].methods()[0]
+        assertEquals("default int foo() { return 0; }", meth.printTrimmed())
+    }
+
+    @Test
     fun formatConstructor() {
         val a = parse("""
             package a;

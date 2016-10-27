@@ -229,6 +229,7 @@ class PrintVisitor : AstVisitor<String>("") {
 
     override fun visitMethod(method: Tr.MethodDecl): String {
         val modifiers = method.modifiers.fold("") { s, mod -> s + mod.fmt(when(mod) {
+            is Tr.MethodDecl.Modifier.Default -> "default"
             is Tr.MethodDecl.Modifier.Public -> "public"
             is Tr.MethodDecl.Modifier.Protected -> "protected"
             is Tr.MethodDecl.Modifier.Private -> "private"

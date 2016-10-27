@@ -522,6 +522,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
             val modFormat = Formatting.Reified(sourceMatching("\\s+"))
             cursor += mod.name.length
             when(mod) {
+                Modifier.DEFAULT -> Tr.MethodDecl.Modifier.Default(modFormat)
                 Modifier.PUBLIC -> Tr.MethodDecl.Modifier.Public(modFormat)
                 Modifier.PROTECTED -> Tr.MethodDecl.Modifier.Protected(modFormat)
                 Modifier.PRIVATE -> Tr.MethodDecl.Modifier.Private(modFormat)
