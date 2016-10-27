@@ -82,4 +82,14 @@ abstract class VariableDeclTest(parser: Parser): AstTest(parser) {
         assertEquals("int [ ] n2", n2.printTrimmed())
         assertEquals("String [ ] [ ] s2", s2.printTrimmed())
     }
+
+    // FIXME
+    @Test
+    fun multipleDeclaration() {
+        parse("""
+            public class A {
+                Integer m = 0, n = 0;
+            }
+        """)
+    }
 }

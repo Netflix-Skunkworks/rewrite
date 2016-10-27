@@ -7,9 +7,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 
 abstract class TernaryTest(parser: Parser): AstTest(parser) {
-    @Test
-    fun ternary() {
-        val a = parse("""
+    val a by lazy {
+        parse("""
             public class A {
                 int n;
                 public void test() {
@@ -17,13 +16,21 @@ abstract class TernaryTest(parser: Parser): AstTest(parser) {
                 }
             }
         """)
+    }
 
-        val evenOrOdd = a.firstMethodStatement() as Tr.VariableDecl
-        val ternary = evenOrOdd.initializer as Tr.Ternary
-        
+    val evenOrOdd by lazy { a.firstMethodStatement() as Tr.VariableDecl }
+    val ternary by lazy { evenOrOdd.initializer as Tr.Ternary }
+
+    @Test
+    fun ternary() {
         assertEquals("java.lang.String", ternary.type.asClass()?.fullyQualifiedName)
         assertTrue(ternary.condition is Tr.Binary)
         assertTrue(ternary.truePart is Tr.Literal)
         assertTrue(ternary.falsePart is Tr.Literal)
+    }
+
+    @Test
+    fun format() {
+        assertEquals("""n % 2 == 0 ? "even" : "odd"""", ternary.printTrimmed())
     }
 }

@@ -308,8 +308,8 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
 
     override fun visitConditionalExpression(node: ConditionalExpressionTree, fmt: Formatting.Reified): Tree {
         return Tr.Ternary(
-                node.condition.convert(),
-                node.trueExpression.convert(),
+                node.condition.convert { sourceBefore("?") },
+                node.trueExpression.convert { sourceBefore(":") },
                 node.falseExpression.convert(),
                 node.type(),
                 fmt

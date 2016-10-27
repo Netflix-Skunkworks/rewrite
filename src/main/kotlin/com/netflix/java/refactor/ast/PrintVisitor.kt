@@ -11,16 +11,15 @@ class PrintVisitor : AstVisitor<String>("") {
         }
     }
 
-    fun visitStatements(statements: Collection<Tree>): String {
-        return statements.fold("") { s, stat ->
-            s + visit(stat) +
-                when(stat) {
-                    is Tr.Assign, is Tr.AssignOp, is Tr.Break, is Tr.Continue, is Tr.MethodInvocation -> ";"
-                    is Tr.NewClass, is Tr.Return, is Tr.Throw, is Tr.Unary, is Tr.VariableDecl -> ";"
-                    is Tr.Label -> ":"
-                    else -> ""
-                }
+    fun visitStatements(statements: Collection<Tree>): String =
+        statements.fold("") { s, stat -> s + visitStatement(stat) }
 
+    fun visitStatement(statement: Tree): String {
+        return visit(statement) + when(statement) {
+            is Tr.Assign, is Tr.AssignOp, is Tr.Break, is Tr.Continue, is Tr.MethodInvocation -> ";"
+            is Tr.NewClass, is Tr.Return, is Tr.Throw, is Tr.Unary, is Tr.VariableDecl -> ";"
+            is Tr.Label -> ":"
+            else -> ""
         }
     }
 
@@ -179,8 +178,8 @@ class PrintVisitor : AstVisitor<String>("") {
     }
 
     override fun visitIf(iff: Tr.If): String {
-        val elsePart = iff.elsePart?.let { it.fmt("else${visit(iff.elsePart.statement)}") } ?: ""
-        return iff.fmt("if${visit(iff.ifCondition)}${visit(iff.thenPart)}$elsePart")
+        val elsePart = iff.elsePart?.let { it.fmt("else${visitStatement(iff.elsePart.statement)}") } ?: ""
+        return iff.fmt("if${visit(iff.ifCondition)}${visitStatement(iff.thenPart)}$elsePart")
     }
 
     override fun visitImport(import: Tr.Import): String {
@@ -313,6 +312,10 @@ class PrintVisitor : AstVisitor<String>("") {
 
     override fun visitSynchronized(synch: Tr.Synchronized): String {
         return synch.fmt("synchronized${visit(synch.lock)}${visit(synch.body)}")
+    }
+
+    override fun visitTernary(ternary: Tr.Ternary): String {
+        return ternary.fmt("${visit(ternary.condition)}?${visit(ternary.truePart)}:${visit(ternary.falsePart)}")
     }
 
     override fun visitThrow(thrown: Tr.Throw): String {
