@@ -9,6 +9,7 @@ import com.sun.tools.javac.code.Symbol
 import com.sun.tools.javac.code.TypeTag
 import com.sun.tools.javac.tree.EndPosTable
 import com.sun.tools.javac.tree.JCTree
+import com.sun.tools.javac.code.BoundKind
 import org.slf4j.LoggerFactory
 import java.lang.IllegalArgumentException
 import java.lang.IllegalStateException
@@ -869,6 +870,18 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
                 node.statement.convert(),
                 fmt
         )
+    }
+
+    override fun visitWildcard(node: WildcardTree, fmt: Formatting.Reified): Tree {
+        skip("?")
+
+        val bound = when((node as JCTree.JCWildcard).kind.kind!!) {
+            BoundKind.EXTENDS -> Tr.Wildcard.Bound.Extends(Formatting.Reified(sourceBefore("extends")))
+            BoundKind.SUPER -> Tr.Wildcard.Bound.Super(Formatting.Reified(sourceBefore("super")))
+            BoundKind.UNBOUND -> null
+        }
+
+        return Tr.Wildcard(bound, node.inner.convert<NameTree>(), fmt)
     }
 
     /**

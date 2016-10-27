@@ -261,9 +261,7 @@ class PrintVisitor : AstVisitor<String>("") {
 
     override fun visitNewArray(newArray: Tr.NewArray): String {
         val dimensions = newArray.dimensions.fold("") { s, dim -> s + dim.fmt("[${visit(dim.size)}]") }
-        val init = if(newArray.initializer != null) {
-            newArray.fmt("{${visit(newArray.initializer.elements, ",")}}")
-        } else ""
+        val init = newArray.initializer?.let { it.fmt("{${visit(it.elements, ",")}}") } ?: ""
         return newArray.fmt("new${visit(newArray.typeExpr)}$dimensions$init")
     }
 
@@ -318,7 +316,7 @@ class PrintVisitor : AstVisitor<String>("") {
     }
 
     override fun visitThrow(thrown: Tr.Throw): String {
-        return "throw${visit(thrown.exception)}"
+        return thrown.fmt("throw${visit(thrown.exception)}")
     }
 
     override fun visitTry(tryable: Tr.Try): String {
@@ -386,6 +384,16 @@ class PrintVisitor : AstVisitor<String>("") {
 
     override fun visitWhileLoop(whileLoop: Tr.WhileLoop): String {
         return whileLoop.fmt("while${visit(whileLoop.condition)}${visit(whileLoop.body)}")
+    }
+
+    override fun visitWildcard(wildcard: Tr.Wildcard): String {
+        val bound = when(wildcard.bound) {
+            is Tr.Wildcard.Bound.Super -> wildcard.bound.fmt("super")
+            is Tr.Wildcard.Bound.Extends -> wildcard.bound.fmt("extends")
+            null -> ""
+        }
+
+        return wildcard.fmt("?$bound${visit(wildcard.boundedType)}")
     }
 
     private fun Tree?.fmt(code: String?): String {

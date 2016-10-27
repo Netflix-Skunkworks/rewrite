@@ -247,4 +247,8 @@ open class AstVisitor<R> {
     open fun visitWhileLoop(whileLoop: Tr.WhileLoop): R =
             visit(whileLoop.condition)
                     .andThen(whileLoop.body)
+
+    open fun visitWildcard(wildcard: Tr.Wildcard): R =
+            visit(wildcard.bound)
+                    .andThen(wildcard.boundedType)
 }

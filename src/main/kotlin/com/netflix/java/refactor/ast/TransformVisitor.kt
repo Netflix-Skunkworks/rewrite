@@ -33,6 +33,19 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
         } else annotation).transformIfNecessary(cursor)
     }
 
+    override fun visitArrayAccess(arrayAccess: Tr.ArrayAccess): Tree {
+        val indexed = visit(arrayAccess.indexed) as Expression
+
+        val dimension = arrayAccess.dimension.let {
+            val index = visit(arrayAccess.dimension.index) as Expression
+            if(it.index !== index) it.copy(index) else it
+        }
+
+        return (if(indexed !== arrayAccess.indexed || dimension !== arrayAccess.dimension) {
+            arrayAccess.copy(indexed = indexed, dimension = dimension)
+        } else arrayAccess).transformIfNecessary(cursor)
+    }
+
     override fun visitAssign(assign: Tr.Assign): Tree {
         val variable = visit(assign.variable) as NameTree
         val assignment = visit(assign.assignment) as Expression
@@ -79,6 +92,16 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
         } else case).transformIfNecessary(cursor)
     }
 
+    @Suppress("UNCHECKED_CAST")
+    override fun visitCatch(catch: Tr.Catch): Tree {
+        val param = visit(catch.param) as Tr.Parentheses
+        val body = visit(catch.body) as Tr.Block<Statement>
+
+        return (if(param !== catch.param || body !== catch.body) {
+            catch.copy(param = param, body = body)
+        } else catch).transformIfNecessary(cursor)
+    }
+
     override fun visitClassDecl(classDecl: Tr.ClassDecl): Tree {
         val extends = visit(classDecl.extends)
         val implements = classDecl.implements.mapIfNecessary { visit(it) as Tree }
@@ -116,6 +139,8 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
             doWhileLoop.copy(condition = condition, body = body)
         } else doWhileLoop).transformIfNecessary(cursor)
     }
+
+    override fun visitEmpty(empty: Tr.Empty): Tree = empty.transformIfNecessary(cursor)
 
     override fun visitFieldAccess(field: Tr.FieldAccess): Tree {
         val target = visit(field.target) as Expression
@@ -184,12 +209,30 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
         else import).transformIfNecessary(cursor)
     }
 
+    override fun visitInstanceOf(instanceOf: Tr.InstanceOf): Tree {
+        val expr = visit(instanceOf.expr) as Expression
+        val clazz = visit(instanceOf.clazz) as Tree
+
+        return (if(expr !== instanceOf.expr || clazz !== instanceOf.clazz) {
+            instanceOf.copy(expr = expr, clazz = clazz)
+        } else instanceOf).transformIfNecessary(cursor)
+    }
+
     override fun visitLabel(label: Tr.Label): Tree {
         val statement = visit(label.statement) as Statement
 
         return (if(statement !== label.statement) {
             label.copy(statement = statement)
         } else label).transformIfNecessary(cursor)
+    }
+
+    override fun visitLambda(lambda: Tr.Lambda): Tree {
+        val params = lambda.params.mapIfNecessary { visit(it) as Tr.VariableDecl }
+        val body = visit(lambda.body) as Tree
+
+        return (if(params !== lambda.params || body !== lambda.body) {
+            lambda.copy(params = params, body = body)
+        } else lambda).transformIfNecessary(cursor)
     }
 
     override fun visitLiteral(literal: Tr.Literal): Tree = literal.transformIfNecessary(cursor)
@@ -232,6 +275,21 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
         } else meth).transformIfNecessary(cursor)
     }
 
+    override fun visitNewArray(newArray: Tr.NewArray): Tree {
+        val typeExpr = visit(newArray.typeExpr) as TypeTree
+        val dimensions = newArray.dimensions.mapIfNecessary { visit(it) as Tr.NewArray.Dimension }
+        val initializer = if(newArray.initializer != null) {
+            val elements = newArray.initializer.elements.mapIfNecessary { visit(it) as Expression }
+            if(elements != newArray.initializer.elements) {
+                newArray.initializer.copy(elements)
+            } else newArray.initializer
+        } else null
+
+        return (if(typeExpr !== newArray.typeExpr || dimensions !== newArray.dimensions || initializer !== newArray.initializer) {
+            newArray.copy(typeExpr = typeExpr, dimensions = dimensions, initializer = initializer)
+        } else newArray).transformIfNecessary(cursor)
+    }
+
     override fun visitNewClass(newClass: Tr.NewClass): Tree {
         val clazz = newClass.clazz
         val args = newClass.args.let {
@@ -258,6 +316,14 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
         } else type).transformIfNecessary(cursor)
     }
 
+    override fun visitParentheses(parens: Tr.Parentheses): Tree {
+        val expr = visit(parens.expr) as Expression
+
+        return (if(expr !== parens.expr) {
+            parens.copy(expr = expr)
+        } else parens).transformIfNecessary(cursor)
+    }
+
     override fun visitPrimitive(primitive: Tr.Primitive): Tree = primitive.transformIfNecessary(cursor)
 
     override fun visitReturn(retrn: Tr.Return): Tree {
@@ -281,6 +347,16 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
         } else switch).transformIfNecessary(cursor)
     }
 
+    @Suppress("UNCHECKED_CAST")
+    override fun visitSynchronized(synch: Tr.Synchronized): Tree {
+        val lock = visit(synch.lock) as Tr.Parentheses
+        val body = visit(synch.body) as Tr.Block<Statement>
+
+        return (if(lock !== synch.lock || body !== synch.body) {
+            synch.copy(lock = lock, body = body)
+        } else synch).transformIfNecessary(cursor)
+    }
+
     override fun visitTernary(ternary: Tr.Ternary): Tree {
         val condition = visit(ternary.condition) as Expression
         val truePart = visit(ternary.truePart) as Expression
@@ -296,6 +372,27 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
         return (if(exception !== thrown.exception) {
             thrown.copy(exception = exception)
         } else exception).transformIfNecessary(cursor)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    override fun visitTry(tryable: Tr.Try): Tree {
+        val resources = tryable.resources?.let {
+            val decls = it.decls.mapIfNecessary { visit(it) as Tr.VariableDecl }
+            if(it.decls !== decls) it.copy(decls) else it
+        }
+
+        val body = visit(tryable.body) as Tr.Block<Statement>
+        val catches = tryable.catches.mapIfNecessary { visit(it) as Tr.Catch }
+
+        val finally = tryable.finally?.let {
+            val block = visit(tryable.finally) as Tr.Block<Statement>
+            if(it.block !== block) it.copy(block) else it
+        }
+
+        return (if(resources !== tryable.resources || body !== tryable.body || catches !== tryable.catches ||
+                finally !== tryable.finally) {
+            tryable.copy(resources = resources, body = body, catches = catches, finally = finally)
+        } else tryable).transformIfNecessary(cursor)
     }
 
     override fun visitUnary(unary: Tr.Unary): Tree {
@@ -325,100 +422,11 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
         } else whileLoop).transformIfNecessary(cursor)
     }
 
-    @Suppress("UNCHECKED_CAST")
-    override fun visitTry(tryable: Tr.Try): Tree {
-        val resources = tryable.resources?.let {
-            val decls = it.decls.mapIfNecessary { visit(it) as Tr.VariableDecl }
-            if(it.decls !== decls) it.copy(decls) else it
-        }
+    override fun visitWildcard(wildcard: Tr.Wildcard): Tree? {
+        val boundedType = visit(wildcard.boundedType) as NameTree
 
-        val body = visit(tryable.body) as Tr.Block<Statement>
-        val catches = tryable.catches.mapIfNecessary { visit(it) as Tr.Catch }
-
-        val finally = tryable.finally?.let {
-            val block = visit(tryable.finally) as Tr.Block<Statement>
-            if(it.block !== block) it.copy(block) else it
-        }
-        
-        return (if(resources !== tryable.resources || body !== tryable.body || catches !== tryable.catches ||
-                    finally !== tryable.finally) {
-            tryable.copy(resources = resources, body = body, catches = catches, finally = finally)
-        } else tryable).transformIfNecessary(cursor)
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    override fun visitCatch(catch: Tr.Catch): Tree {
-        val param = visit(catch.param) as Tr.Parentheses
-        val body = visit(catch.body) as Tr.Block<Statement>
-     
-        return (if(param !== catch.param || body !== catch.body) {
-            catch.copy(param = param, body = body)
-        } else catch).transformIfNecessary(cursor)
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    override fun visitSynchronized(synch: Tr.Synchronized): Tree {
-        val lock = visit(synch.lock) as Tr.Parentheses
-        val body = visit(synch.body) as Tr.Block<Statement>
-        
-        return (if(lock !== synch.lock || body !== synch.body) {
-            synch.copy(lock = lock, body = body)
-        } else synch).transformIfNecessary(cursor)
-    }
-
-    override fun visitEmpty(empty: Tr.Empty): Tree = empty.transformIfNecessary(cursor)
-
-    override fun visitParentheses(parens: Tr.Parentheses): Tree {
-        val expr = visit(parens.expr) as Expression
-        
-        return (if(expr !== parens.expr) {
-            parens.copy(expr = expr)
-        } else parens).transformIfNecessary(cursor)
-    }
-
-    override fun visitInstanceOf(instanceOf: Tr.InstanceOf): Tree {
-        val expr = visit(instanceOf.expr) as Expression
-        val clazz = visit(instanceOf.clazz) as Tree
-        
-        return (if(expr !== instanceOf.expr || clazz !== instanceOf.clazz) {
-            instanceOf.copy(expr = expr, clazz = clazz)
-        } else instanceOf).transformIfNecessary(cursor)
-    }
-
-    override fun visitNewArray(newArray: Tr.NewArray): Tree {
-        val typeExpr = visit(newArray.typeExpr) as TypeTree
-        val dimensions = newArray.dimensions.mapIfNecessary { visit(it) as Tr.NewArray.Dimension }
-        val initializer = if(newArray.initializer != null) {
-            val elements = newArray.initializer.elements.mapIfNecessary { visit(it) as Expression }
-            if(elements != newArray.initializer.elements) {
-                newArray.initializer.copy(elements)
-            } else newArray.initializer
-        } else null
-        
-        return (if(typeExpr !== newArray.typeExpr || dimensions !== newArray.dimensions || initializer !== newArray.initializer) {
-            newArray.copy(typeExpr = typeExpr, dimensions = dimensions, initializer = initializer)
-        } else newArray).transformIfNecessary(cursor)
-    }
-    
-    override fun visitArrayAccess(arrayAccess: Tr.ArrayAccess): Tree {
-        val indexed = visit(arrayAccess.indexed) as Expression
-
-        val dimension = arrayAccess.dimension.let {
-            val index = visit(arrayAccess.dimension.index) as Expression
-            if(it.index !== index) it.copy(index) else it
-        }
-     
-        return (if(indexed !== arrayAccess.indexed || dimension !== arrayAccess.dimension) {
-            arrayAccess.copy(indexed = indexed, dimension = dimension)
-        } else arrayAccess).transformIfNecessary(cursor)
-    }
-
-    override fun visitLambda(lambda: Tr.Lambda): Tree {
-        val params = lambda.params.mapIfNecessary { visit(it) as Tr.VariableDecl }
-        val body = visit(lambda.body) as Tree
-        
-        return (if(params !== lambda.params || body !== lambda.body) {
-            lambda.copy(params = params, body = body)
-        } else lambda).transformIfNecessary(cursor)
+        return (if(boundedType !== wildcard.boundedType) {
+            wildcard.copy(boundedType = boundedType)
+        } else wildcard).transformIfNecessary(cursor)
     }
 }

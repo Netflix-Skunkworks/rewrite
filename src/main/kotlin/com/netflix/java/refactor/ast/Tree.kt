@@ -640,4 +640,16 @@ sealed class Tr : Serializable, Tree {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitWhileLoop(this)
     }
+
+    data class Wildcard(val bound: Bound?,
+                        val boundedType: NameTree?,
+                        override val formatting: Formatting): Tr() {
+
+        override fun <R> accept(v: AstVisitor<R>): R = v.visitWildcard(this)
+
+        sealed class Bound: Tr() {
+            data class Super(override val formatting: Formatting): Bound()
+            data class Extends(override val formatting: Formatting): Bound()
+        }
+    }
 }
