@@ -111,7 +111,14 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
     }
 
     override fun visitBlock(node: BlockTree, fmt: Formatting.Reified): Tree {
-        skip("{")
+        val static = if((node as JCTree.JCBlock).flags and Flags.STATIC.toLong() != 0L) {
+            skip("static")
+            Tr.Empty(Formatting.Reified("", sourceBefore("{")))
+        } else {
+            skip("{")
+            null
+        }
+
         val statementDelim = { t: JdkTree ->
             sourceBefore(when(t) {
                 is JCTree.JCLabeledStatement -> ""
@@ -146,7 +153,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
                 }
                 .convertAll<Statement>(statementDelim, statementDelim)
 
-        return Tr.Block<Statement>(statements, fmt, sourceBefore("}"))
+        return Tr.Block<Statement>(static, statements, fmt, sourceBefore("}"))
     }
 
     override fun visitBreak(node: BreakTree, fmt: Formatting.Reified): Tree {
@@ -180,12 +187,34 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
     }
 
     override fun visitClass(node: ClassTree, fmt: Formatting.Reified): Tree {
-        if(node.modifiers.hasFlag(Flags.ENUM)) {
-            return visitEnumClass(node, fmt)
+        val annotations = node.modifiers.annotations.convertAll<Tr.Annotation>(NO_DELIM, NO_DELIM)
+
+        val modifiers = node.modifiers.flags.mapIndexed { i, mod ->
+            val modPrefix = sourceMatching("\\s+")
+            cursor += mod.name.length
+            val modFormat = Formatting.Reified(modPrefix)
+            when (mod) {
+                Modifier.PUBLIC -> Tr.TypeModifier.Public(modFormat)
+                Modifier.PROTECTED -> Tr.TypeModifier.Protected(modFormat)
+                Modifier.PRIVATE -> Tr.TypeModifier.Private(modFormat)
+                Modifier.ABSTRACT -> Tr.TypeModifier.Abstract(modFormat)
+                Modifier.STATIC -> Tr.TypeModifier.Static(modFormat)
+                Modifier.FINAL -> Tr.TypeModifier.Final(modFormat)
+                else -> throw IllegalArgumentException("Unexpected modifier $mod")
+            }
         }
 
-        val annotations = node.modifiers.annotations.convertAll<Tr.Annotation>(NO_DELIM, NO_DELIM)
-        val modifiers = typeModifiers(node.modifiers, "class")
+        val kind = if(node.modifiers.hasFlag(Flags.ENUM)) {
+            Tr.ClassDecl.Kind.Enum(Formatting.Reified(sourceBefore("enum")))
+        } else if(node.modifiers.hasFlag(Flags.ANNOTATION)) {
+            // note that annotations ALSO have the INTERFACE flag
+            Tr.ClassDecl.Kind.Annotation(Formatting.Reified(sourceBefore("@interface")))
+        } else if(node.modifiers.hasFlag(Flags.INTERFACE)) {
+            Tr.ClassDecl.Kind.Interface(Formatting.Reified(sourceBefore("interface")))
+        } else {
+            Tr.ClassDecl.Kind.Class(Formatting.Reified(sourceBefore("class")))
+        }
+
         val name = Tr.Ident((node as JCTree.JCClassDecl).simpleName.toString(), node.type(),
                 Formatting.Reified(sourceBefore(node.simpleName.toString())))
 
@@ -198,20 +227,34 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
         val extends = node.extendsClause.convertOrNull<Tree>()
         val implements = node.implementsClause.convertAll<Tree>(COMMA_DELIM, NO_DELIM)
 
-        val memberDelim = { t: JdkTree -> if(t is JCTree.JCVariableDecl) sourceBefore(";") else "" }
-
         val bodyPrefix = sourceBefore("{")
-        val body = Tr.Block<Tree>(
-                node.members
-                        // we don't care about the compiler-inserted default constructor,
-                        // since it will never be subject to refactoring
-                        .filter { it !is JCTree.JCMethodDecl || !it.modifiers.hasFlag(Flags.GENERATEDCONSTR) }
-                        .convertAll(memberDelim, memberDelim),
-                Formatting.Reified(bodyPrefix),
-                sourceBefore("}")
-        )
 
-        return Tr.ClassDecl(annotations, modifiers, name, typeParams, extends, implements, body, node.type(), fmt)
+        // enum values are required by the grammar to occur before any ordinary field, constructor, or method members
+        val enumValues = node.members
+                .filterIsInstance<JCTree.JCVariableDecl>()
+                .filter { it.modifiers.hasFlag(Flags.ENUM) }
+                .convertAll<Tree>(COMMA_DELIM, {
+                    // this semicolon is required when there are non-value members, but can still
+                    // be present when there are not
+                    sourceMatching("\\s*;").trimEnd(';')
+                })
+
+        val memberDelim = { t: JdkTree -> if(t is JCTree.JCVariableDecl) sourceBefore(";") else "" }
+        val members = node.members
+                // we don't care about the compiler-inserted default constructor,
+                // since it will never be subject to refactoring
+                .filter {
+                    when(it) {
+                        is JCTree.JCMethodDecl -> !it.modifiers.hasFlag(Flags.GENERATEDCONSTR)
+                        is JCTree.JCVariableDecl -> !it.modifiers.hasFlag(Flags.ENUM)
+                        else -> true
+                    }
+                }
+                .convertAll<Tree>(memberDelim, memberDelim)
+
+        val body = Tr.Block<Tree>(null, enumValues + members, Formatting.Reified(bodyPrefix), sourceBefore("}"))
+
+        return Tr.ClassDecl(annotations, modifiers, kind, name, typeParams, extends, implements, body, node.type(), fmt)
     }
 
     override fun visitCompilationUnit(node: CompilationUnitTree, fmt: Formatting.Reified): Tree {
@@ -306,44 +349,6 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
                 node.statement.convert(),
                 fmt
         )
-    }
-
-    fun visitEnumClass(node: ClassTree, fmt: Formatting.Reified): Tree {
-        val annotations = node.modifiers.annotations.convertAll<Tr.Annotation>(NO_DELIM, NO_DELIM)
-        val modifiers = typeModifiers(node.modifiers, "enum")
-        val name = Tr.Ident((node as JCTree.JCClassDecl).simpleName.toString(), node.type(),
-                Formatting.Reified(sourceBefore(node.simpleName.toString())))
-        val implements = node.implementsClause.convertAll<Tree>(COMMA_DELIM, NO_DELIM)
-
-        val memberDelim = { t: JdkTree -> if(t is JCTree.JCVariableDecl) sourceBefore(";") else "" }
-
-        val bodyPrefix = sourceBefore("{")
-
-        // enum values are required by the grammar to occur before any ordinary field, constructor, or method members
-        val enumValues = node.members
-                .filterIsInstance<JCTree.JCVariableDecl>()
-                .filter { it.modifiers.hasFlag(Flags.ENUM) }
-                .convertAll<Tree>(COMMA_DELIM, {
-                    // this semicolon is required when there are non-value members, but can still
-                    // be present when there are not
-                    sourceMatching("\\s*;").trimEnd(';')
-                })
-
-        val members = node.members
-                // we don't care about the compiler-inserted default constructor,
-                // since it will never be subject to refactoring
-                .filter {
-                    when(it) {
-                        is JCTree.JCMethodDecl -> !it.modifiers.hasFlag(Flags.GENERATEDCONSTR)
-                        is JCTree.JCVariableDecl -> !it.modifiers.hasFlag(Flags.ENUM)
-                        else -> true
-                    }
-                }
-                .convertAll<Tree>(memberDelim, memberDelim)
-
-        val body = Tr.Block<Tree>(enumValues + members, Formatting.Reified(bodyPrefix), sourceBefore("}"))
-
-        return Tr.EnumClass(annotations, modifiers, name, implements, body, node.type(), fmt)
     }
 
     fun visitEnumVariable(node: VariableTree, fmt: Formatting.Reified): Tree {
@@ -634,7 +639,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
                     .filter { it !is JCTree.JCMethodDecl || it.modifiers.flags and Flags.GENERATEDCONSTR == 0L }
                     .convertAll<Tree>(NO_DELIM, NO_DELIM)
 
-            Tr.Block(members, Formatting.Reified(bodyPrefix), sourceBefore("}"))
+            Tr.Block(null, members, Formatting.Reified(bodyPrefix), sourceBefore("}"))
         }
 
         return Tr.NewClass(clazz, args, body, (node as JCTree.JCNewClass).type.type(), fmt)
@@ -695,7 +700,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
         val casePrefix = sourceBefore("{")
         val cases = node.cases.convertAll<Tr.Case>(NO_DELIM, NO_DELIM)
 
-        return Tr.Switch(selector, Tr.Block(cases, Formatting.Reified(casePrefix), sourceBefore("}")), fmt)
+        return Tr.Switch(selector, Tr.Block(null, cases, Formatting.Reified(casePrefix), sourceBefore("}")), fmt)
     }
 
     override fun visitSynchronized(node: SynchronizedTree, fmt: Formatting.Reified): Tree {
@@ -918,23 +923,6 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
         }
     }
 
-    private fun typeModifiers(mods: ModifiersTree, typeKeyword: String): List<Tr.TypeModifier> {
-        return mods.flags.mapIndexed { i, mod ->
-            val modPrefix = sourceMatching("\\s+")
-            cursor += mod.name.length
-            val modFormat = Formatting.Reified(modPrefix, sourceMatching("\\s+$typeKeyword").substringBefore(typeKeyword))
-            when (mod) {
-                Modifier.PUBLIC -> Tr.TypeModifier.Public(modFormat)
-                Modifier.PROTECTED -> Tr.TypeModifier.Protected(modFormat)
-                Modifier.PRIVATE -> Tr.TypeModifier.Private(modFormat)
-                Modifier.ABSTRACT -> Tr.TypeModifier.Abstract(modFormat)
-                Modifier.STATIC -> Tr.TypeModifier.Static(modFormat)
-                Modifier.FINAL -> Tr.TypeModifier.Final(modFormat)
-                else -> throw IllegalArgumentException("Unexpected modifier $mod")
-            }
-        }
-    }
-
     /**
      * --------------
      * Type conversion
@@ -1071,7 +1059,9 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
      * Because Flags.asModifierSet() only matches on certain flags... (debugging utility only)
      */
     @Suppress("unused")
-    private fun ModifiersTree.listFlags(): List<String> {
+    private fun ModifiersTree.listFlags(): List<String> = (this as JCTree.JCModifiers).flags.listFlags()
+
+    private fun Number.listFlags(): List<String> {
         val allFlags = Flags::class.java.declaredFields
                 .filter {
                     it.isAccessible = true
@@ -1080,7 +1070,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
                 .map { it.name to it.get(null) as Number }
 
         return allFlags.fold(emptyList<String>()) { all, f ->
-            if(f.second.toLong() and (this as JCTree.JCModifiers).flags != 0L)
+            if(f.second.toLong() and this.toLong() != 0L)
                 all + f.first
             else all
         }

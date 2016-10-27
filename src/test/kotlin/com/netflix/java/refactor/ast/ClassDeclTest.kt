@@ -2,6 +2,7 @@ package com.netflix.java.refactor.ast
 
 import com.netflix.java.refactor.parse.Parser
 import com.netflix.java.refactor.test.AstTest
+import org.junit.Assert
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
@@ -54,7 +55,7 @@ abstract class ClassDeclTest(parser: Parser): AstTest(parser) {
         val b = "public class B {}"
         val a = "public class A extends B {}"
 
-        val aClass = parse(a, whichDependsOn = b).typeDecls[0] as Tr.ClassDecl
+        val aClass = parse(a, whichDependsOn = b).typeDecls[0]
         assertNotNull(aClass.extends)
     }
 
@@ -62,14 +63,55 @@ abstract class ClassDeclTest(parser: Parser): AstTest(parser) {
     fun format() {
         val b = "public class B<T> {}"
         val a = "@Deprecated public class A < T > extends B < T > {}"
+        assertEquals(a, parse(a, whichDependsOn = b).typeDecls[0].printTrimmed())
+    }
 
-        val aClass = parse(a, whichDependsOn = b).typeDecls[0]
-        assertEquals(a, aClass.printTrimmed())
+    @Test
+    fun formatInterface() {
+        val b = "public interface B {}"
+        val a = "public interface A extends B {}"
+        assertEquals(a, parse(a, whichDependsOn = b).typeDecls[0].printTrimmed())
+    }
+
+    @Test
+    fun formatAnnotation() {
+        val a = "public @interface Produces { }"
+        assertEquals(a, parse(a).typeDecls[0].printTrimmed())
     }
 
     @Test
     fun trailingLastTypeDeclaration() {
         val a = parse("public class A {}/**/")
         assertEquals("/**/", (a.typeDecls[0].formatting as Formatting.Reified).suffix)
+    }
+
+    @Test
+    fun enumWithParameters() {
+        val aSrc = """
+            |public enum A {
+            |    ONE(1),
+            |    TWO(2);
+            |
+            |    A(int n) {}
+            |}
+        """.trimMargin()
+
+        val a = parse(aSrc)
+
+        Assert.assertTrue(a.typeDecls[0].kind is Tr.ClassDecl.Kind.Enum)
+        assertEquals("ONE(1)", a.typeDecls[0].enumValues()[0].printTrimmed())
+        assertEquals(aSrc, a.printTrimmed())
+    }
+
+    @Test
+    fun enumWithoutParameters() {
+        val aSrc = "public enum A { ONE, TWO }"
+        assertEquals(aSrc, parse(aSrc).typeDecls[0].printTrimmed())
+    }
+
+    @Test
+    fun enumWithEmptyParameters() {
+        val aSrc = "public enum A { ONE(), TWO() }"
+        assertEquals(aSrc, parse(aSrc).typeDecls[0].printTrimmed())
     }
 }

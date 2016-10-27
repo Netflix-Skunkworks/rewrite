@@ -33,18 +33,6 @@ interface NameTree : Tree
  */
 interface TypeTree: Tree
 
-interface TypeDeclarationTree: Tree {
-    val type: Type?
-    val annotations: List<Tr.Annotation>
-    val modifiers: List<Tr.TypeModifier>
-    val name: Tr.Ident
-    val implements: List<Tree>
-    val body: Tr.Block<Tree>
-
-    fun methods(): List<Tr.MethodDecl>
-    fun fields(): List<Tr.VariableDecl>
-}
-
 /**
  * The stylistic surroundings of a tree element
  */
@@ -157,7 +145,8 @@ sealed class Tr : Serializable, Tree {
         }
     }
 
-    data class Block<out T: Tree>(val statements: List<T>,
+    data class Block<out T: Tree>(val static: Tr.Empty?,
+                                  val statements: List<T>,
                                   override val formatting: Formatting,
                                   val endOfBlockSuffix: String) : Statement, Tr() {
 
@@ -184,27 +173,39 @@ sealed class Tr : Serializable, Tree {
         override fun <R> accept(v: AstVisitor<R>): R = v.visitCatch(this)
     }
 
-    data class ClassDecl(
-            override val annotations: List<Annotation>,
-            override val modifiers: List<TypeModifier>,
-            override val name: Ident,
-            val typeParams: TypeParameters?,
-            val extends: Tree?,
-            override val implements: List<Tree>,
-            override val body: Block<Tree>,
-            override val type: Type?,
-            override val formatting: Formatting) : TypeDeclarationTree, Tr() {
+    data class ClassDecl(val annotations: List<Annotation>,
+                         val modifiers: List<TypeModifier>,
+                         val kind: Kind,
+                         val name: Ident,
+                         val typeParams: TypeParameters?,
+                         val extends: Tree?,
+                         val implements: List<Tree>,
+                         val body: Block<Tree>,
+                         val type: Type?,
+                         override val formatting: Formatting) : Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitClassDecl(this)
 
-        override fun fields(): List<VariableDecl> = body.statements.filterIsInstance<VariableDecl>()
-        override fun methods(): List<MethodDecl> = body.statements.filterIsInstance<MethodDecl>()
+        /**
+         * Values will always occur before any fields, constructors, or methods
+         */
+        fun enumValues(): List<EnumValue> = body.statements.filterIsInstance<EnumValue>()
+
+        fun fields(): List<VariableDecl> = body.statements.filterIsInstance<VariableDecl>()
+        fun methods(): List<MethodDecl> = body.statements.filterIsInstance<MethodDecl>()
+
+        sealed class Kind: Tr() {
+            data class Class(override val formatting: Formatting): Kind()
+            data class Enum(override val formatting: Formatting): Kind()
+            data class Interface(override val formatting: Formatting): Kind()
+            data class Annotation(override val formatting: Formatting): Kind()
+        }
     }
 
     data class CompilationUnit(val source: SourceFile,
                                val packageDecl: Package?,
                                val imports: List<Import>,
-                               val typeDecls: List<TypeDeclarationTree>,
+                               val typeDecls: List<ClassDecl>,
                                override val formatting: Formatting) : Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitCompilationUnit(this)
@@ -266,27 +267,6 @@ sealed class Tr : Serializable, Tree {
         override fun <R> accept(v: AstVisitor<R>): R = v.visitEnumValue(this)
 
         data class Arguments(val args: List<Expression>, override val formatting: Formatting): Tr()
-    }
-
-    data class EnumClass(override val annotations: List<Annotation>,
-                         override val modifiers: List<TypeModifier>,
-                         override val name: Ident,
-                         override val implements: List<Tree>,
-                         override val body: Block<Tree>,
-                         override val type: Type?,
-                         override val formatting: Formatting) : TypeDeclarationTree, Tr() {
-
-        /**
-         * Values will always occur before any fields, constructors, or methods
-         */
-        fun values(): List<EnumValue> = body.statements.filterIsInstance<EnumValue>()
-
-        fun members(): List<Tree> = body.statements.filter { it !is EnumValue }
-
-        override fun methods(): List<MethodDecl> = body.statements.filterIsInstance<MethodDecl>()
-        override fun fields(): List<VariableDecl> = body.statements.filterIsInstance<VariableDecl>()
-
-        override fun <R> accept(v: AstVisitor<R>): R = v.visitEnumClass(this)
     }
 
     data class FieldAccess(val target: Expression,

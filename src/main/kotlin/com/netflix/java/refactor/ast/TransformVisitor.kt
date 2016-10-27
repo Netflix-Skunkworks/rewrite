@@ -338,9 +338,8 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
         val selector = visit(switch.selector) as Tr.Parentheses
         val caseBlock = switch.cases.let {
             val cases = it.statements.mapIfNecessary { visit(it) as Tr.Case }
-            if(it.statements !== cases) it.copy(cases) else it
+            if(it.statements !== cases) it.copy(statements = cases) else it
         }
-
 
         return (if(selector !== switch.selector || caseBlock !== switch.cases) {
             switch.copy(selector = selector, cases = caseBlock)

@@ -91,7 +91,8 @@ class PrintVisitor : AstVisitor<String>("") {
     }
 
     override fun visitBlock(block: Tr.Block<Tree>): String {
-        return block.fmt("{${visitStatements(block.statements)}${block.endOfBlockSuffix}}")
+        val static = block.static.fmt("static")
+        return block.fmt("$static{${visitStatements(block.statements)}${block.endOfBlockSuffix}}")
     }
 
     override fun visitBreak(breakStatement: Tr.Break): String {
@@ -120,8 +121,21 @@ class PrintVisitor : AstVisitor<String>("") {
             })
         }
 
-        return classDecl.fmt("${visit(classDecl.annotations)}${modifiers}class${visit(classDecl.name)}$typeParams" +
-                "${visit(classDecl.extends)}${visit(classDecl.implements)}${visit(classDecl.body)}")
+        val kind = classDecl.kind.fmt(when(classDecl.kind) {
+            is Tr.ClassDecl.Kind.Class -> "class"
+            is Tr.ClassDecl.Kind.Enum -> "enum"
+            is Tr.ClassDecl.Kind.Interface -> "interface"
+            is Tr.ClassDecl.Kind.Annotation -> "@interface"
+        })
+
+        val body = classDecl.body.let {
+            val members = it.statements.filter { it !is Tr.EnumValue }
+            val enumValues = visit(classDecl.enumValues(), ",", if(members.isNotEmpty()) ";" else "")
+            it.fmt("{$enumValues${visitStatements(members)}${it.endOfBlockSuffix}}")
+        }
+
+        return classDecl.fmt("${visit(classDecl.annotations)}$modifiers$kind${visit(classDecl.name)}$typeParams" +
+                "${visit(classDecl.extends)}${visit(classDecl.implements)}$body")
     }
 
     override fun visitCompilationUnit(cu: Tr.CompilationUnit): String {
@@ -144,25 +158,6 @@ class PrintVisitor : AstVisitor<String>("") {
         } else ""
 
         return enum.fmt("${visit(enum.name)}$initializer")
-    }
-
-    override fun visitEnumClass(enumClass: Tr.EnumClass): String {
-        val modifiers = enumClass.modifiers.fold("") { s, mod -> s + mod.fmt(when(mod) {
-            is Tr.TypeModifier.Public -> "public"
-            is Tr.TypeModifier.Protected -> "protected"
-            is Tr.TypeModifier.Private -> "private"
-            is Tr.TypeModifier.Abstract -> "abstract"
-            is Tr.TypeModifier.Static -> "static"
-            is Tr.TypeModifier.Final -> "final"
-        }) }
-
-        val body = enumClass.body.let {
-            val values = visit(enumClass.values(), ",", if(enumClass.members().isNotEmpty()) ";" else "")
-            it.fmt("{$values${visitStatements(enumClass.members())}${it.endOfBlockSuffix}}")
-        }
-
-        return enumClass.fmt("${visit(enumClass.annotations)}${modifiers}enum${visit(enumClass.name)}" +
-                "${visit(enumClass.implements)}$body")
     }
 
     override fun visitFieldAccess(field: Tr.FieldAccess): String {

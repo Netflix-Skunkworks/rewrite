@@ -117,13 +117,6 @@ open class AstVisitor<R> {
             visit(enum.name)
                     .andThen(enum.initializer?.args)
 
-    open fun visitEnumClass(enumClass: Tr.EnumClass): R =
-            visit(enumClass.annotations)
-                    .andThen(enumClass.modifiers)
-                    .andThen(enumClass.name)
-                    .andThen(enumClass.implements)
-                    .andThen(enumClass.body)
-
     open fun visitFieldAccess(field: Tr.FieldAccess): R =
             visit(field.target)
                     .andThen(field.name)

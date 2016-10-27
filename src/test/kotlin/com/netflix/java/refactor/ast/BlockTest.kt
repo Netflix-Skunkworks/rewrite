@@ -30,4 +30,15 @@ abstract class BlockTest(parser: Parser): AstTest(parser) {
         
         assertEquals("{  }", a.typeDecls[0].methods()[0].body!!.printTrimmed())
     }
+
+    @Test
+    fun staticInitBlock() {
+        val a = parse("""
+            public class A {
+                static {}
+            }
+        """)
+
+        assertEquals("static {}", a.typeDecls[0].body.statements[0].printTrimmed())
+    }
 }
