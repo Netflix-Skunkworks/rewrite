@@ -156,12 +156,12 @@ class OracleJdkParserVisitorOld(val path: Path, val source: String): TreeScanner
                 node.modifiers.getFlags().mapIndexed { i, mod ->
                     val modFormat = (node.modifiers as JCTree.JCModifiers).flagFormat(i)
                     when (mod) {
-                        Modifier.PUBLIC -> Tr.TypeModifier.Public(modFormat)
-                        Modifier.PROTECTED -> Tr.TypeModifier.Protected(modFormat)
-                        Modifier.PRIVATE -> Tr.TypeModifier.Private(modFormat)
-                        Modifier.ABSTRACT -> Tr.TypeModifier.Abstract(modFormat)
-                        Modifier.STATIC -> Tr.TypeModifier.Static(modFormat)
-                        Modifier.FINAL -> Tr.TypeModifier.Final(modFormat)
+                        Modifier.PUBLIC -> Tr.Modifier.Public(modFormat)
+                        Modifier.PROTECTED -> Tr.Modifier.Protected(modFormat)
+                        Modifier.PRIVATE -> Tr.Modifier.Private(modFormat)
+                        Modifier.ABSTRACT -> Tr.Modifier.Abstract(modFormat)
+                        Modifier.STATIC -> Tr.Modifier.Static(modFormat)
+                        Modifier.FINAL -> Tr.Modifier.Final(modFormat)
                         else -> throw IllegalArgumentException("Unexpected modifier $mod")
                     }
                 },

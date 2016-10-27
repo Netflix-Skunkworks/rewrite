@@ -166,7 +166,7 @@ sealed class Tr : Serializable, Tree {
         override fun <R> accept(v: AstVisitor<R>): R = v.visitCase(this)
     }
 
-    data class Catch(val param: Parentheses,
+    data class Catch(val param: Parentheses<VariableDecl>,
                      val body: Block<Statement>,
                      override val formatting: Formatting) : Tr() {
 
@@ -174,7 +174,7 @@ sealed class Tr : Serializable, Tree {
     }
 
     data class ClassDecl(val annotations: List<Annotation>,
-                         val modifiers: List<TypeModifier>,
+                         val modifiers: List<Modifier>,
                          val kind: Kind,
                          val name: Ident,
                          val typeParams: TypeParameters?,
@@ -193,6 +193,15 @@ sealed class Tr : Serializable, Tree {
 
         fun fields(): List<VariableDecl> = body.statements.filterIsInstance<VariableDecl>()
         fun methods(): List<MethodDecl> = body.statements.filterIsInstance<MethodDecl>()
+
+        sealed class Modifier : Tr() {
+            data class Public(override val formatting: Formatting): Modifier()
+            data class Protected(override val formatting: Formatting): Modifier()
+            data class Private(override val formatting: Formatting): Modifier()
+            data class Abstract(override val formatting: Formatting): Modifier()
+            data class Static(override val formatting: Formatting): Modifier()
+            data class Final(override val formatting: Formatting): Modifier()
+        }
 
         sealed class Kind: Tr() {
             data class Class(override val formatting: Formatting): Kind()
@@ -250,7 +259,7 @@ sealed class Tr : Serializable, Tree {
     }
 
     data class DoWhileLoop(val body: Statement,
-                           val condition: Parentheses,
+                           val condition: Parentheses<Expression>,
                            override val formatting: Formatting) : Statement, Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitDoWhileLoop(this)
@@ -307,7 +316,7 @@ sealed class Tr : Serializable, Tree {
         override fun <R> accept(v: AstVisitor<R>): R = v.visitIdentifier(this)
     }
 
-    data class If(val ifCondition: Parentheses,
+    data class If(val ifCondition: Parentheses<Expression>,
                   val thenPart: Statement,
                   val elsePart: Else?,
                   override val formatting: Formatting) : Statement, Tr() {
@@ -438,6 +447,10 @@ sealed class Tr : Serializable, Tree {
         data class TypeParameters(val params: List<NameTree>, override val formatting: Formatting): Tr()
     }
 
+    data class MultiCatch(val alternatives: List<NameTree>, override val formatting: Formatting): TypeTree, Tr() {
+        override fun <R> accept(v: AstVisitor<R>): R = v.visitMultiCatch(this)
+    }
+
     data class NewArray(val typeExpr: TypeTree?, // null in the case of an array as an annotation parameter
                         val dimensions: List<Dimension>,
                         val initializer: Initializer?,
@@ -477,9 +490,13 @@ sealed class Tr : Serializable, Tree {
                                  override val formatting: Formatting): Tr()
     }
 
-    data class Parentheses(val expr: Tree,
-                           override val type: Type?,
-                           override val formatting: Formatting) : Expression, Tr() {
+    data class Parentheses<out T: Tree>(val tree: T,
+                                        override val formatting: Formatting) : Expression, Tr() {
+
+        override val type = when(tree) {
+            is Expression -> tree.type
+            else -> null
+        }
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitParentheses(this)
     }
@@ -497,14 +514,14 @@ sealed class Tr : Serializable, Tree {
         override fun <R> accept(v: AstVisitor<R>): R = v.visitReturn(this)
     }
 
-    data class Switch(val selector: Parentheses,
+    data class Switch(val selector: Parentheses<Expression>,
                       val cases: Block<Case>,
                       override val formatting: Formatting) : Statement, Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitSwitch(this)
     }
 
-    data class Synchronized(val lock: Parentheses,
+    data class Synchronized(val lock: Parentheses<Expression>,
                             val body: Block<Statement>,
                             override val formatting: Formatting) : Statement, Tr() {
 
@@ -538,13 +555,13 @@ sealed class Tr : Serializable, Tree {
         data class Finally(val block: Block<Statement>, override val formatting: Formatting): Tr()
     }
 
-    sealed class TypeModifier: Tr() {
-        data class Public(override val formatting: Formatting): TypeModifier()
-        data class Protected(override val formatting: Formatting): TypeModifier()
-        data class Private(override val formatting: Formatting): TypeModifier()
-        data class Abstract(override val formatting: Formatting): TypeModifier()
-        data class Static(override val formatting: Formatting): TypeModifier()
-        data class Final(override val formatting: Formatting): TypeModifier()
+    data class TypeCast(val clazz: Parentheses<TypeTree>,
+                        val expr: Expression,
+                        override val formatting: Formatting): Expression, Tr() {
+
+        override val type = clazz.type
+
+        override fun <R> accept(v: AstVisitor<R>): R = v.visitTypeCast(this)
     }
 
     data class TypeParameter(val annotations: List<Annotation>,
@@ -615,7 +632,7 @@ sealed class Tr : Serializable, Tree {
         data class Dimension(val whitespace: Tr.Empty, override val formatting: Formatting): Tr()
     }
 
-    data class WhileLoop(val condition: Parentheses,
+    data class WhileLoop(val condition: Parentheses<Expression>,
                          val body: Statement,
                          override val formatting: Formatting) : Statement, Tr() {
 

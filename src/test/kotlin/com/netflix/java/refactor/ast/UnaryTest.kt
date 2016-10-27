@@ -18,7 +18,7 @@ abstract class UnaryTest(parser: Parser): AstTest(parser) {
 
         val unary = a.fields()[0].initializer as Tr.Unary
         assertTrue(unary.operator is Tr.Unary.Operator.Not)
-        assertTrue(unary.expr is Tr.Parentheses)
+        assertTrue(unary.expr is Tr.Parentheses<*>)
     }
 
     @Test

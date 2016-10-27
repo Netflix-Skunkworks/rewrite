@@ -21,7 +21,7 @@ abstract class WhileLoopTest(parser: Parser): AstTest(parser) {
 
     @Test
     fun whileLoop() {
-        assertTrue(whileLoop.condition.expr is Tr.Literal)
+        assertTrue(whileLoop.condition.tree is Tr.Literal)
         assertTrue(whileLoop.body is Tr.Block<*>)
     }
 

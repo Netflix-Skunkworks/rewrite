@@ -22,7 +22,7 @@ abstract class ParenthesesTest(parser: Parser): AstTest(parser) {
 
     @Test
     fun parentheses() {
-        assertTrue(variable is Tr.Parentheses)
+        assertTrue(variable is Tr.Parentheses<*>)
     }
 
     @Test

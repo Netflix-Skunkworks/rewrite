@@ -112,12 +112,12 @@ class PrintVisitor : AstVisitor<String>("") {
 
         val modifiers = classDecl.modifiers.fold("") { s, mod ->
             s + mod.fmt(when(mod) {
-                is Tr.TypeModifier.Public -> "public"
-                is Tr.TypeModifier.Protected -> "protected"
-                is Tr.TypeModifier.Private -> "private"
-                is Tr.TypeModifier.Abstract -> "abstract"
-                is Tr.TypeModifier.Static -> "static"
-                is Tr.TypeModifier.Final -> "final"
+                is Tr.ClassDecl.Modifier.Public -> "public"
+                is Tr.ClassDecl.Modifier.Protected -> "protected"
+                is Tr.ClassDecl.Modifier.Private -> "private"
+                is Tr.ClassDecl.Modifier.Abstract -> "abstract"
+                is Tr.ClassDecl.Modifier.Static -> "static"
+                is Tr.ClassDecl.Modifier.Final -> "final"
             })
         }
 
@@ -255,6 +255,10 @@ class PrintVisitor : AstVisitor<String>("") {
         return meth.fmt("${visit(meth.select)}$selectSeparator$typeParams${visit(meth.name)}$args")
     }
 
+    override fun visitMultiCatch(multiCatch: Tr.MultiCatch): String {
+        return multiCatch.fmt(visit(multiCatch.alternatives, "|"))
+    }
+
     override fun visitNewArray(newArray: Tr.NewArray): String {
         val dimensions = newArray.dimensions.fold("") { s, dim -> s + dim.fmt("[${visit(dim.size)}]") }
         val init = newArray.initializer?.let { it.fmt("{${visit(it.elements, ",")}}") } ?: ""
@@ -295,8 +299,8 @@ class PrintVisitor : AstVisitor<String>("") {
         })
     }
 
-    override fun visitParentheses(parens: Tr.Parentheses): String {
-        return parens.fmt("(${visit(parens.expr)})")
+    override fun <T: Tree> visitParentheses(parens: Tr.Parentheses<T>): String {
+        return parens.fmt("(${visit(parens.tree)})")
     }
 
     override fun visitReturn(retrn: Tr.Return): String {
@@ -325,6 +329,10 @@ class PrintVisitor : AstVisitor<String>("") {
         } ?: ""
 
         return tryable.fmt("try$resources${visit(tryable.body)}${visit(tryable.catches)}$finally")
+    }
+
+    override fun visitTypeCast(typeCast: Tr.TypeCast): String {
+        return typeCast.fmt("${visit(typeCast.clazz)}${visit(typeCast.expr)}")
     }
 
     override fun visitTypeParameter(typeParameter: Tr.TypeParameter): String {

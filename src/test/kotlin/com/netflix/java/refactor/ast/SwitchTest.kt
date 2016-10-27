@@ -23,7 +23,7 @@ abstract class SwitchTest(parser: Parser): AstTest(parser) {
         """)
         
         val switch = a.firstMethodStatement() as Tr.Switch
-        assertTrue(switch.selector.expr is Tr.Ident)
+        assertTrue(switch.selector.tree is Tr.Ident)
         assertEquals(1, switch.cases.statements.size)
         
         val case0 = switch.cases.statements[0]
@@ -45,7 +45,7 @@ abstract class SwitchTest(parser: Parser): AstTest(parser) {
         """)
 
         val switch = a.firstMethodStatement() as Tr.Switch
-        assertTrue(switch.selector.expr is Tr.Ident)
+        assertTrue(switch.selector.tree is Tr.Ident)
         assertEquals(1, switch.cases.statements.size)
 
         val default = switch.cases.statements[0]
@@ -86,7 +86,7 @@ abstract class SwitchTest(parser: Parser): AstTest(parser) {
         """)
 
         val switch = a.firstMethodStatement() as Tr.Switch
-        assertTrue(switch.selector.expr is Tr.Ident)
+        assertTrue(switch.selector.tree is Tr.Ident)
         assertEquals(0, switch.cases.statements.size)
     }
 }

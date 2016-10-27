@@ -6,7 +6,7 @@ import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 
-abstract class TryTest(parser: Parser): AstTest(parser) {
+abstract class TryCatchTest(parser: Parser): AstTest(parser) {
     
     @Test
     fun tryFinally() {
@@ -78,6 +78,23 @@ abstract class TryTest(parser: Parser): AstTest(parser) {
         val tryable = a.firstMethodStatement() as Tr.Try
         assertEquals("try(FileInputStream fis = new FileInputStream(f)) { }",
                 tryable.printTrimmed())
+    }
+
+    @Test
+    fun formatMultiCatch() {
+        val a = parse("""
+            import java.io.*;
+            public class A {
+                File f;
+                public void test() {
+                    try(FileInputStream fis = new FileInputStream(f)) {}
+                    catch(FileNotFoundException | RuntimeException e) {}
+                }
+            }
+        """)
+
+        val multiCatch = (a.firstMethodStatement() as Tr.Try).catches[0].param.tree.varType as Tr.MultiCatch
+        assertEquals("FileNotFoundException | RuntimeException", multiCatch.printTrimmed())
     }
 
     @Test

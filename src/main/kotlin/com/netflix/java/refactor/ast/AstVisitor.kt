@@ -173,6 +173,9 @@ open class AstVisitor<R> {
                     .andThen(meth.name)
                     .andThen(meth.args.args)
 
+    open fun visitMultiCatch(multiCatch: Tr.MultiCatch): R =
+            visit(multiCatch.alternatives)
+
     open fun visitNewArray(newArray: Tr.NewArray): R =
             visit(newArray.typeExpr)
                     .andThen(newArray.dimensions.map { it.size })
@@ -190,8 +193,8 @@ open class AstVisitor<R> {
             visit(type.clazz)
                     .andThen(type.typeArguments?.args)
 
-    open fun visitParentheses(parens: Tr.Parentheses): R =
-            visit(parens.expr)
+    open fun <T: Tree> visitParentheses(parens: Tr.Parentheses<T>): R =
+            visit(parens.tree)
 
     open fun visitPrimitive(primitive: Tr.Primitive): R =
             default(primitive)
@@ -219,6 +222,10 @@ open class AstVisitor<R> {
                     .andThen(tryable.body)
                     .andThen(tryable.catches)
                     .andThen(tryable.finally?.block)
+
+    open fun visitTypeCast(typeCast: Tr.TypeCast): R =
+            visit(typeCast.clazz)
+                    .andThen(typeCast.expr)
 
     open fun visitTypeParameter(typeParameter: Tr.TypeParameter): R =
             visit(typeParameter.annotations)

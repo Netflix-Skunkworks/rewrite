@@ -181,7 +181,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
 
         val paramPrefix = sourceBefore("(")
         val paramDecl = node.parameter.convert<Tr.VariableDecl> { sourceBefore(")") }
-        val param = Tr.Parentheses(paramDecl, paramDecl.type, Formatting.Reified(paramPrefix))
+        val param = Tr.Parentheses(paramDecl, Formatting.Reified(paramPrefix))
 
         return Tr.Catch(param, node.block.convert(), fmt)
     }
@@ -194,12 +194,12 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
             cursor += mod.name.length
             val modFormat = Formatting.Reified(modPrefix)
             when (mod) {
-                Modifier.PUBLIC -> Tr.TypeModifier.Public(modFormat)
-                Modifier.PROTECTED -> Tr.TypeModifier.Protected(modFormat)
-                Modifier.PRIVATE -> Tr.TypeModifier.Private(modFormat)
-                Modifier.ABSTRACT -> Tr.TypeModifier.Abstract(modFormat)
-                Modifier.STATIC -> Tr.TypeModifier.Static(modFormat)
-                Modifier.FINAL -> Tr.TypeModifier.Final(modFormat)
+                Modifier.PUBLIC -> Tr.ClassDecl.Modifier.Public(modFormat)
+                Modifier.PROTECTED -> Tr.ClassDecl.Modifier.Protected(modFormat)
+                Modifier.PRIVATE -> Tr.ClassDecl.Modifier.Private(modFormat)
+                Modifier.ABSTRACT -> Tr.ClassDecl.Modifier.Abstract(modFormat)
+                Modifier.STATIC -> Tr.ClassDecl.Modifier.Static(modFormat)
+                Modifier.FINAL -> Tr.ClassDecl.Modifier.Final(modFormat)
                 else -> throw IllegalArgumentException("Unexpected modifier $mod")
             }
         }
@@ -400,7 +400,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
     override fun visitIf(node: IfTree, fmt: Formatting.Reified): Tree {
         skip("if")
 
-        val ifPart = node.condition.convert<Tr.Parentheses>()
+        val ifPart = node.condition.convert<Tr.Parentheses<Expression>>()
         val then = node.thenStatement.convert<Statement>()
 
         val elsePart = if(node.elseStatement is JCTree.JCStatement) {
@@ -666,11 +666,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
 
     override fun visitParenthesized(node: ParenthesizedTree, fmt: Formatting.Reified): Tree {
         skip("(")
-        return Tr.Parentheses(
-                node.expression.convert { sourceBefore(")") },
-                node.type(),
-                fmt
-        )
+        return Tr.Parentheses<Expression>(node.expression.convert { sourceBefore(")") }, fmt)
     }
 
     override fun visitPrimitiveType(node: PrimitiveTypeTree, fmt: Formatting.Reified): Tree {
@@ -696,7 +692,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
 
     override fun visitSwitch(node: SwitchTree, fmt: Formatting.Reified): Tree {
         skip("switch")
-        val selector = node.expression.convert<Tr.Parentheses>()
+        val selector = node.expression.convert<Tr.Parentheses<Expression>>()
 
         val casePrefix = sourceBefore("{")
         val cases = node.cases.convertAll<Tr.Case>(NO_DELIM, NO_DELIM)
@@ -738,6 +734,14 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
         return Tr.Try(resources, block, catches, finally, fmt)
     }
 
+    override fun visitTypeCast(node: TypeCastTree, fmt: Formatting.Reified): Tree {
+        val clazzPrefix = sourceBefore("(")
+        val clazz = Tr.Parentheses(node.type.convert<TypeTree> { sourceBefore(")") },
+                Formatting.Reified(clazzPrefix))
+
+        return Tr.TypeCast(clazz, node.expression.convert(), fmt)
+    }
+
     override fun visitTypeParameter(node: TypeParameterTree, fmt: Formatting.Reified): Tree {
         val annotations = node.annotations.convertAll<Tr.Annotation>(NO_DELIM, NO_DELIM)
         val name = TreeBuilder.buildName(typeCache, node.name.toString(), Formatting.Reified(sourceBefore(node.name.toString())))
@@ -746,6 +750,10 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
         val bounds = node.bounds.convertAll<Expression>({ sourceBefore("&") }, NO_DELIM)
 
         return Tr.TypeParameter(annotations, name, bounds, fmt)
+    }
+
+    override fun visitUnionType(node: UnionTypeTree, fmt: Formatting.Reified): Tree {
+        return Tr.MultiCatch(node.typeAlternatives.convertAll({ sourceBefore("|") }, NO_DELIM), fmt)
     }
 
     override fun visitUnary(node: UnaryTree, fmt: Formatting.Reified): Tree {

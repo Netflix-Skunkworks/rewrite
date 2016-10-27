@@ -24,7 +24,7 @@ abstract class SynchronizedTest(parser: Parser): AstTest(parser) {
 
     @Test
     fun synchronized() {
-        assertTrue(sync.lock.expr is Tr.Ident)
+        assertTrue(sync.lock.tree is Tr.Ident)
     }
 
     @Test

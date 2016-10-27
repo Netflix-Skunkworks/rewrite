@@ -26,12 +26,12 @@ abstract class IfTest(parser: Parser): AstTest(parser) {
 
     @Test
     fun ifElse() {
-        assertTrue(iff.ifCondition.expr is Tr.Binary)
+        assertTrue(iff.ifCondition.tree is Tr.Binary)
         assertTrue(iff.thenPart is Tr.Block<*>)
         
         assertTrue(iff.elsePart?.statement is Tr.If)
         val elseIf = iff.elsePart?.statement as Tr.If
-        assertTrue(elseIf.ifCondition.expr is Tr.Binary)
+        assertTrue(elseIf.ifCondition.tree is Tr.Binary)
         assertTrue(elseIf.thenPart is Tr.Block<*>)
         assertTrue(elseIf.elsePart?.statement is Tr.Block<*>)
     }
