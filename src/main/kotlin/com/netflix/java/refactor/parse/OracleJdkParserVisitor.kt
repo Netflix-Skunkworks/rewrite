@@ -498,7 +498,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
                 if(node.args.isEmpty()) {
                     listOf(Tr.Empty(Formatting.Reified(sourceBefore(")"))))
                 } else {
-                    node.args.convertExpressionsOrEmpty(COMMA_DELIM, { sourceBefore(")") })
+                    node.args.convertAll<Expression>(COMMA_DELIM, { sourceBefore(")") })
                 },
                 Formatting.Reified(argsPrefix))
 
@@ -615,8 +615,12 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
 
         val initializer = if(node.initializers != null) {
             val initPrefix = sourceBefore("{")
-            Tr.NewArray.Initializer(node.initializers.convertExpressionsOrEmpty({ sourceBefore(",") }, { sourceBefore("}") }),
-                    Formatting.Reified(initPrefix))
+            val initializers = if(node.initializers.isEmpty()) {
+                listOf(Tr.Empty(Formatting.Reified(sourceBefore("}"))))
+            } else {
+                node.initializers.convertAll<Expression>(COMMA_DELIM, { sourceBefore("}") })
+            }
+            Tr.NewArray.Initializer(initializers, Formatting.Reified(initPrefix))
         } else null
 
         return Tr.NewArray(typeExpr, dimensions, initializer, node.type(), fmt)
@@ -628,7 +632,11 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
 
         val argPrefix = sourceBefore("(")
         val args = Tr.NewClass.Arguments(
-                node.arguments.convertExpressionsOrEmpty(COMMA_DELIM, { sourceBefore(")") }),
+                if(node.arguments.isEmpty()) {
+                    listOf(Tr.Empty(Formatting.Reified(sourceBefore(")"))))
+                } else {
+                    node.arguments.convertAll<Expression>(COMMA_DELIM, { sourceBefore(")") })
+                },
                 Formatting.Reified(argPrefix))
 
         val body = node.classBody?.let {
@@ -920,17 +928,6 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
 
     private fun <T: Tree> List<JdkTree>.convertAll(innerSuffix: (JdkTree) -> String, suffix: (JdkTree) -> String): List<T> =
             mapIndexed { i, tree -> tree.convert<T>(if (i == size - 1) suffix else innerSuffix) }
-
-    private fun List<JdkTree>.convertExpressionsOrEmpty(innerSuffix: (JdkTree) -> String = { "" },
-                                                        suffix: (JdkTree) -> String = { "" }): List<Expression> {
-        return if(this.isEmpty()) {
-            listOf(Tr.Empty(Formatting.Reified.Empty))
-        } else {
-            mapIndexed { i, tree ->
-                tree.convert<Expression>(if (i == size - 1) suffix else innerSuffix)
-            }
-        }
-    }
 
     /**
      * --------------
