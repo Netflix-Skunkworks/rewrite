@@ -16,7 +16,7 @@ abstract class BinaryTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val bin = a.fields()[0].initializer as Tr.Binary
+        val bin = a.fields()[0].vars[0].initializer as Tr.Binary
         assertTrue(bin.operator is Tr.Binary.Operator.Addition)
         assertTrue(bin.left is Tr.Literal)
         assertTrue(bin.right is Tr.Literal)
@@ -30,7 +30,22 @@ abstract class BinaryTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val bin = a.fields()[0].initializer as Tr.Binary
+        val bin = a.fields()[0].vars[0].initializer as Tr.Binary
         assertEquals("0 + 1", bin.printTrimmed())
+    }
+
+    /**
+     * String folding needs to be disabled in the parser to preserve the binary expression in the AST!
+     * @see com.sun.tools.javac.parser.JavacParser.allowStringFolding
+     */
+    @Test
+    fun formatFoldableStrings() {
+        val a = """
+            public class A {
+                String s = "a" + "b";
+            }
+        """
+
+        assertEquals("\"a\" + \"b\"", parse(a).fields()[0].vars[0].initializer?.printTrimmed())
     }
 }

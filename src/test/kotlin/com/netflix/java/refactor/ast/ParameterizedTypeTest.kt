@@ -16,7 +16,7 @@ abstract class ParameterizedTypeTest(parser: Parser): AstTest(parser) {
             }
         """, whichDependOn = "public class B {}")
 
-        val typeParam = a.typeDecls[0].fields()[0].varType as Tr.ParameterizedType
+        val typeParam = a.typeDecls[0].fields()[0].typeExpr as Tr.ParameterizedType
         assertEquals("List< ?  extends  B >", typeParam.print())
     }
 }

@@ -8,6 +8,7 @@ import com.sun.tools.javac.nio.JavacPathFileManager
 import com.sun.tools.javac.tree.JCTree
 import com.sun.tools.javac.util.Context
 import com.sun.tools.javac.util.Log
+import com.sun.tools.javac.util.Options
 import org.slf4j.LoggerFactory
 import java.io.PrintWriter
 import java.io.Writer
@@ -32,6 +33,10 @@ class OracleJdkParser(classpath: List<Path>? = null) : Parser(classpath) {
     }
 
     init {
+        // otherwise, consecutive string literals in binary expressions are concatenated by the parser, losing the original
+        // structure of the expression!
+        Options.instance(context).put("allowStringFolding", "false")
+
         // otherwise the JavacParser will use EmptyEndPosTable, effectively setting -1 as the end position
         // for every tree element
         compiler.genEndPos = true

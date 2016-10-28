@@ -15,7 +15,7 @@ abstract class LiteralTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val literal = a.fields()[0].initializer as Tr.Literal
+        val literal = a.fields()[0].vars[0].initializer as Tr.Literal
         assertEquals(0, literal.value)
         assertEquals(Type.Tag.Int, literal.typeTag)
         assertEquals("0", literal.printTrimmed())
@@ -29,7 +29,7 @@ abstract class LiteralTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val literal = a.fields()[0].initializer as Tr.Literal
+        val literal = a.fields()[0].vars[0].initializer as Tr.Literal
         assertEquals("\"foo\"", literal.transformValue<String> { it.substringBefore(' ') })
     }
 
@@ -41,7 +41,7 @@ abstract class LiteralTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        assertEquals("null", a.fields()[0].initializer?.printTrimmed())
+        assertEquals("null", a.fields()[0].vars[0].initializer?.printTrimmed())
     }
 
     @Test
@@ -52,7 +52,7 @@ abstract class LiteralTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val literal = a.fields()[0].initializer as Tr.Literal
+        val literal = a.fields()[0].vars[0].initializer as Tr.Literal
         assertEquals("4L", literal.transformValue<Long> { it * 2 })
     }
 
@@ -65,7 +65,7 @@ abstract class LiteralTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val (lower, upper) = a.fields(0..1).map { it.initializer as Tr.Literal }
+        val (lower, upper) = a.fields(0..1).map { it.vars[0].initializer as Tr.Literal }
 
         assertEquals("0L", upper.printTrimmed())
         assertEquals("0l", lower.printTrimmed())
@@ -79,7 +79,7 @@ abstract class LiteralTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val s = a.fields()[0].initializer as Tr.Literal
+        val s = a.fields()[0].vars[0].initializer as Tr.Literal
         assertEquals("\"\\\"\"", s.printTrimmed())
     }
 }

@@ -25,7 +25,7 @@ abstract class MethodInvocationTest(parser: Parser) : AstTest(parser) {
         """)
     }
 
-    val allInvs by lazy { a.fields(0..4).map { it.initializer as Tr.MethodInvocation } }
+    val allInvs by lazy { a.fields(0..4).map { it.vars[0].initializer as Tr.MethodInvocation } }
 
     val inv by lazy { allInvs[0] }
     val staticInv by lazy { allInvs[1] }
@@ -98,7 +98,7 @@ abstract class MethodInvocationTest(parser: Parser) : AstTest(parser) {
             }
         """)
 
-        val inv = a.fields()[0].initializer as Tr.MethodInvocation
+        val inv = a.fields()[0].vars[0].initializer as Tr.MethodInvocation
         assertEquals("A", inv.declaringType?.fullyQualifiedName)
         assertNull(inv.resolvedSignature)
         assertNull(inv.genericSignature)

@@ -18,8 +18,8 @@ abstract class InstanceOfTest(parser: Parser): AstTest(parser) {
         """)
     }
 
-    val variable by lazy { a.firstMethodStatement() as Tr.VariableDecl }
-    val instanceof by lazy { variable.initializer as Tr.InstanceOf }
+    val variable by lazy { a.firstMethodStatement() as Tr.VariableDecls }
+    val instanceof by lazy { variable.vars[0].initializer as Tr.InstanceOf }
 
     @Test
     fun instanceOf() {

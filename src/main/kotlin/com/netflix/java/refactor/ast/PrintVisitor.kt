@@ -18,7 +18,7 @@ class PrintVisitor : AstVisitor<String>("") {
     fun visitStatement(statement: Tree): String {
         return visit(statement) + when(statement) {
             is Tr.Assign, is Tr.AssignOp, is Tr.Break, is Tr.Continue, is Tr.MethodInvocation -> ";"
-            is Tr.NewClass, is Tr.Return, is Tr.Throw, is Tr.Unary, is Tr.VariableDecl -> ";"
+            is Tr.NewClass, is Tr.Return, is Tr.Throw, is Tr.Unary, is Tr.VariableDecls -> ";"
             is Tr.Label -> ":"
             else -> ""
         }
@@ -366,34 +366,35 @@ class PrintVisitor : AstVisitor<String>("") {
         })
     }
 
-    override fun visitVariable(variable: Tr.VariableDecl): String {
-        val modifiers = variable.modifiers.fold("") { s, mod -> s + mod.fmt(when(mod) {
-            is Tr.VariableDecl.Modifier.Public -> "public"
-            is Tr.VariableDecl.Modifier.Protected -> "protected"
-            is Tr.VariableDecl.Modifier.Private -> "private"
-            is Tr.VariableDecl.Modifier.Abstract -> "abstract"
-            is Tr.VariableDecl.Modifier.Static -> "static"
-            is Tr.VariableDecl.Modifier.Final -> "final"
-            is Tr.VariableDecl.Modifier.Transient -> "transient"
-            is Tr.VariableDecl.Modifier.Volatile -> "volatile"
+    override fun visitMultiVariable(multiVariable: Tr.VariableDecls): String {
+        val modifiers = multiVariable.modifiers.fold("") { s, mod -> s + mod.fmt(when(mod) {
+            is Tr.VariableDecls.Modifier.Public -> "public"
+            is Tr.VariableDecls.Modifier.Protected -> "protected"
+            is Tr.VariableDecls.Modifier.Private -> "private"
+            is Tr.VariableDecls.Modifier.Abstract -> "abstract"
+            is Tr.VariableDecls.Modifier.Static -> "static"
+            is Tr.VariableDecls.Modifier.Final -> "final"
+            is Tr.VariableDecls.Modifier.Transient -> "transient"
+            is Tr.VariableDecls.Modifier.Volatile -> "volatile"
         }) }
 
-        val init = when(variable.initializer) {
+        val varargs = when(multiVariable.varArgs) {
+            is Tr.VariableDecls.Varargs -> multiVariable.varArgs.fmt("...")
+            else -> ""
+        }
+
+        return multiVariable.fmt("${visit(multiVariable.annotations)}$modifiers" +
+                "${visit(multiVariable.typeExpr)}${visitDims(multiVariable.dimensionsBeforeName)}" +
+                "$varargs${visit(multiVariable.vars, ",")}")
+    }
+
+    override fun visitVariable(variable: Tr.VariableDecls.NamedVar): String {
+        val init = when (variable.initializer) {
             is Expression -> "=${visit(variable.initializer)}"
             else -> ""
         }
 
-        val varargs = when(variable.varArgs) {
-            is Tr.VariableDecl.Varargs -> variable.varArgs.fmt("...")
-            else -> ""
-        }
-
-        fun visitDims(dims: List<Tr.VariableDecl.Dimension>): String =
-            dims.fold("") { s, d -> s + d.fmt("[${visit(d.whitespace)}]") }
-
-        return variable.fmt("${visit(variable.annotations)}$modifiers" +
-                "${visit(variable.varType)}${visitDims(variable.dimensionsBeforeName)}" +
-                "$varargs${visit(variable.name)}${visitDims(variable.dimensionsAfterName)}$init")
+        return variable.fmt("${visit(variable.name)}${visitDims(variable.dimensionsAfterName)}$init")
     }
 
     override fun visitWhileLoop(whileLoop: Tr.WhileLoop): String {
@@ -430,4 +431,7 @@ class PrintVisitor : AstVisitor<String>("") {
         is Formatting.Infer -> ""
         is Formatting.None -> ""
     }
+
+    private fun visitDims(dims: List<Tr.VariableDecls.Dimension>): String =
+            dims.fold("") { s, d -> s + d.fmt("[${visit(d.whitespace)}]") }
 }

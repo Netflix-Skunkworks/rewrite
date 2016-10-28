@@ -18,8 +18,8 @@ abstract class TernaryTest(parser: Parser): AstTest(parser) {
         """)
     }
 
-    val evenOrOdd by lazy { a.firstMethodStatement() as Tr.VariableDecl }
-    val ternary by lazy { evenOrOdd.initializer as Tr.Ternary }
+    val evenOrOdd by lazy { a.firstMethodStatement() as Tr.VariableDecls }
+    val ternary by lazy { evenOrOdd.vars[0].initializer as Tr.Ternary }
 
     @Test
     fun ternary() {

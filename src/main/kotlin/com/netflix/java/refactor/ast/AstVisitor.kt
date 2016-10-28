@@ -179,6 +179,12 @@ open class AstVisitor<R> {
     open fun visitMultiCatch(multiCatch: Tr.MultiCatch): R =
             visit(multiCatch.alternatives)
 
+    open fun visitMultiVariable(multiVariable: Tr.VariableDecls): R =
+            visit(multiVariable.annotations)
+                    .andThen(multiVariable.modifiers)
+                    .andThen(multiVariable.typeExpr)
+                    .andThen(multiVariable.vars)
+
     open fun visitNewArray(newArray: Tr.NewArray): R =
             visit(newArray.typeExpr)
                     .andThen(newArray.dimensions.map { it.size })
@@ -240,11 +246,9 @@ open class AstVisitor<R> {
 
     open fun visitUnary(unary: Tr.Unary): R = visit(unary.expr)
 
-    open fun visitVariable(variable: Tr.VariableDecl): R =
-            visit(variable.annotations)
-                    .andThen(variable.modifiers)
-                    .andThen(variable.varType)
-                    .andThen(variable.name)
+    open fun visitVariable(variable: Tr.VariableDecls.NamedVar): R =
+            visit(variable.name)
+                    .andThen(variable.dimensionsAfterName)
                     .andThen(variable.initializer)
 
     open fun visitWhileLoop(whileLoop: Tr.WhileLoop): R =

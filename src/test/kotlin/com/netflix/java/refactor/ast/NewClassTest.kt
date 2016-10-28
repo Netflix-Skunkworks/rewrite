@@ -22,7 +22,7 @@ abstract class NewClassTest(parser: Parser): AstTest(parser) {
             }
         """
         
-        val b = parse(c, whichDependsOn = a).fields()[0]
+        val b = parse(c, whichDependsOn = a).fields()[0].vars[0]
         assertEquals("a.A.B", b.type.asClass()?.fullyQualifiedName)
     }
 
@@ -36,7 +36,7 @@ abstract class NewClassTest(parser: Parser): AstTest(parser) {
         """
 
         val cu = parse(c, whichDependsOn = a)
-        val b = cu.fields()[0]
+        val b = cu.fields()[0].vars[0]
         assertEquals("a.A.B", b.type.asClass()?.fullyQualifiedName)
         assertEquals("A.B", (b.initializer as Tr.NewClass).clazz.printTrimmed())
     }
@@ -50,7 +50,7 @@ abstract class NewClassTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val newClass = a.fields()[0].initializer as Tr.NewClass
+        val newClass = a.fields()[0].vars[0].initializer as Tr.NewClass
         assertEquals(1, newClass.args.args.size)
     }
 
@@ -63,7 +63,7 @@ abstract class NewClassTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val newClass = a.fields()[0].initializer as Tr.NewClass
+        val newClass = a.fields()[0].vars[0].initializer as Tr.NewClass
         assertEquals("new ArrayList< String > ( 0 ) { }", newClass.printTrimmed())
     }
 
@@ -76,7 +76,7 @@ abstract class NewClassTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val newClass = a.fields()[0].initializer as Tr.NewClass
+        val newClass = a.fields()[0].vars[0].initializer as Tr.NewClass
         assertEquals("new ArrayList < > ()", newClass.printTrimmed())
     }
 }

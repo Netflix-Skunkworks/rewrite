@@ -22,7 +22,7 @@ abstract class ForEachLoopTest(parser: Parser): AstTest(parser) {
 
     @Test
     fun forEachLoop() {
-        assertTrue(forEachLoop.control.variable is Tr.VariableDecl)
+        assertTrue(forEachLoop.control.variable is Tr.VariableDecls)
         assertTrue(forEachLoop.control.iterable is Expression)
     }
 

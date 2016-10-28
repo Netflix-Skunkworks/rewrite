@@ -13,7 +13,7 @@ interface Tree {
 
     fun <R> accept(v: AstVisitor<R>): R = v.default(null)
     fun format(): Tree = throw NotImplementedError()
-    fun printTrimmed() = print().trimIndent()
+    fun printTrimmed() = print().trimIndent().trim()
     fun print() = PrintVisitor().visit(this)
 }
 
@@ -175,7 +175,7 @@ sealed class Tr : Serializable, Tree {
         override fun <R> accept(v: AstVisitor<R>): R = v.visitCase(this)
     }
 
-    data class Catch(val param: Parentheses<VariableDecl>,
+    data class Catch(val param: Parentheses<VariableDecls>,
                      val body: Block<Statement>,
                      override val formatting: Formatting) : Tr() {
 
@@ -200,7 +200,7 @@ sealed class Tr : Serializable, Tree {
          */
         fun enumValues(): List<EnumValue> = body.statements.filterIsInstance<EnumValue>()
 
-        fun fields(): List<VariableDecl> = body.statements.filterIsInstance<VariableDecl>()
+        fun fields(): List<VariableDecls> = body.statements.filterIsInstance<VariableDecls>()
         fun methods(): List<MethodDecl> = body.statements.filterIsInstance<MethodDecl>()
 
         sealed class Modifier : Tr() {
@@ -301,7 +301,7 @@ sealed class Tr : Serializable, Tree {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitForEachLoop(this)
 
-        data class Control(val variable: VariableDecl,
+        data class Control(val variable: VariableDecls,
                            val iterable: Expression,
                            override val formatting: Formatting): Tr()
     }
@@ -312,7 +312,7 @@ sealed class Tr : Serializable, Tree {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitForLoop(this)
 
-        data class Control(val init: List<Statement>,
+        data class Control(val init: Statement, // either Tr.Empty or Tr.VariableDecls
                            val condition: Expression,
                            val update: List<Statement>,
                            override val formatting: Formatting): Tr()
@@ -362,7 +362,7 @@ sealed class Tr : Serializable, Tree {
         override fun <R> accept(v: AstVisitor<R>): R = v.visitLabel(this)
     }
 
-    data class Lambda(val params: List<VariableDecl>,
+    data class Lambda(val params: List<VariableDecls>,
                       val arrow: Arrow,
                       val body: Tree,
                       override val type: Type?,
@@ -560,7 +560,7 @@ sealed class Tr : Serializable, Tree {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitTry(this)
 
-        data class Resources(val decls: List<VariableDecl>, override val formatting: Formatting): Tr()
+        data class Resources(val decls: List<VariableDecls>, override val formatting: Formatting): Tr()
         data class Finally(val block: Block<Statement>, override val formatting: Formatting): Tr()
     }
 
@@ -612,19 +612,16 @@ sealed class Tr : Serializable, Tree {
         }
     }
 
-    data class VariableDecl(
+    data class VariableDecls(
             val annotations: List<Annotation>,
             val modifiers: List<Modifier>,
-            val varType: TypeTree,
+            val typeExpr: TypeTree,
             val varArgs: Varargs?,
             val dimensionsBeforeName: List<Dimension>,
-            val name: Ident,
-            val dimensionsAfterName: List<Dimension>, // thanks for making it hard, Java
-            val initializer: Expression?,
-            val type: Type?,
+            val vars: List<NamedVar>,
             override val formatting: Formatting) : Statement, Tr() {
 
-        override fun <R> accept(v: AstVisitor<R>): R = v.visitVariable(this)
+        override fun <R> accept(v: AstVisitor<R>): R = v.visitMultiVariable(this)
 
         sealed class Modifier: Tr() {
             data class Public(override val formatting: Formatting): Modifier()
@@ -639,6 +636,14 @@ sealed class Tr : Serializable, Tree {
 
         data class Varargs(override val formatting: Formatting): Tr()
         data class Dimension(val whitespace: Tr.Empty, override val formatting: Formatting): Tr()
+        
+        data class NamedVar(val name: Ident,
+                            val dimensionsAfterName: List<Dimension>, // thanks for making it hard, Java
+                            val initializer: Expression?,
+                            val type: Type?,
+                            override val formatting: Formatting): Tr() {
+            override fun <R> accept(v: AstVisitor<R>): R = v.visitVariable(this)
+        }
     }
 
     data class WhileLoop(val condition: Parentheses<Expression>,

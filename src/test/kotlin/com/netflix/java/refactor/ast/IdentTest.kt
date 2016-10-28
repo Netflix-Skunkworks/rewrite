@@ -16,7 +16,7 @@ abstract class IdentTest(parser: Parser): AstTest(parser) {
             }
         """)
         
-        val ident = a.typeDecls[0].fields().first { it.name.name == "m" }.initializer as Tr.Ident
+        val ident = a.fields(1..1)[0].vars[0].initializer as Tr.Ident
         assertEquals("n", ident.name)
         assertEquals("java.lang.Integer", ident.type.asClass()?.fullyQualifiedName)
     }

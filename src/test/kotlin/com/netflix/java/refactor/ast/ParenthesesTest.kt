@@ -18,7 +18,7 @@ abstract class ParenthesesTest(parser: Parser): AstTest(parser) {
         """)
     }
 
-    val variable by lazy { (a.firstMethodStatement() as Tr.VariableDecl).initializer }
+    val variable by lazy { (a.firstMethodStatement() as Tr.VariableDecls).vars[0].initializer }
 
     @Test
     fun parentheses() {

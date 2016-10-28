@@ -2,6 +2,7 @@ package com.netflix.java.refactor.parse
 
 import com.netflix.java.refactor.ast.*
 import com.netflix.java.refactor.ast.Tree
+import com.oracle.tools.packager.JreUtils.Rule.suffix
 import com.sun.source.tree.*
 import com.sun.source.util.TreeScanner
 import com.sun.tools.javac.code.Flags
@@ -137,39 +138,14 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
             null
         }
 
-        val statementDelim = { t: JdkTree ->
-            sourceBefore(when(t) {
-                is JCTree.JCLabeledStatement -> ""
-                is JCTree.JCThrow -> ";"
-                is JCTree.JCSynchronized -> ""
-                is JCTree.JCBlock -> ""
-                is JCTree.JCTry -> ""
-                is JCTree.JCSkip -> ""
-                is JCTree.JCWhileLoop -> ""
-                is JCTree.JCIf -> ""
-                is JCTree.JCForLoop -> ""
-                is JCTree.JCBreak -> ";"
-                is JCTree.JCSwitch -> ""
-                is JCTree.JCAssert -> ";"
-                is JCTree.JCContinue -> ";"
-                is JCTree.JCExpressionStatement -> ";"
-                is JCTree.JCReturn -> ";"
-                is JCTree.JCCase -> ":"
-                is JCTree.JCEnhancedForLoop -> ""
-                is JCTree.JCClassDecl -> ""
-                is JCTree.JCVariableDecl -> ";"
-                is JCTree.JCDoWhileLoop -> ""
-                else -> throw IllegalStateException("Unexpected statement type ${t.javaClass}")
-            })
-        }
-
+        @Suppress("UNCHECKED_CAST")
         val statements = node
                 .statements
                 .filter {
                     // filter out synthetic super() invocations and the like
                     it.endPos() > 0
                 }
-                .convertAll<Statement>(statementDelim, statementDelim)
+                .convertBlockContents() as List<Statement>
 
         return Tr.Block<Statement>(static, statements, fmt, sourceBefore("}"))
     }
@@ -198,7 +174,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
         skip("catch")
 
         val paramPrefix = sourceBefore("(")
-        val paramDecl = node.parameter.convert<Tr.VariableDecl> { sourceBefore(")") }
+        val paramDecl = node.parameter.convert<Tr.VariableDecls> { sourceBefore(")") }
         val param = Tr.Parentheses(paramDecl, Formatting.Reified(paramPrefix))
 
         return Tr.Catch(param, node.block.convert(), fmt)
@@ -257,7 +233,6 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
                     sourceMatching("\\s*;").trimEnd(';')
                 })
 
-        val memberDelim = { t: JdkTree -> if(t is JCTree.JCVariableDecl) sourceBefore(";") else "" }
         val members = node.members
                 // we don't care about the compiler-inserted default constructor,
                 // since it will never be subject to refactoring
@@ -268,7 +243,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
                         else -> true
                     }
                 }
-                .convertAll<Tree>(memberDelim, memberDelim)
+                .convertBlockContents()
 
         val body = Tr.Block<Tree>(null, enumValues + members, Formatting.Reified(bodyPrefix), sourceBefore("}"))
 
@@ -359,7 +334,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
     override fun visitEnhancedForLoop(node: EnhancedForLoopTree, fmt: Formatting.Reified): Tree {
         skip("for")
         val ctrlPrefix = sourceBefore("(")
-        val variable = node.variable.convert<Tr.VariableDecl> { sourceBefore(":") }
+        val variable = node.variable.convert<Tr.VariableDecls> { sourceBefore(":") }
         val expression = node.expression.convert<Expression> { sourceBefore(")") }
 
         return Tr.ForEachLoop(
@@ -398,7 +373,9 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
             }
         }
 
-        val init = node.initializer.convertAllOrEmpty(COMMA_DELIM, SEMI_DELIM)
+        val init: Statement = node.initializer.convertBlockContents().filterIsInstance<Tr.VariableDecls>().firstOrNull() ?:
+                Tr.Empty(Formatting.Reified("", sourceBefore(";")))
+
         val condition = node.condition.convertOrNull<Expression>(SEMI_DELIM) ?:
                 Tr.Empty(Formatting.Reified("", sourceBefore(";")))
         val update = node.update.convertAllOrEmpty(COMMA_DELIM, { sourceBefore(")") })
@@ -571,7 +548,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
 
         val paramFmt = Formatting.Reified(sourceBefore("("))
         val params = if(node.parameters.isNotEmpty()) {
-            Tr.MethodDecl.Parameters(node.parameters.convertAll<Tr.VariableDecl>(COMMA_DELIM, { sourceBefore(")") }), paramFmt)
+            Tr.MethodDecl.Parameters(node.parameters.convertAll<Tr.VariableDecls>(COMMA_DELIM, { sourceBefore(")") }), paramFmt)
         } else {
             Tr.MethodDecl.Parameters(listOf(Tr.Empty(Formatting.Reified(sourceBefore(")")))), paramFmt)
         }
@@ -744,7 +721,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
         skip("try")
         val resources = if(node.resources.isNotEmpty()) {
             val resourcesPrefix = sourceBefore("(")
-            val decls = node.resources.convertAll<Tr.VariableDecl>(SEMI_DELIM, { sourceBefore(")") })
+            val decls = node.resources.convertAll<Tr.VariableDecls>(SEMI_DELIM, { sourceBefore(")") })
             Tr.Try.Resources(decls, Formatting.Reified(resourcesPrefix))
         } else null
 
@@ -822,30 +799,31 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
         return Tr.Unary(op, expr, node.type(), fmt)
     }
 
-    override fun visitVariable(node: VariableTree, fmt: Formatting.Reified): Tree? {
-        logger.trace("Visiting variable {}", node.name.toString())
-
-        if(node.name.toString() == "<error>") return null
-
-        if(node.modifiers.hasFlag(Flags.ENUM)) {
-            return visitEnumVariable(node, fmt)
+    override fun visitVariable(node: VariableTree, fmt: Formatting.Reified): Tree {
+        return if(node.modifiers.hasFlag(Flags.ENUM)) {
+            visitEnumVariable(node, fmt)
+        } else {
+            visitVariables(listOf(node), fmt) // method arguments cannot be multi-declarations
         }
+    }
 
+    fun visitVariables(nodes: List<VariableTree>, fmt: Formatting.Reified): Tr.VariableDecls {
+        val node = nodes[0] as JCTree.JCVariableDecl
         val annotations = node.modifiers.annotations.convertAll<Tr.Annotation>(NO_DELIM, NO_DELIM)
 
         val modifiers = if((node.modifiers as JCTree.JCModifiers).pos >= 0) {
-            node.modifiers.flags.mapIndexed { i, mod ->
+            node.modifiers.getFlags().mapIndexed { i, mod ->
                 val modFormat = Formatting.Reified(sourceMatching("\\s+"))
                 cursor += mod.name.length
                 when (mod) {
-                    Modifier.PUBLIC -> Tr.VariableDecl.Modifier.Public(modFormat)
-                    Modifier.PROTECTED -> Tr.VariableDecl.Modifier.Protected(modFormat)
-                    Modifier.PRIVATE -> Tr.VariableDecl.Modifier.Private(modFormat)
-                    Modifier.ABSTRACT -> Tr.VariableDecl.Modifier.Abstract(modFormat)
-                    Modifier.STATIC -> Tr.VariableDecl.Modifier.Static(modFormat)
-                    Modifier.FINAL -> Tr.VariableDecl.Modifier.Final(modFormat)
-                    Modifier.TRANSIENT -> Tr.VariableDecl.Modifier.Transient(modFormat)
-                    Modifier.VOLATILE -> Tr.VariableDecl.Modifier.Volatile(modFormat)
+                    Modifier.PUBLIC -> Tr.VariableDecls.Modifier.Public(modFormat)
+                    Modifier.PROTECTED -> Tr.VariableDecls.Modifier.Protected(modFormat)
+                    Modifier.PRIVATE -> Tr.VariableDecls.Modifier.Private(modFormat)
+                    Modifier.ABSTRACT -> Tr.VariableDecls.Modifier.Abstract(modFormat)
+                    Modifier.STATIC -> Tr.VariableDecls.Modifier.Static(modFormat)
+                    Modifier.FINAL -> Tr.VariableDecls.Modifier.Final(modFormat)
+                    Modifier.TRANSIENT -> Tr.VariableDecls.Modifier.Transient(modFormat)
+                    Modifier.VOLATILE -> Tr.VariableDecls.Modifier.Volatile(modFormat)
                     else -> throw IllegalArgumentException("Unexpected modifier $mod")
                 }
             }
@@ -853,26 +831,26 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
             emptyList() // these are implicit modifiers, like "final" on try-with-resources variable declarations
         }
 
-        val jcVarType = (node as JCTree.JCVariableDecl).vartype
-        val varType = when(jcVarType) {
+        val vartype = node.vartype
+        val typeExpr = when(vartype) {
             is JCTree.JCArrayTypeTree -> {
                 // we'll capture the array dimensions in a bit, just convert the element type
-                var elementType = jcVarType.elemtype
+                var elementType = vartype.elemtype
                 while(elementType is JCTree.JCArrayTypeTree) {
                     elementType = elementType.elemtype
                 }
                 elementType.convert<TypeTree>()
             }
-            else -> jcVarType.convert<TypeTree>()
+            else -> vartype.convert<TypeTree>()
         }
 
-        fun dimensions(): List<Tr.VariableDecl.Dimension> {
+        fun dimensions(): List<Tr.VariableDecls.Dimension> {
             val matcher = Pattern.compile("\\G(\\s*)\\[(\\s*)\\]").matcher(source)
-            val dimensions = ArrayList<Tr.VariableDecl.Dimension>()
+            val dimensions = ArrayList<Tr.VariableDecls.Dimension>()
             while(matcher.find(cursor)) {
                 cursor(matcher.end())
                 val ws = Tr.Empty(Formatting.Reified(matcher.group(2)))
-                dimensions.add(Tr.VariableDecl.Dimension(ws, Formatting.Reified(matcher.group(1))))
+                dimensions.add(Tr.VariableDecls.Dimension(ws, Formatting.Reified(matcher.group(1))))
             }
             return dimensions
         }
@@ -882,25 +860,21 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
         val varargMatcher = Pattern.compile("(\\s*)\\.{3}").matcher(source.substring(node.vartype.startPosition, node.vartype.endPos()))
         val varargs = if(varargMatcher.find()) {
             skipPattern("(\\s*)\\.{3}")
-            Tr.VariableDecl.Varargs(Formatting.Reified(varargMatcher.group(1)))
+            Tr.VariableDecls.Varargs(Formatting.Reified(varargMatcher.group(1)))
         } else null
 
-        val name = Tr.Ident(node.name.toString(), node.type(), Formatting.Reified(sourceBefore(node.name.toString()),
-                if(node.init is JCTree.JCExpression) sourceBefore("=") else ""))
+        val vars = nodes.mapIndexed { i, n ->
+            val namedVarPrefix = sourceBefore(n.name.toString())
+            Tr.VariableDecls.NamedVar(
+                    Tr.Ident(n.name.toString(), node.type(), Formatting.Reified("", if (node.init is JCTree.JCExpression) sourceBefore("=") else "")),
+                    dimensions(),
+                    (n as JCTree.JCVariableDecl).init.convertOrNull(),
+                    n.type(),
+                    if(i == nodes.size - 1) Formatting.Reified(namedVarPrefix) else Formatting.Reified(namedVarPrefix, sourceBefore(","))
+            )
+        }
 
-        val afterDimensions = dimensions()
-
-        return Tr.VariableDecl(
-                annotations,
-                modifiers,
-                varType,
-                varargs,
-                beforeDimensions,
-                name,
-                afterDimensions,
-                node.init.convertOrNull(),
-                node.type(),
-                fmt)
+        return Tr.VariableDecls(annotations, modifiers, typeExpr, varargs, beforeDimensions, vars, fmt)
     }
 
     override fun visitWhileLoop(node: WhileLoopTree, fmt: Formatting.Reified): Tree {
@@ -946,6 +920,39 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
 
     private fun <T: Tree> List<JdkTree>.convertAll(innerSuffix: (JdkTree) -> String, suffix: (JdkTree) -> String): List<T> =
             mapIndexed { i, tree -> tree.convert<T>(if (i == size - 1) suffix else innerSuffix) }
+
+    private fun List<JdkTree>?.convertBlockContents(): List<Tree> {
+        if(this == null)
+            return emptyList()
+
+        val statementDelim = { t: JdkTree ->
+            sourceBefore(when(t) {
+                is JCTree.JCThrow, is JCTree.JCBreak, is JCTree.JCAssert, is JCTree.JCContinue -> ";"
+                is JCTree.JCExpressionStatement, is JCTree.JCReturn, is JCTree.JCVariableDecl -> ";"
+                is JCTree.JCCase -> ":"
+                else -> ""
+            })
+        }
+
+        val groups = this.groupBy {
+            // group multi-variable declarations together, other types of members will never have the same starting position
+            (it as JCTree).startPosition
+        }.values
+
+        return groups.mapIndexed { i, treeGroup ->
+            if(treeGroup.size == 1) {
+                treeGroup[0].convert<Tree>(statementDelim)
+            } else {
+                // multi-variable declarations are split into independent overlapping JCVariableDecl's by the Oracle AST
+                val prefix = source.substring(cursor, Math.max((treeGroup[0] as JCTree).startPosition, cursor))
+                cursor += prefix.length
+                @Suppress("UNCHECKED_CAST") val vars = visitVariables(treeGroup as List<VariableTree>, Formatting.Reified(prefix))
+                (vars.formatting as Formatting.Reified).suffix = SEMI_DELIM(treeGroup.last())
+                cursor(Math.max(treeGroup.last().endPos(), cursor))
+                vars
+            }
+        }
+    }
 
     /**
      * --------------

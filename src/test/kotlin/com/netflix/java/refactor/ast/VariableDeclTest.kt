@@ -18,11 +18,13 @@ abstract class VariableDeclTest(parser: Parser): AstTest(parser) {
         """)
         
         val varDecl = a.fields()[0]
-        assertTrue(varDecl.varType is Tr.Ident)
-        assertEquals("a", varDecl.name.name)
-        assertEquals("java.lang.String", varDecl.type.asClass()?.fullyQualifiedName)
-        assertEquals((varDecl.varType as Tr.Ident).type, varDecl.type)
-        assertTrue(varDecl.initializer is Tr.Literal)
+        assertTrue(varDecl.typeExpr is Tr.Ident)
+
+        val singleVar = varDecl.vars[0]
+        assertEquals("a", singleVar.name.name)
+        assertEquals("java.lang.String", singleVar.type.asClass()?.fullyQualifiedName)
+        assertEquals((varDecl.typeExpr as Tr.Ident).type, singleVar.type)
+        assertTrue(singleVar.initializer is Tr.Literal)
     }
 
     @Test
@@ -35,9 +37,11 @@ abstract class VariableDeclTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val varDecl = a.firstMethodStatement() as Tr.VariableDecl
-        assertEquals("java.lang.String", varDecl.type.asClass()?.fullyQualifiedName)
-        assertEquals("a", varDecl.name.name)
+        val varDecl = a.firstMethodStatement() as Tr.VariableDecls
+
+        val singleVar = varDecl.vars[0]
+        assertEquals("java.lang.String", singleVar.type.asClass()?.fullyQualifiedName)
+        assertEquals("a", singleVar.name.name)
     }
 
     @Test
@@ -49,7 +53,7 @@ abstract class VariableDeclTest(parser: Parser): AstTest(parser) {
         """)
 
         val varDecl = a.fields()[0]
-        assertNull(varDecl.initializer)
+        assertNull(varDecl.vars[0].initializer)
     }
 
     @Test
@@ -83,13 +87,26 @@ abstract class VariableDeclTest(parser: Parser): AstTest(parser) {
         assertEquals("String [ ] [ ] s2", s2.printTrimmed())
     }
 
-    // FIXME
+    @Suppress("UNCHECKED_CAST")
     @Test
     fun multipleDeclaration() {
-        parse("""
+        val a = parse("""
             public class A {
+                static {
+                    Integer[] m = { 0 }, n[] = { { 0 } };
+                    for(int i = 0, j = 0; i < 1; i++) { }
+                }
+
                 Integer m = 0, n = 0;
             }
         """)
+
+        assertEquals("Integer m = 0, n = 0", a.fields()[0].printTrimmed())
+
+        val staticInit = a.typeDecls[0].body.statements[0] as Tr.Block<Statement>
+
+        val (localDecl, forLoop) = staticInit.statements.subList(0, 2)
+        assertEquals("Integer[] m = { 0 }, n[] = { { 0 } }", localDecl.printTrimmed())
+        assertEquals("for(int i = 0, j = 0; i < 1; i++) { }", forLoop.printTrimmed())
     }
 }

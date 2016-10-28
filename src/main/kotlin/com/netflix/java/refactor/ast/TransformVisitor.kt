@@ -102,7 +102,7 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
 
     @Suppress("UNCHECKED_CAST")
     override fun visitCatch(catch: Tr.Catch): Tree {
-        val param = visit(catch.param) as Tr.Parentheses<Tr.VariableDecl>
+        val param = visit(catch.param) as Tr.Parentheses<Tr.VariableDecls>
         val body = visit(catch.body) as Tr.Block<Statement>
 
         return (if(param !== catch.param || body !== catch.body) {
@@ -114,7 +114,7 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
         val extends = visit(classDecl.extends)
         val implements = classDecl.implements.mapIfNecessary { visit(it) as Tree }
 
-        val statements = classDecl.body.statements.mapIfNecessary { visit(it) as Tr.VariableDecl }
+        val statements = classDecl.body.statements.mapIfNecessary { visit(it) as Tr.VariableDecls }
         val body = if(statements !== classDecl.body.statements) {
             classDecl.body.copy(statements = statements)
         } else classDecl.body
@@ -161,7 +161,7 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
 
     override fun visitForLoop(forLoop: Tr.ForLoop): Tree {
         val control = forLoop.control.let {
-            val init = it.init.mapIfNecessary { visit(it) as Statement }
+            val init = visit(it.init) as Statement
             val condition = visit(it.condition) as Expression
             val update = it.update.mapIfNecessary { visit(it) as Statement }
 
@@ -179,7 +179,7 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
 
     override fun visitForEachLoop(forEachLoop: Tr.ForEachLoop): Tree {
         val control = forEachLoop.control.let {
-            val variable = visit(it.variable) as Tr.VariableDecl
+            val variable = visit(it.variable) as Tr.VariableDecls
             val iterable = visit(it.iterable) as Expression
 
             if(variable !== it.variable || iterable !== it.iterable) {
@@ -237,7 +237,7 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
     }
 
     override fun visitLambda(lambda: Tr.Lambda): Tree {
-        val params = lambda.params.mapIfNecessary { visit(it) as Tr.VariableDecl }
+        val params = lambda.params.mapIfNecessary { visit(it) as Tr.VariableDecls }
         val body = visit(lambda.body) as Tree
 
         return (if(params !== lambda.params || body !== lambda.body) {
@@ -248,7 +248,7 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
     override fun visitLiteral(literal: Tr.Literal): Tree = literal.transformIfNecessary(cursor)
 
     override fun visitMethod(method: Tr.MethodDecl): Tree {
-        val params = method.params.params.mapIfNecessary { visit(it) as Tr.VariableDecl }
+        val params = method.params.params.mapIfNecessary { visit(it) as Tr.VariableDecls }
 
         val throws = method.throws?.let {
             val exceptions = it.exceptions.mapIfNecessary { visit(it) as NameTree }
@@ -396,7 +396,7 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
     @Suppress("UNCHECKED_CAST")
     override fun visitTry(tryable: Tr.Try): Tree {
         val resources = tryable.resources?.let {
-            val decls = it.decls.mapIfNecessary { visit(it) as Tr.VariableDecl }
+            val decls = it.decls.mapIfNecessary { visit(it) as Tr.VariableDecls }
             if(it.decls !== decls) it.copy(decls) else it
         }
 
@@ -432,14 +432,22 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
         } else unary).transformIfNecessary(cursor)
     }
 
-    override fun visitVariable(variable: Tr.VariableDecl): Tree {
-        val varType = visit(variable.varType) as TypeTree
+    override fun visitVariable(variable: Tr.VariableDecls.NamedVar): Tree? {
         val name = visit(variable.name) as Tr.Ident
         val initializer = visit(variable.initializer) as Expression?
 
-        return (if(varType !== variable.varType || name !== variable.name || initializer !== variable.initializer) {
-            variable.copy(varType = varType, name = name, initializer = initializer)
+        return (if(name !== variable.name || initializer !== variable.initializer) {
+            variable.copy(name = name, initializer = initializer)
         } else variable).transformIfNecessary(cursor)
+    }
+
+    override fun visitMultiVariable(multiVariable: Tr.VariableDecls): Tree {
+        val typeExpr = visit(multiVariable.typeExpr) as TypeTree
+        val vars = multiVariable.vars.mapIfNecessary { visit(it) as Tr.VariableDecls.NamedVar }
+
+        return (if(typeExpr !== multiVariable.typeExpr || vars !== multiVariable.vars) {
+            multiVariable.copy(typeExpr = typeExpr, vars = vars)
+        } else multiVariable).transformIfNecessary(cursor)
     }
 
     @Suppress("UNCHECKED_CAST")

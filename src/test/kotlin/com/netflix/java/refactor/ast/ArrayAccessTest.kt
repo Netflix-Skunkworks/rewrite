@@ -19,8 +19,8 @@ abstract class ArrayAccessTest(parser: Parser): AstTest(parser) {
         """)
     }
 
-    val variable by lazy { a.firstMethodStatement() as Tr.VariableDecl }
-    val arrAccess by lazy { variable.initializer as Tr.ArrayAccess }
+    val variable by lazy { a.firstMethodStatement() as Tr.VariableDecls }
+    val arrAccess by lazy { variable.vars[0].initializer as Tr.ArrayAccess }
 
     @Test
     fun arrayAccess() {

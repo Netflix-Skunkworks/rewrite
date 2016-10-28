@@ -43,30 +43,30 @@ data class ChangeField(val clazz: String, val tx: RefactorTransaction) : Refacto
 //                )
 //            } else ChangeFieldScanner(this)
 
-    override fun visitVariable(variable: Tr.VariableDecl): List<RefactorFix> {
-        if(variable.type.asClass()?.fullyQualifiedName == clazz) {
-            return refactorField(variable)
+    override fun visitMultiVariable(multiVariable: Tr.VariableDecls): List<RefactorFix> =
+        multiVariable.vars.fold(emptyList()) { fixes, variable ->
+            if (variable.type.asClass()?.fullyQualifiedName == clazz) {
+                fixes + refactorField(multiVariable, variable)
+            } else fixes
         }
-        return super.visitVariable(variable)
-    }
 
-    private fun refactorField(decl: Tr.VariableDecl): ArrayList<RefactorFix> {
+    private fun refactorField(decls: Tr.VariableDecls, variable: Tr.VariableDecls.NamedVar): ArrayList<RefactorFix> {
         val fixes = ArrayList<RefactorFix>()
 
         if (refactorDelete) {
-            fixes.add(decl.delete())
+            fixes.add(decls.delete())
             return fixes
         }
         
-        if (decl.varType != null && refactorTargetType is String && !decl.varType.matches(refactorTargetType)) {
-            fixes.add(decl.varType.replace(className(refactorTargetType!!)))
+        if (refactorTargetType is String && !decls.typeExpr.matches(refactorTargetType)) {
+            fixes.add(decls.typeExpr.replace(className(refactorTargetType!!)))
         }
 
-        if (refactorName is String && decl.name.toString() != refactorName) {
+        if (refactorName is String && variable.name.toString() != refactorName) {
             // unfortunately name is not represented with a JCTree, so we have to resort to extraordinary measures...
-            val original = decl.name.toString()
+            val original = variable.name.toString()
             
-//            val start = (decl.formatting as Formatting.Persisted).pos.start + decl.printTrimmed().substringBefore(original).length
+//            val start = (decls.formatting as Formatting.Persisted).pos.start + decls.printTrimmed().substringBefore(original).length
             
 //            fixes.add(replace(start..start+original.length, refactorName!!))
         }

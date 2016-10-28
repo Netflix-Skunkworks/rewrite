@@ -93,7 +93,7 @@ abstract class TryCatchTest(parser: Parser): AstTest(parser) {
             }
         """)
 
-        val multiCatch = (a.firstMethodStatement() as Tr.Try).catches[0].param.tree.varType as Tr.MultiCatch
+        val multiCatch = (a.firstMethodStatement() as Tr.Try).catches[0].param.tree.typeExpr as Tr.MultiCatch
         assertEquals("FileNotFoundException | RuntimeException", multiCatch.printTrimmed())
     }
 
