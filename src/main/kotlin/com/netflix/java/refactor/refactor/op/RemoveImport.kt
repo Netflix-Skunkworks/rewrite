@@ -71,7 +71,7 @@ class RemoveImport(val clazz: String) : RefactorTreeVisitor() {
         }
         staticNamedImports.forEach { staticImport ->
             val method = staticImport.qualid.name.name
-            if(referencedMethods.none { ref -> ref.methodName() == method })
+            if(referencedMethods.none { ref -> ref.name.name == method })
                 staticImportFixes.add(staticImport.delete())
         }
         return staticImportFixes

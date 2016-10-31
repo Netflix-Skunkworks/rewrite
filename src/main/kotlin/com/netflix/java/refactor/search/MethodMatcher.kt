@@ -33,14 +33,16 @@ class MethodMatcher(signature: String) {
 
     fun matches(meth: Tr.MethodInvocation): Boolean {
         val targetType = meth.declaringType?.fullyQualifiedName ?: return false
-        return targetTypePattern.matches(targetType) && 
-                methodNamePattern.matches(meth.methodName()) &&
-                argumentPattern.matches(meth.args.args.map {
-                    val type = it.type
-                    when(type) {
+        return targetTypePattern.matches(targetType) &&
+                methodNamePattern.matches(meth.name.name) &&
+                meth.resolvedSignature is Type.Method &&
+                argumentPattern.matches(meth.resolvedSignature.paramTypes.map { type ->
+                    fun typePattern(type: Type): String? = when(type) {
                         is Type.Class -> type.fullyQualifiedName
-                        else -> return@matches false
+                        is Type.Array -> typePattern(type.elemType) + "[]"
+                        else -> null
                     }
+                    typePattern(type) ?: false
                 }.joinToString(","))
     }
 }
@@ -59,7 +61,7 @@ fun String.aspectjNameToRegexSyntax() = this
         .replace("[", "\\[").replace("]", "\\]")
         .replace("([^\\.])*.([^\\.])*", "$1\\.$2")
         .replace("*", "[^\\.]*")
-        .replace("", "\\.(.+\\.)?")
+        .replace("..", "\\.(.+\\.)?")
 
 class TypeVisitor : RefactorMethodSignatureParserBaseVisitor<String>() {
     override fun visitClassNameOrInterface(ctx: RefactorMethodSignatureParser.ClassNameOrInterfaceContext): String {

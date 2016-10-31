@@ -240,6 +240,11 @@ sealed class Tr : Serializable, Tree {
         fun findInheritedFields(clazz: Class<*>): List<Type.Var> = FindInheritedFields(clazz.name).visit(this)
 
         fun findInheritedFields(clazz: String): List<Type.Var> = FindInheritedFields(clazz).visit(this)
+
+        fun findMethodCalls(signature: String): List<Tr.MethodInvocation> = FindMethods(signature).visit(this)
+
+        fun hasType(clazz: Class<*>): Boolean = HasType(clazz.name).visit(this)
+        fun hasType(clazz: String): Boolean = HasType(clazz).visit(this)
     }
 
     data class CompilationUnit(val source: SourceFile,
@@ -250,13 +255,8 @@ sealed class Tr : Serializable, Tree {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitCompilationUnit(this)
 
-        fun hasType(clazz: Class<*>): Boolean = HasType(clazz.name).visit(this)
-        fun hasType(clazz: String): Boolean = HasType(clazz).visit(this)
-
         fun hasImport(clazz: Class<*>): Boolean = HasImport(clazz.name).visit(this)
         fun hasImport(clazz: String): Boolean = HasImport(clazz).visit(this)
-
-        fun findMethodCalls(signature: String): List<Method> = FindMethods(signature).visit(this)
 
         fun refactor() = RefactorTransaction(this)
 
@@ -454,16 +454,12 @@ sealed class Tr : Serializable, Tree {
 
         fun returnType(): Type? = resolvedSignature?.returnType
 
-        fun methodName(): String = when (select) {
-            is FieldAccess -> select.name.name
-            is Ident -> select.name
-            else -> throw IllegalStateException("Unexpected method select type ${select}")
-        }
-
         fun firstMethodInChain(): MethodInvocation =
             if(select is MethodInvocation)
                 select.firstMethodInChain()
             else this
+
+        fun argExpressions() = args.args.filter { it !is Tr.Empty }
 
         data class Arguments(val args: List<Expression>, override val formatting: Formatting): Tr()
         data class TypeParameters(val params: List<NameTree>, override val formatting: Formatting): Tr()

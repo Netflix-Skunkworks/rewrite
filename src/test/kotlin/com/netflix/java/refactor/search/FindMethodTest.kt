@@ -18,10 +18,10 @@ abstract class FindMethodTest(parser: Parser): AstTest(parser) {
             |}
         """)
         
-        val m = a.findMethodCalls("java.util.Collections emptyList()").first()
+        val m = a.typeDecls[0].findMethodCalls("java.util.Collections emptyList()").first()
         
-        assertEquals("Collections.emptyList", m.name)
-        assertEquals("Collections.emptyList()", m.source)
+        assertEquals("emptyList", m.name.name)
+        assertEquals("Collections.emptyList()", m.printTrimmed())
     }
 
     @Test
@@ -40,7 +40,7 @@ abstract class FindMethodTest(parser: Parser): AstTest(parser) {
             |}
         """
 
-        assertTrue(parse(b, a).findMethodCalls("A foo(String, Object...)").isNotEmpty())
+        assertTrue(parse(b, a).typeDecls[0].findMethodCalls("A foo(String, Object...)").isNotEmpty())
     }
 
     @Test
@@ -61,7 +61,7 @@ abstract class FindMethodTest(parser: Parser): AstTest(parser) {
             |}
         """
 
-        assertEquals(1, parse(a, b).findMethodCalls("B.C foo()").size)
+        assertEquals(1, parse(a, b).typeDecls[0].findMethodCalls("B.C foo()").size)
     }
 }
 

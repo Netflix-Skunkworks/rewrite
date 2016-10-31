@@ -4,15 +4,11 @@ import com.netflix.java.refactor.ast.AstVisitor
 import com.netflix.java.refactor.ast.Cursor
 import com.netflix.java.refactor.ast.Tr
 
-data class Method(val name: String, val source: String)
-
-class FindMethods(signature: String): AstVisitor<List<Method>>(emptyList()) {
+class FindMethods(signature: String): AstVisitor<List<Tr.MethodInvocation>>(emptyList()) {
     val matcher = MethodMatcher(signature)
     
-    override fun visitMethodInvocation(meth: Tr.MethodInvocation): List<Method> {
-        if(matcher.matches(meth)) {
-            return listOf(Method(meth.toString(), meth.printTrimmed()))
-        }
-        return super.visitMethodInvocation(meth)
-    }
+    override fun visitMethodInvocation(meth: Tr.MethodInvocation): List<Tr.MethodInvocation> =
+        if(matcher.matches(meth))
+            listOf(meth)
+        else super.visitMethodInvocation(meth)
 }
