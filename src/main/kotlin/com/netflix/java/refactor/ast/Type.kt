@@ -49,7 +49,7 @@ sealed class Type(): Serializable {
     
     data class Method(val returnType: Type?, val paramTypes: List<Type>): Type()
    
-    data class GenericTypeVariable(val name: String, val bound: Class?): Type()
+    data class GenericTypeVariable(val fullyQualifiedName: String, val bound: Class?): Type()
     
     data class Array(val elemType: Type): Type()
     
@@ -115,11 +115,9 @@ fun Type?.asMethod(): Type.Method? = when(this) {
     else -> null
 }
 
-fun Type?.isArrayOfType(qualifiedNameOrTypeVar: String): Boolean = when(this) {
-    is Type.Array -> when(this.elemType) {
-        is Type.Class -> this.elemType.fullyQualifiedName == qualifiedNameOrTypeVar
-        is Type.GenericTypeVariable -> this.elemType.name == qualifiedNameOrTypeVar
-        else -> false
-    }
+fun Type?.hasElementType(fullyQualifiedName: String): Boolean = when(this) {
+    is Type.Array -> this.elemType.hasElementType(fullyQualifiedName)
+    is Type.Class -> this.fullyQualifiedName == fullyQualifiedName
+    is Type.GenericTypeVariable -> this.fullyQualifiedName == fullyQualifiedName
     else -> false
 }

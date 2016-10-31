@@ -39,7 +39,6 @@ abstract class HasTypeTest(parser: Parser) : AstTest(parser) {
             |package a;
             |public class A { 
             |    public static A none() { return null; }
-            |    public A none() { return null; }
             |}
         """
         
@@ -78,7 +77,7 @@ abstract class HasTypeTest(parser: Parser) : AstTest(parser) {
                         @Override public void foo() {
                             bar();
                         }
-                    }
+                    };
                 }
                 public static void bar() {}
             }

@@ -1,5 +1,6 @@
 package com.netflix.java.refactor.ast
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.netflix.java.refactor.diff.JavaSourceDiff
 import com.netflix.java.refactor.parse.SourceFile
 import com.netflix.java.refactor.refactor.RefactorTransaction
@@ -26,12 +27,16 @@ interface Expression : Tree {
 /**
  * A tree representing a simple or fully qualified name
  */
-interface NameTree : Tree
+interface NameTree : Tree {
+    val type: Type?
+}
 
 /**
  * A tree identifying a type (e.g. a simple or fully qualified class name, a primitive, array, or parameterized type)
  */
-interface TypeTree: Tree
+interface TypeTree: Tree {
+    val type: Type?
+}
 
 /**
  * The stylistic surroundings of a tree element
@@ -77,6 +82,9 @@ sealed class Tr : Serializable, Tree {
     data class ArrayType(val elementType: TypeTree,
                          val dimensions: List<Dimension>,
                          override val formatting: Formatting): TypeTree, Tr() {
+
+        @JsonIgnore
+        override val type = elementType.type
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitArrayType(this)
 
@@ -218,6 +226,20 @@ sealed class Tr : Serializable, Tree {
             data class Interface(override val formatting: Formatting): Kind()
             data class Annotation(override val formatting: Formatting): Kind()
         }
+
+        /**
+         * Find fields defined on this class, but do not include inherited fields up the type hierarchy
+         */
+        fun findFields(clazz: Class<*>): List<Tr.VariableDecls> = FindFields(clazz.name).visit(this)
+
+        fun findFields(clazz: String): List<Tr.VariableDecls> = FindFields(clazz).visit(this)
+
+        /**
+         * Find fields defined up the type hierarchy
+         */
+        fun findInheritedFields(clazz: Class<*>): List<Type.Var> = FindInheritedFields(clazz.name).visit(this)
+
+        fun findInheritedFields(clazz: String): List<Type.Var> = FindInheritedFields(clazz).visit(this)
     }
 
     data class CompilationUnit(val source: SourceFile,
@@ -233,20 +255,6 @@ sealed class Tr : Serializable, Tree {
 
         fun hasImport(clazz: Class<*>): Boolean = HasImport(clazz.name).visit(this)
         fun hasImport(clazz: String): Boolean = HasImport(clazz).visit(this)
-
-        /**
-         * Find fields defined on this class, but do not include inherited fields up the type hierarchy
-         */
-        fun findFields(clazz: Class<*>): List<Field> = FindFields(clazz.name, false).visit(this)
-
-        fun findFields(clazz: String): List<Field> = FindFields(clazz, false).visit(this)
-
-        /**
-         * Find fields defined both on this class and visible inherited fields up the type hierarchy
-         */
-        fun findFieldsIncludingInherited(clazz: Class<*>): List<Field> = FindFields(clazz.name, true).visit(this)
-
-        fun findFieldsIncludingInherited(clazz: String): List<Field> = FindFields(clazz, true).visit(this)
 
         fun findMethodCalls(signature: String): List<Method> = FindMethods(signature).visit(this)
 
@@ -452,11 +460,16 @@ sealed class Tr : Serializable, Tree {
             else -> throw IllegalStateException("Unexpected method select type ${select}")
         }
 
+        fun firstMethodInChain(): MethodInvocation =
+            if(select is MethodInvocation)
+                select.firstMethodInChain()
+            else this
+
         data class Arguments(val args: List<Expression>, override val formatting: Formatting): Tr()
         data class TypeParameters(val params: List<NameTree>, override val formatting: Formatting): Tr()
     }
 
-    data class MultiCatch(val alternatives: List<NameTree>, override val formatting: Formatting): TypeTree, Tr() {
+    data class MultiCatch(val alternatives: List<NameTree>, override val formatting: Formatting): Tr() {
         override fun <R> accept(v: AstVisitor<R>): R = v.visitMultiCatch(this)
     }
 
@@ -492,6 +505,9 @@ sealed class Tr : Serializable, Tree {
     data class ParameterizedType(val clazz: NameTree,
                                  val typeArguments: TypeArguments?,
                                  override val formatting: Formatting): TypeTree, Tr() {
+
+        @JsonIgnore
+        override val type = clazz.type
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitParameterizedType(this)
 

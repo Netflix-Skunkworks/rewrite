@@ -971,7 +971,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
                             Type.Var(
                                     it.name.toString(),
                                     it.type.type(stack.plus(this)),
-                                    this.flags() or allFlagsMask
+                                    it.flags() and allFlagsMask
                             )
                         }
 

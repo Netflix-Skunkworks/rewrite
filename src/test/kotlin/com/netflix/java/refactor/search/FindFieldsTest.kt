@@ -1,5 +1,6 @@
 package com.netflix.java.refactor.search
 
+import com.netflix.java.refactor.ast.hasElementType
 import com.netflix.java.refactor.parse.OracleJdkParser
 import com.netflix.java.refactor.parse.Parser
 import com.netflix.java.refactor.test.AstTest
@@ -8,63 +9,38 @@ import org.junit.Test
 import org.junit.Assert.assertTrue
 
 abstract class FindFieldsTest(parser: Parser) : AstTest(parser) {
-    
-    @Test
-    fun findField() {
-        val a = parse("""
-            import java.util.*;
-            public class A {
-               List list = new ArrayList<>();
-            }
-        """)
 
-        val field = a.findFields(List::class.java).first()
-        assertEquals("list", field.name)
-        assertEquals("java.util.List", field.type)
-    }
-    
     @Test
     fun findPrivateNonInheritedField() {
         val a = parse("""
-            import java.util.List;
+            import java.util.*;
             public class A {
                private List list;
+               private Set set;
             }
         """)
 
-        assertEquals("list", a.findFields(List::class.java).firstOrNull()?.name)
+        val fields = a.typeDecls[0].findFields(List::class.java)
+
+        assertEquals(1, fields.size)
+        assertEquals("list", fields[0].vars[0].name.printTrimmed())
+        assertTrue(fields[0].typeExpr.type.hasElementType("java.util.List"))
     }
     
     @Test
-    fun findInheritedField() {
-        val a = """
+    fun findArrayOfType() {
+        val a = parse("""
             import java.util.*;
             public class A {
-               List list;
-               private Set set;
+               private String[] s;
             }
-        """
-        
-        val b = "public class B extends A { }"
+        """)
 
-        assertTrue(parse(b, a).findFields(List::class.java).isEmpty())
+        val fields = a.typeDecls[0].findFields(String::class.java)
 
-        assertEquals("list", parse(b, a).findFieldsIncludingInherited(List::class.java).firstOrNull()?.name)
-        assertTrue(parse(b, a).findFieldsIncludingInherited(Set::class.java).isEmpty())
-    }
-
-    // FIXME this is intended to test the case where there is something that satisfies cu.defs.find { it.type == null }, but
-    // doesn't currently
-    @Test
-    fun unresolvableTypeSymbol() {
-        val b = parse("""
-            import java.util.List;
-            public class <T extends A> B<T> {
-                List unresolvable;
-            }
-		""")
-
-        b.findFields(List::class.java)
+        assertEquals(1, fields.size)
+        assertEquals("s", fields[0].vars[0].name.printTrimmed())
+        assertTrue(fields[0].typeExpr.type.hasElementType("java.lang.String"))
     }
 }
 

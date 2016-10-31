@@ -43,14 +43,14 @@ abstract class MethodInvocationTest(parser: Parser) : AstTest(parser) {
 
         val effectParams = inv.resolvedSignature!!.paramTypes
         assertEquals("java.lang.Integer", effectParams[0].asClass()?.fullyQualifiedName)
-        assertTrue(effectParams[1].isArrayOfType("java.lang.Integer"))
+        assertTrue(effectParams[1].hasElementType("java.lang.Integer"))
 
         // check assumptions about the target method
         // notice how for non-generic method signatures, genericSignature and resolvedSignature match
         val methType = inv.genericSignature!!
         assertEquals("java.lang.Integer", methType.returnType.asClass()?.fullyQualifiedName)
         assertEquals("java.lang.Integer", methType.paramTypes[0].asClass()?.fullyQualifiedName)
-        assertTrue(methType.paramTypes[1].isArrayOfType("java.lang.Integer"))
+        assertTrue(methType.paramTypes[1].hasElementType("java.lang.Integer"))
 
         assertEquals("A", inv.declaringType?.fullyQualifiedName)
     }
@@ -65,14 +65,14 @@ abstract class MethodInvocationTest(parser: Parser) : AstTest(parser) {
 
             val effectiveParams = test.resolvedSignature!!.paramTypes
             assertEquals("java.lang.Integer", effectiveParams[0].asClass()?.fullyQualifiedName)
-            assertTrue(effectiveParams[1].isArrayOfType("java.lang.Integer"))
+            assertTrue(effectiveParams[1].hasElementType("java.lang.Integer"))
 
             // check assumptions about the target method
             // notice how, in the case of generic arguments, the generics are concretized to match the call site
             val methType = test.genericSignature!!
-            assertEquals("T", methType.returnType.asGeneric()?.name)
-            assertEquals("T", methType.paramTypes[0].asGeneric()?.name)
-            assertTrue(methType.paramTypes[1].isArrayOfType("T"))
+            assertEquals("T", methType.returnType.asGeneric()?.fullyQualifiedName)
+            assertEquals("T", methType.paramTypes[0].asGeneric()?.fullyQualifiedName)
+            assertTrue(methType.paramTypes[1].hasElementType("T"))
         }
     }
 

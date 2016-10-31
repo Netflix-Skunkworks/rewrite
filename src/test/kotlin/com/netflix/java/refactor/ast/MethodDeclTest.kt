@@ -34,7 +34,7 @@ abstract class MethodDeclTest(parser: Parser): AstTest(parser) {
         assertEquals("foo", meth.name.name)
         assertEquals(3, meth.params.params.size)
         assertEquals(1, meth.body!!.statements.size)
-        assertEquals("R", ((meth.returnTypeExpr as Tr.Ident).type as Type.GenericTypeVariable).name)
+        assertEquals("R", ((meth.returnTypeExpr as Tr.Ident).type as Type.GenericTypeVariable).fullyQualifiedName)
     }
     
     @Test
