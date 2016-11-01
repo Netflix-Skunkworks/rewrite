@@ -1,9 +1,11 @@
-package com.netflix.java.refactor.ast
+package com.netflix.java.refactor.ast.visitor
 
-import kotlin.properties.Delegates
+import com.netflix.java.refactor.ast.Cursor
+import com.netflix.java.refactor.ast.Tr
+import com.netflix.java.refactor.ast.Tree
+import java.util.*
 
 open class AstVisitor<R> {
-    var cu: Tr.CompilationUnit by Delegates.notNull()
     var default: (Tree?) -> R
 
     constructor(default: R) {
@@ -25,12 +27,15 @@ open class AstVisitor<R> {
         else -> r1
     }
 
-    var cursor: Cursor = Cursor.Empty
+    private val cursorStack = Stack<Tree>()
+    fun cursor(): Cursor = Cursor(cursorStack)
 
     open fun visit(tree: Tree?): R =
             if (tree != null) {
-                cursor = cursor.plus(tree)
-                tree.accept(this)
+                cursorStack.push(tree)
+                val t = tree.accept(this)
+                cursorStack.pop()
+                t
             } else default(tree)
 
     private fun R.andThen(nodes: Iterable<Tree>?): R =
@@ -95,15 +100,12 @@ open class AstVisitor<R> {
                     .andThen(classDecl.implements)
                     .andThen(classDecl.body)
 
-    open fun visitCompilationUnit(cu: Tr.CompilationUnit): R {
-        this.cu = cu
-        return reduce(
-                visit(cu.imports)
-                        .andThen(cu.packageDecl)
-                        .andThen(cu.typeDecls),
-                visitEnd()
-        )
-    }
+    open fun visitCompilationUnit(cu: Tr.CompilationUnit): R = reduce(
+            visit(cu.imports)
+                    .andThen(cu.packageDecl)
+                    .andThen(cu.typeDecls),
+            visitEnd()
+    )
 
     open fun visitContinue(continueStatement: Tr.Continue): R =
             visit(continueStatement.label)
@@ -245,6 +247,9 @@ open class AstVisitor<R> {
             visit(typeParameters.params)
 
     open fun visitUnary(unary: Tr.Unary): R = visit(unary.expr)
+
+    open fun visitUnparsedSource(unparsed: Tr.UnparsedSource): R =
+            default(null)
 
     open fun visitVariable(variable: Tr.VariableDecls.NamedVar): R =
             visit(variable.name)

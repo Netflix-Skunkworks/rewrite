@@ -1,11 +1,10 @@
 package com.netflix.java.refactor.ast
 
 import com.netflix.java.refactor.parse.Parser
-import com.netflix.java.refactor.test.AstTest
-import org.junit.Test
 import org.junit.Assert.assertEquals
+import org.junit.Test
 
-abstract class IdentTest(parser: Parser): AstTest(parser) {
+abstract class IdentTest(p: Parser): Parser by p {
     
     @Test
     fun referToField() {

@@ -1,6 +1,6 @@
 package com.netflix.java.refactor.search
 
-import com.netflix.java.refactor.ast.AstVisitor
+import com.netflix.java.refactor.ast.visitor.AstVisitor
 import com.netflix.java.refactor.ast.Tr
 import com.netflix.java.refactor.ast.Type
 

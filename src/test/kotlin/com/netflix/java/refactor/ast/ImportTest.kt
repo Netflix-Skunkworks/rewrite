@@ -1,12 +1,11 @@
 package com.netflix.java.refactor.ast
 
 import com.netflix.java.refactor.parse.Parser
-import com.netflix.java.refactor.test.AstTest
-import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Test
 
-abstract class ImportTest(parser: Parser): AstTest(parser) {
+abstract class ImportTest(p: Parser): Parser by p {
     
     @Test
     fun matchImport() {
@@ -57,8 +56,6 @@ abstract class ImportTest(parser: Parser): AstTest(parser) {
             |import static java.util.Collections.*;
             |public class A {}
         """)
-        
-        // FIXME scan is getting called too late, so currentPath is missing path elements
         
         assertEquals("import java.util.List", a.imports[0].printTrimmed())
         assertEquals("import static java.util.Collections.*", a.imports[1].printTrimmed())

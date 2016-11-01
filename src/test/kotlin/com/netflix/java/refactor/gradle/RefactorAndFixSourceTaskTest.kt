@@ -4,10 +4,10 @@ import com.netflix.java.refactor.TestKitTest
 import com.netflix.java.refactor.compiler.JavaCompilerHelper
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
+import org.junit.Assert.assertEquals
 import org.junit.Ignore
 import org.junit.Test
 import java.io.File
-import org.junit.Assert.assertEquals
 
 class RefactorAndFixSourceTaskTest: TestKitTest() {
     @Ignore("This test pollutes the classloader, causing refactoring op test to fail")

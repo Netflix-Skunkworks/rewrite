@@ -1,12 +1,11 @@
 package com.netflix.java.refactor.ast
 
 import com.netflix.java.refactor.parse.Parser
-import com.netflix.java.refactor.test.AstTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-abstract class ParenthesesTest(parser: Parser): AstTest(parser) {
+abstract class ParenthesesTest(p: Parser): Parser by p {
 
     val a by lazy {
         parse("""

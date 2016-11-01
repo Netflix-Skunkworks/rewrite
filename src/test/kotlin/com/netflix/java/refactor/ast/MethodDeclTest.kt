@@ -1,12 +1,11 @@
 package com.netflix.java.refactor.ast
 
 import com.netflix.java.refactor.parse.Parser
-import com.netflix.java.refactor.test.AstTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-abstract class MethodDeclTest(parser: Parser): AstTest(parser) {
+abstract class MethodDeclTest(p: Parser): Parser by p {
 
     @Test
     fun constructor() {

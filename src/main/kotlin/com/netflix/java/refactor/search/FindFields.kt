@@ -1,6 +1,7 @@
 package com.netflix.java.refactor.search
 
 import com.netflix.java.refactor.ast.*
+import com.netflix.java.refactor.ast.visitor.AstVisitor
 
 class FindFields(val fullyQualifiedName: String) : AstVisitor<List<Tr.VariableDecls>>(emptyList()) {
 

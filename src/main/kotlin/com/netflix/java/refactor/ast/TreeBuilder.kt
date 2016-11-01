@@ -29,4 +29,15 @@ object TreeBuilder {
 
         return expr.first as NameTree
     }
+
+    fun buildField(cache: TypeCache, modifiers: List<Tr.VariableDecls.Modifier>, clazz: String, name: String, init: Expression?) {
+        val clazzTypeExpr = buildName(cache, clazz)
+        Tr.VariableDecls(emptyList(), modifiers, clazzTypeExpr as TypeTree, null, emptyList(), listOf(Tr.VariableDecls.NamedVar(
+                Tr.Ident(name, null, Formatting.Reified.Empty),
+                emptyList(),
+                init,
+                clazzTypeExpr.type,
+                Formatting.Reified(" ")
+        )), Formatting.Infer)
+    }
 }

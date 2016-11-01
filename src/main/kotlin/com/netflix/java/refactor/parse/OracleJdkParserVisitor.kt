@@ -29,7 +29,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
     private val SEMI_DELIM = { t: JdkTree -> sourceBefore(";") }
     private val NO_DELIM = { t: JdkTree -> "" }
 
-    private val typeCache = TypeCache()
+    private val typeCache = TypeCache.new()
 
     private var endPosTable: EndPosTable by Delegates.notNull()
     private var cursor: Int = 0
@@ -267,6 +267,7 @@ class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tr
                 packageDecl,
                 node.imports.convertAll(SEMI_DELIM, SEMI_DELIM),
                 node.typeDecls.filterIsInstance<JCTree.JCClassDecl>().convertAll(WS_DELIM, { source.substring(cursor) }),
+                typeCache.key,
                 fmt
         )
     }

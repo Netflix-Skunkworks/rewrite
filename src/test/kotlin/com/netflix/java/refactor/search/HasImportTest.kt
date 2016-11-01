@@ -2,12 +2,11 @@ package com.netflix.java.refactor.search
 
 import com.netflix.java.refactor.parse.OracleJdkParser
 import com.netflix.java.refactor.parse.Parser
-import com.netflix.java.refactor.test.AstTest
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-abstract class HasImportTest(parser: Parser): AstTest(parser) {
+abstract class HasImportTest(p: Parser): Parser by p {
     
     @Test
     fun hasImport() {

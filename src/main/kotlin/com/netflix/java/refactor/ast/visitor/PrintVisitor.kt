@@ -1,5 +1,6 @@
-package com.netflix.java.refactor.ast
+package com.netflix.java.refactor.ast.visitor
 
+import com.netflix.java.refactor.ast.*
 import org.apache.commons.lang.StringEscapeUtils
 import java.lang.IllegalStateException
 
@@ -264,6 +265,28 @@ class PrintVisitor : AstVisitor<String>("") {
         return multiCatch.fmt(visit(multiCatch.alternatives, "|"))
     }
 
+    override fun visitMultiVariable(multiVariable: Tr.VariableDecls): String {
+        val modifiers = multiVariable.modifiers.fold("") { s, mod -> s + mod.fmt(when(mod) {
+            is Tr.VariableDecls.Modifier.Public -> "public"
+            is Tr.VariableDecls.Modifier.Protected -> "protected"
+            is Tr.VariableDecls.Modifier.Private -> "private"
+            is Tr.VariableDecls.Modifier.Abstract -> "abstract"
+            is Tr.VariableDecls.Modifier.Static -> "static"
+            is Tr.VariableDecls.Modifier.Final -> "final"
+            is Tr.VariableDecls.Modifier.Transient -> "transient"
+            is Tr.VariableDecls.Modifier.Volatile -> "volatile"
+        }) }
+
+        val varargs = when(multiVariable.varArgs) {
+            is Tr.VariableDecls.Varargs -> multiVariable.varArgs.fmt("...")
+            else -> ""
+        }
+
+        return multiVariable.fmt("${visit(multiVariable.annotations)}$modifiers" +
+                "${visit(multiVariable.typeExpr)}${visitDims(multiVariable.dimensionsBeforeName)}" +
+                "$varargs${visit(multiVariable.vars, ",")}")
+    }
+
     override fun visitNewArray(newArray: Tr.NewArray): String {
         val typeExpr = newArray.typeExpr?.let { "new${visit(newArray.typeExpr)}" } ?: ""
         val dimensions = newArray.dimensions.fold("") { s, dim -> s + dim.fmt("[${visit(dim.size)}]") }
@@ -366,26 +389,8 @@ class PrintVisitor : AstVisitor<String>("") {
         })
     }
 
-    override fun visitMultiVariable(multiVariable: Tr.VariableDecls): String {
-        val modifiers = multiVariable.modifiers.fold("") { s, mod -> s + mod.fmt(when(mod) {
-            is Tr.VariableDecls.Modifier.Public -> "public"
-            is Tr.VariableDecls.Modifier.Protected -> "protected"
-            is Tr.VariableDecls.Modifier.Private -> "private"
-            is Tr.VariableDecls.Modifier.Abstract -> "abstract"
-            is Tr.VariableDecls.Modifier.Static -> "static"
-            is Tr.VariableDecls.Modifier.Final -> "final"
-            is Tr.VariableDecls.Modifier.Transient -> "transient"
-            is Tr.VariableDecls.Modifier.Volatile -> "volatile"
-        }) }
-
-        val varargs = when(multiVariable.varArgs) {
-            is Tr.VariableDecls.Varargs -> multiVariable.varArgs.fmt("...")
-            else -> ""
-        }
-
-        return multiVariable.fmt("${visit(multiVariable.annotations)}$modifiers" +
-                "${visit(multiVariable.typeExpr)}${visitDims(multiVariable.dimensionsBeforeName)}" +
-                "$varargs${visit(multiVariable.vars, ",")}")
+    override fun visitUnparsedSource(unparsed: Tr.UnparsedSource): String {
+        return unparsed.fmt(unparsed.source)
     }
 
     override fun visitVariable(variable: Tr.VariableDecls.NamedVar): String {

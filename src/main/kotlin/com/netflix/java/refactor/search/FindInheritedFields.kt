@@ -1,6 +1,7 @@
 package com.netflix.java.refactor.search
 
 import com.netflix.java.refactor.ast.*
+import com.netflix.java.refactor.ast.visitor.AstVisitor
 
 class FindInheritedFields(val fullyQualifiedClassName: String): AstVisitor<List<Type.Var>>(emptyList()) {
     override fun visitClassDecl(classDecl: Tr.ClassDecl): List<Type.Var> {

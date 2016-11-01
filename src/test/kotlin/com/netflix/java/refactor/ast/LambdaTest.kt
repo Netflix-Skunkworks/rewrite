@@ -1,12 +1,11 @@
 package com.netflix.java.refactor.ast
 
 import com.netflix.java.refactor.parse.Parser
-import com.netflix.java.refactor.test.AstTest
-import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Test
 
-abstract class LambdaTest(parser: Parser): AstTest(parser) {
+abstract class LambdaTest(p: Parser): Parser by p {
 
     val a by lazy {
         parse("""

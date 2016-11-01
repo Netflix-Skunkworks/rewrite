@@ -4,7 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class TreeBuilderTest {
-    val cache = TypeCache()
+    val cache = TypeCache.new()
 
     @Test
     fun buildFullyQualifiedClassName() {

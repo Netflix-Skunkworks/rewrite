@@ -2,12 +2,11 @@ package com.netflix.java.refactor.search
 
 import com.netflix.java.refactor.parse.OracleJdkParser
 import com.netflix.java.refactor.parse.Parser
-import com.netflix.java.refactor.test.AstTest
 import org.junit.Assert.assertEquals
-import org.junit.Test
 import org.junit.Assert.assertTrue
+import org.junit.Test
 
-abstract class FindMethodTest(parser: Parser): AstTest(parser) {
+abstract class FindMethodTest(p: Parser): Parser by p {
 
     @Test
     fun findMethodCalls() {

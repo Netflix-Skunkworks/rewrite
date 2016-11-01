@@ -2,6 +2,7 @@ package com.netflix.java.refactor.parse
 
 import com.netflix.java.refactor.ast.Formatting
 import com.netflix.java.refactor.ast.Tr
+import com.sun.tools.javac.comp.Check
 import com.sun.tools.javac.comp.Enter
 import com.sun.tools.javac.main.JavaCompiler
 import com.sun.tools.javac.nio.JavacPathFileManager
@@ -19,16 +20,20 @@ import javax.tools.JavaFileManager
 import javax.tools.JavaFileObject
 import javax.tools.StandardLocation
 
-class OracleJdkParser(classpath: List<Path>? = null) : Parser(classpath) {
+/**
+ * This parser is NOT thread-safe, as the Oracle parser maintains in-memory caches in static state.
+ */
+class OracleJdkParser(classpath: List<Path>? = null) : AbstractParser(classpath) {
     val context = Context()
 
     // Both of these must be declared before compiler, so that compiler doesn't attempt to register alternate
     // instances with context
     private val compilerLog = object : Log(context) {
-        fun removeFile(file: JavaFileObject) {
-            sourceMap.remove(file)
+        fun reset() {
+            sourceMap.clear()
         }
     }
+
     private val pfm = JavacPathFileManager(context, true, Charset.defaultCharset())
 
     private val compiler = JavaCompiler(context)
@@ -60,6 +65,12 @@ class OracleJdkParser(classpath: List<Path>? = null) : Parser(classpath) {
         }))
     }
 
+    override fun reset() {
+        compilerLog.reset()
+        pfm.flush()
+        Check.instance(context).compiled.clear()
+    }
+
     override fun parse(sourceFiles: List<Path>): List<Tr.CompilationUnit> {
         if (filteredClasspath != null) { // override classpath
             assert(context.get(JavaFileManager::class.java) === pfm)
@@ -67,11 +78,6 @@ class OracleJdkParser(classpath: List<Path>? = null) : Parser(classpath) {
         }
 
         val fileObjects = pfm.getJavaFileObjects(*filterSourceFiles(sourceFiles).toTypedArray())
-
-        // otherwise, when the parser attempts to set endPosTable on the DiagnosticSource of the files it will blow up
-        // because the previous parsing iteration has already set one
-        fileObjects.forEach(compilerLog::removeFile)
-
         val cus = fileObjects.map { Paths.get(it.toUri()) to compiler.parse(it) }.toMap()
 
         try {
@@ -102,85 +108,3 @@ class OracleJdkParser(classpath: List<Path>? = null) : Parser(classpath) {
         return OracleJdkParserVisitor(path, source).scan(cu, Formatting.Reified.Empty) as Tr.CompilationUnit
     }
 }
-
-/*
-class AstParser(val classpath: Iterable<Path>?) {
-    val context = Context()
-
-    // Both of these must be declared before compiler, so that compiler doesn't attempt to register alternate
-    // instances with contest
-    private val mutableLog = MutableSourceMapLog()
-    private val pfm = JavacPathFileManager(context, true, Charset.defaultCharset())
-
-    val compiler = JavaCompiler(context)
-
-    private inner class MutableSourceMapLog(): Log(context) {
-        fun removeFile(file: JavaFileObject) {
-            sourceMap.remove(file)
-        }
-    }
-
-    private val logger = LoggerFactory.getLogger(AstParser::class.java)
-
-    init {
-        // otherwise the JavacParser will use EmptyEndPosTable, effectively setting -1 as the end position
-        // for every tree element
-        compiler.genEndPos = true
-        mutableLog.setWriters(PrintWriter(object: Writer() {
-            override fun write(cbuf: CharArray, off: Int, len: Int) {
-                logger.debug(String(cbuf.slice(off..(off + len)).toCharArray()))
-            }
-            override fun flush() {}
-            override fun close() {}
-        }))
-    }
-
-    fun parseFiles(files: Iterable<Path>): List<JCTree.JCCompilationUnit> {
-        if(classpath != null) { // override classpath
-            assert(context.get(JavaFileManager::class.java) === pfm)
-            pfm.setLocation(StandardLocation.CLASS_PATH, classpath)
-        }
-
-        val fileObjects = pfm.getJavaFileObjects(*files.toList().toTypedArray())
-
-        // if we are in a reparsing phase, we want to ensure that the contents of the file get re-read
-        fileObjects.forEach { pfm.flushCache(it) }
-
-        val cus = fileObjects.map { compiler.parse(it) }
-
-        try {
-            cus.enterAll()
-            compiler.attribute(compiler.todo)
-        } catch(ignore: Throwable) {
-            // when symbol entering fails on problems like missing types, attribution can often times proceed
-            // unhindered, but it sometimes cannot (so attribution is always a BEST EFFORT in the presence of errors)
-        }
-
-        return cus
-    }
-
-    fun reparse(cu: CompilationUnit): JCTree.JCCompilationUnit {
-        // this will cause the new AST to be re-entered and re-attributed
-        val chk = Check.instance(context)
-        cu.jcCompilationUnit.defs.filterIsInstance<JCTree.JCClassDecl>().forEach {
-            chk.compiled.remove(it.sym.flatname)
-        }
-
-        // otherwise, when the parser attempts to set endPosTable on the DiagnosticSource of this file it will blow up
-        // because the previous parsing iteration has already set one
-        mutableLog.removeFile(pfm.getJavaFileObjects(cu.source()).first())
-
-        return parseFiles(listOf(cu.source())).first()
-    }
-
-    /**
-     * Enter symbol definitions into each compilation unit's scope
-     */
-    private fun List<JCTree.JCCompilationUnit>.enterAll(): List<JCTree.JCCompilationUnit> {
-        val enter = Enter.instance(context)
-        val compilationUnits = com.sun.tools.javac.util.List.from(this.toTypedArray())
-        enter.main(compilationUnits)
-        return this
-    }
-}
- */

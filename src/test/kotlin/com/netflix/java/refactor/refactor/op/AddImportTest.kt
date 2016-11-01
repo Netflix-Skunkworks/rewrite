@@ -1,19 +1,21 @@
 package com.netflix.java.refactor.refactor.op
 
+import com.netflix.java.refactor.ast.assertRefactored
 import com.netflix.java.refactor.parse.OracleJdkParser
 import com.netflix.java.refactor.parse.Parser
-import com.netflix.java.refactor.test.AstTest
 import org.junit.Test
 
-abstract class AddImportTest(parser: Parser): AstTest(parser) {
+abstract class AddImportTest(parser: Parser): Parser by parser {
+
     @Test
     fun addNamedImport() {
         val a = parse("class A {}")
-        
-        a.refactor().addImport("java.util.List").fix()
 
-        assertRefactored(a, """
+        val fixed = a.refactor().addImport("java.util.List").fix()
+
+        assertRefactored(fixed, """
             |import java.util.List;
+            |
             |class A {}
         """)
     }
@@ -21,47 +23,48 @@ abstract class AddImportTest(parser: Parser): AstTest(parser) {
     @Test
     fun addNamedImportByClass() {
         val a = parse("class A {}")
-        
-        a.refactor().addImport(List::class.java).fix()
-        
-        assertRefactored(a, """
+
+        val fixed = a.refactor().addImport(List::class.java).fix()
+
+        assertRefactored(fixed, """
             |import java.util.List;
+            |
             |class A {}
         """)
     }
-    
+
     @Test
     fun namedImportAddedAfterPackageDeclaration() {
         val a = parse("""
             |package a;
             |class A {}
         """)
-        
-        a.refactor().addImport(List::class.java).fix()
 
-        assertRefactored(a, """
+        val fixed = a.refactor().addImport(List::class.java).fix()
+
+        assertRefactored(fixed, """
             |package a;
             |
             |import java.util.List;
             |class A {}
         """)
     }
-    
+
     @Test
     fun importsAddedInAlphabeticalOrder() {
         val otherPackages = listOf("c", "c.c", "c.c.c")
         val otherImports = otherPackages.mapIndexed { i, pkg ->
             "package $pkg;\npublic class C$i {}"
         }
-        
+
         listOf("b" to 0, "c.b" to 1, "c.c.b" to 2).forEach {
             val (pkg, order) = it
-            
+
             val b = """
                 |package $pkg;
                 |public class B {}
             """
-            
+
             val a = """
                 |package a;
                 |
@@ -73,14 +76,16 @@ abstract class AddImportTest(parser: Parser): AstTest(parser) {
             """
 
             val cu = parse(a, otherImports.plus(b))
-            cu.refactor().addImport("$pkg.B").fix()
+            val fixed = cu.refactor().addImport("$pkg.B").fix()
 
             val expectedImports = otherPackages.mapIndexed { i, otherPkg -> "$otherPkg.C$i" }.toMutableList()
             expectedImports.add(order, "$pkg.B")
-            assertRefactored(cu, "package a;\n\n${expectedImports.map { "import $it;" }.joinToString("\n")}\n\nclass A {}")
+            assertRefactored(fixed, "package a;\n\n${expectedImports.map { "import $it;" }.joinToString("\n")}\n\nclass A {}")
+
+            reset()
         }
     }
-    
+
     @Test
     fun doNotAddImportIfAlreadyExists() {
         val a = parse("""
@@ -90,16 +95,16 @@ abstract class AddImportTest(parser: Parser): AstTest(parser) {
             |class A {}
         """)
 
-        a.refactor().addImport(List::class.java).fix()
+        val fixed = a.refactor().addImport(List::class.java).fix()
 
-        assertRefactored(a, """
+        assertRefactored(fixed, """
             |package a;
             |
             |import java.util.List;
             |class A {}
         """)
     }
-    
+
     @Test
     fun doNotAddImportIfCoveredByStarImport() {
         val a = parse("""
@@ -109,16 +114,16 @@ abstract class AddImportTest(parser: Parser): AstTest(parser) {
             |class A {}
         """)
 
-        a.refactor().addImport(List::class.java).fix()
+        val fixed = a.refactor().addImport(List::class.java).fix()
 
-        assertRefactored(a, """
+        assertRefactored(fixed, """
             |package a;
             |
             |import java.util.*;
             |class A {}
         """)
     }
-    
+
     @Test
     fun addNamedImportIfStarStaticImportExists() {
         val a = parse("""
@@ -128,9 +133,9 @@ abstract class AddImportTest(parser: Parser): AstTest(parser) {
             |class A {}
         """)
 
-        a.refactor().addImport(List::class.java).fix()
+        val fixed = a.refactor().addImport(List::class.java).fix()
 
-        assertRefactored(a, """
+        assertRefactored(fixed, """
             |package a;
             |
             |import java.util.List;
@@ -146,20 +151,20 @@ abstract class AddImportTest(parser: Parser): AstTest(parser) {
             |class A {}
         """)
 
-        a.refactor().addStaticImport("java.util.Collections", "emptyList").fix()
+        val fixed = a.refactor().addImport("java.util.Collections", "emptyList").fix()
 
-        assertRefactored(a, """
+        assertRefactored(fixed, """
             |import java.util.*;
             |import static java.util.Collections.emptyList;
             |class A {}
         """)
     }
-    
+
     @Test
     fun dontAddImportWhenClassHasNoPackage() {
         val a = parse("class A {}")
-        a.refactor().addImport("C").fix()
-        assertRefactored(a, "class A {}")
+        val fixed = a.refactor().addImport("C").fix()
+        assertRefactored(fixed, "class A {}")
     }
 }
 

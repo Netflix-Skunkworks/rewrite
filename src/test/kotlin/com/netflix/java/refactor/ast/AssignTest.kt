@@ -1,12 +1,11 @@
 package com.netflix.java.refactor.ast
 
 import com.netflix.java.refactor.parse.Parser
-import com.netflix.java.refactor.test.AstTest
-import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Test
 
-abstract class AssignTest(parser: Parser): AstTest(parser) {
+abstract class AssignTest(p: Parser): Parser by p {
     
     @Test
     fun assignmentToField() {

@@ -1,11 +1,11 @@
 package com.netflix.java.refactor.refactor.op
 
+import com.netflix.java.refactor.ast.assertRefactored
 import com.netflix.java.refactor.parse.OracleJdkParser
 import com.netflix.java.refactor.parse.Parser
-import com.netflix.java.refactor.test.AstTest
 import org.junit.Test
 
-abstract class AddFieldTest(parser: Parser): AstTest(parser) {
+abstract class AddFieldTest(p: Parser): Parser by p {
     
     @Test
     fun addField() {
@@ -14,7 +14,7 @@ abstract class AddFieldTest(parser: Parser): AstTest(parser) {
             |}
         """)
 
-        a.refactor().addField(List::class.java, "list", "new ArrayList<>()").fix()
+        a.typeDecls[0].refactor().addField(List::class.java, "list", "new ArrayList<>()").fix()
 
         assertRefactored(a, """
             |import java.util.List;

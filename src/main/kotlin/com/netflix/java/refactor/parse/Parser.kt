@@ -1,16 +1,57 @@
 package com.netflix.java.refactor.parse
 
 import com.netflix.java.refactor.ast.Tr
+import java.io.File
+import java.nio.file.Files
 import java.nio.file.Path
+import java.util.regex.Pattern
 
-abstract class Parser(classpath: List<Path>?) {
+interface Parser {
+    /**
+     * Clear any in-memory parser caches that may prevent reparsing of classes with the same fully qualified name in
+     * different rounds
+     */
+    fun reset(): Unit
+
+    fun parse(sourceFiles: List<Path>): List<Tr.CompilationUnit>
+
+    fun parse(source: String, whichDependsOn: String) =
+            parse(source, listOf(whichDependsOn))
+
+    fun parse(source: String, whichDependOn: List<String>) =
+            parse(source, *whichDependOn.toTypedArray())
+
+    fun parse(source: String, vararg whichDependOn: String): Tr.CompilationUnit {
+        fun simpleName(sourceStr: String): String? {
+            val classMatcher = Pattern.compile("(class|interface|enum)\\s*(<[^>]*>)?\\s+(\\w+)").matcher(sourceStr)
+            return if (classMatcher.find()) classMatcher.group(3) else null
+        }
+
+        val temp = Files.createTempDirectory("sources").toFile()
+
+        fun sourceFile(source: String): Path {
+            val file = File(temp, "${simpleName(source)}.java")
+            file.writeText(source.trimMargin())
+            return file.toPath()
+        }
+
+        val dependencies = whichDependOn.map { it.trimMargin() }.map(::sourceFile)
+        val sources = dependencies + listOf(sourceFile(source.trimMargin()))
+
+        try {
+            return parse(sources).last()
+        } finally {
+            temp.deleteRecursively()
+        }
+    }
+}
+
+abstract class AbstractParser(classpath: List<Path>?): Parser {
     val filteredClasspath: List<Path>? = classpath?.filter {
         val fn = it.fileName.toString()
         fn.endsWith(".jar") && !fn.endsWith("-javadoc.jar") && !fn.endsWith("-sources.jar")
     }
 
-    abstract fun parse(sourceFiles: List<Path>): List<Tr.CompilationUnit>
-    
     protected fun filterSourceFiles(sourceFiles: List<Path>) =
-        sourceFiles.filter { it.fileName.toString().endsWith(".java") }.toList()
+            sourceFiles.filter { it.fileName.toString().endsWith(".java") }.toList()
 }

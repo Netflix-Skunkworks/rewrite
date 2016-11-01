@@ -29,21 +29,41 @@ sealed class Type(): Serializable {
     
     data class Class private constructor(val fullyQualifiedName: String,
                                          override val owner: Type?,
-                                         val members: List<Var>,
-                                         val supertype: Class?): TypeWithOwner() {
+                                         var members: List<Var>,
+                                         var supertype: Class?): TypeWithOwner() {
         
         fun isCyclicRef() = this == Cyclic
-        
+
+        fun className() =
+                fullyQualifiedName.split('.').dropWhile { it[0].isLowerCase() }.joinToString(".")
+
+        fun packageOwner() =
+                fullyQualifiedName.split('.').dropLastWhile { it[0].isUpperCase() }.joinToString(".")
+
         companion object {
             val Cyclic = Class("CYCLIC_TYPE_REF", null, emptyList(), null)
 
-            fun build(cache: TypeCache, fullyQualifiedName: String, members: List<Var> = emptyList(), supertype: Class? = null) =
-                cache.classPool.getOrPut(fullyQualifiedName) {
+            fun build(cache: TypeCache, fullyQualifiedName: String, members: List<Var> = emptyList(), supertype: Class? = null): Type.Class {
+                val clazz = cache.classPool.getOrPut(fullyQualifiedName) {
+                    val subName = fullyQualifiedName.substringBeforeLast(".")
                     Class(fullyQualifiedName,
-                            Package.build(cache, fullyQualifiedName.substringBeforeLast(".")),
+                            if (!subName.contains('.'))
+                                null
+                            else if (subName.substringAfterLast('.').first().isUpperCase()) {
+                                Class.build(cache, subName, emptyList(), null)
+                            } else
+                                Package.build(cache, subName),
                             members,
                             supertype)
                 }
+
+                if(members.isNotEmpty())
+                    clazz.members = members
+                if(supertype != null)
+                    clazz.supertype = supertype
+
+                return clazz
+            }
         }
     }
     

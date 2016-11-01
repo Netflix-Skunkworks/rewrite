@@ -6,4 +6,14 @@ data class Cursor(val path: List<Tree>) {
     companion object {
         val Empty = Cursor(emptyList())
     }
+
+    override fun equals(other: Any?): Boolean = if(other is Cursor && path.size == other.path.size) {
+        path.forEachIndexed { i, tree ->
+            if(other.path[i] != path[i])
+                return@equals false
+        }
+        true
+    } else false
+
+    override fun hashCode(): Int = path.hashCode()
 }
