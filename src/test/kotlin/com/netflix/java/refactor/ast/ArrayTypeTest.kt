@@ -15,7 +15,7 @@ abstract class ArrayTypeTest(p: Parser): Parser by p {
             }
         """)
 
-        val meth = a.typeDecls[0].methods()[0]
+        val meth = a.classes[0].methods()[0]
         Assert.assertEquals("public String[][] foo() { return null; }", meth.printTrimmed())
     }
 }

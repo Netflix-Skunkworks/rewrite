@@ -19,7 +19,7 @@ abstract class FindFieldsTest(p: Parser): Parser by p {
             }
         """)
 
-        val fields = a.typeDecls[0].findFields(List::class.java)
+        val fields = a.classes[0].findFields(List::class.java)
 
         assertEquals(1, fields.size)
         assertEquals("list", fields[0].vars[0].name.printTrimmed())
@@ -35,7 +35,7 @@ abstract class FindFieldsTest(p: Parser): Parser by p {
             }
         """)
 
-        val fields = a.typeDecls[0].findFields(String::class.java)
+        val fields = a.classes[0].findFields(String::class.java)
 
         assertEquals(1, fields.size)
         assertEquals("s", fields[0].vars[0].name.printTrimmed())

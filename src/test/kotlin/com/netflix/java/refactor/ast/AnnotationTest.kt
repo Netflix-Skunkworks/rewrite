@@ -13,7 +13,7 @@ abstract class AnnotationTest(p: Parser): Parser by p {
             |public class A {}
         """)
         
-        val ann = a.typeDecls[0].annotations[0]
+        val ann = a.classes[0].annotations[0]
         
         assertEquals("java.lang.SuppressWarnings", ann.type.asClass()?.fullyQualifiedName)
         assertEquals("ALL", ann.args!!.args.filterIsInstance<Tr.Literal>().firstOrNull()?.value)
@@ -26,7 +26,7 @@ abstract class AnnotationTest(p: Parser): Parser by p {
             |public class A {}
         """)
         
-        val ann = a.typeDecls[0].annotations[0]
+        val ann = a.classes[0].annotations[0]
         
         assertEquals("@SuppressWarnings(\"ALL\")", ann.printTrimmed())
     }

@@ -128,10 +128,10 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
     override fun visitCompilationUnit(cu: Tr.CompilationUnit): Tree {
         val imports = cu.imports.mapIfNecessary { visit(it) as Tr.Import }
         val packageDecl = visit(cu.packageDecl) as Tr.Package?
-        val classDecls = cu.typeDecls.mapIfNecessary { visit(it) as Tr.ClassDecl }
+        val classDecls = cu.classes.mapIfNecessary { visit(it) as Tr.ClassDecl }
 
-        return (if(imports !== cu.imports || packageDecl !== cu.packageDecl || classDecls !== cu.typeDecls) {
-            cu.copy(imports = imports, packageDecl = packageDecl, typeDecls = classDecls)
+        return (if(imports !== cu.imports || packageDecl !== cu.packageDecl || classDecls !== cu.classes) {
+            cu.copy(imports = imports, packageDecl = packageDecl, classes = classDecls)
         } else cu).transformIfNecessary(cursor())
     }
 

@@ -251,7 +251,7 @@ sealed class Tr : Serializable, Tree {
     data class CompilationUnit(val source: SourceFile,
                                val packageDecl: Package?,
                                val imports: List<Import>,
-                               val typeDecls: List<ClassDecl>,
+                               val classes: List<ClassDecl>,
                                private val cacheId: UUID,
                                override var formatting: Formatting) : Tr() {
 
@@ -262,6 +262,8 @@ sealed class Tr : Serializable, Tree {
 
         fun hasType(clazz: Class<*>): Boolean = HasType(clazz.name).visit(this)
         fun hasType(clazz: String): Boolean = HasType(clazz).visit(this)
+
+        fun findMethodCalls(signature: String): List<Tr.MethodInvocation> = FindMethods(signature).visit(this)
 
         fun refactor() = Refactor(this)
 
@@ -277,6 +279,7 @@ sealed class Tr : Serializable, Tree {
             ops.call(r)
             return r
         }
+
 
         fun typeCache() = TypeCache.of(cacheId)
     }
@@ -313,6 +316,11 @@ sealed class Tr : Serializable, Tree {
                            override var formatting: Formatting) : Expression, NameTree, TypeTree, Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitFieldAccess(this)
+
+        /**
+         * Make debugging a bit easier
+         */
+        override fun toString(): String = "FieldAccess(${printTrimmed()})"
     }
 
     data class ForEachLoop(val control: Control,
@@ -343,6 +351,11 @@ sealed class Tr : Serializable, Tree {
                      override var formatting: Formatting) : Expression, NameTree, TypeTree, Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitIdentifier(this)
+
+        /**
+         * Make debugging a bit easier
+         */
+        override fun toString(): String = "Ident(${printTrimmed()})"
     }
 
     data class If(val ifCondition: Parentheses<Expression>,

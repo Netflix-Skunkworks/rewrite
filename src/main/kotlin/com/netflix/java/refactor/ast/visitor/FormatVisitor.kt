@@ -44,7 +44,7 @@ class FormatVisitor: AstVisitor<Tree?>({ it }) {
                 import.blankLinesBefore(2)
             } else {
                 import.formatting = Formatting.Reified.Empty
-                cu.typeDecls.firstOrNull()?.blankLinesBefore(2)
+                cu.classes.firstOrNull()?.blankLinesBefore(2)
             }
         }
 

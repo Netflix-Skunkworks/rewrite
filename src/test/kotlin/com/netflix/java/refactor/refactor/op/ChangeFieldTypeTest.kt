@@ -17,7 +17,7 @@ abstract class ChangeFieldTypeTest(p: Parser): Parser by p {
         """)
 
         val fixed = a.refactor {
-            a.typeDecls[0].findFields(List::class.java).forEach { f ->
+            a.classes[0].findFields(List::class.java).forEach { f ->
                 changeType(f, Collection::class.java)
             }
         }.fix()

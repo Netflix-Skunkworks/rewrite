@@ -17,7 +17,7 @@ abstract class HasTypeTest(p: Parser): Parser by p {
             |}
         """)
 
-        assertTrue(a.typeDecls[0].hasType(List::class.java))
+        assertTrue(a.classes[0].hasType(List::class.java))
     }
 
     @Test
@@ -29,7 +29,7 @@ abstract class HasTypeTest(p: Parser): Parser by p {
             |}
         """)
 
-        assertTrue(a.typeDecls[0].hasType(Collections::class.java))
+        assertTrue(a.classes[0].hasType(Collections::class.java))
     }
     
     @Test
@@ -48,7 +48,7 @@ abstract class HasTypeTest(p: Parser): Parser by p {
             |}
         """
 
-        assertTrue(parse(b, a).typeDecls[0].hasType("a.A"))
+        assertTrue(parse(b, a).classes[0].hasType("a.A"))
     }
 
     @Test
@@ -62,7 +62,7 @@ abstract class HasTypeTest(p: Parser): Parser by p {
             |}
         """)
 
-        assertTrue(a.typeDecls[0].hasType(List::class.java))
+        assertTrue(a.classes[0].hasType(List::class.java))
     }
 
     @Test
@@ -82,7 +82,7 @@ abstract class HasTypeTest(p: Parser): Parser by p {
             }
         """)
 
-        a.typeDecls[0].hasType("DoesNotMatter") // doesn't throw an exception
+        a.classes[0].hasType("DoesNotMatter") // doesn't throw an exception
     }
 }
 

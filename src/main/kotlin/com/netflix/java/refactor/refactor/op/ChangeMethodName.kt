@@ -14,6 +14,6 @@ class ChangeMethodName(val cu: Tr.CompilationUnit, val meth: Tr.MethodInvocation
                 })
             }
         }
-        return emptyList()
+        return super.visitMethodInvocation(meth)
     }
 }

@@ -16,7 +16,7 @@ abstract class MethodDeclTest(p: Parser): Parser by p {
             }
         """)
 
-        assertNull(a.typeDecls[0].methods()[0].returnTypeExpr)
+        assertNull(a.classes[0].methods()[0].returnTypeExpr)
     }
 
     @Test
@@ -29,7 +29,7 @@ abstract class MethodDeclTest(p: Parser): Parser by p {
             }
         """)
         
-        val meth = a.typeDecls[0].methods()[0]
+        val meth = a.classes[0].methods()[0]
         assertEquals("foo", meth.name.name)
         assertEquals(3, meth.params.params.size)
         assertEquals(1, meth.body!!.statements.size)
@@ -44,7 +44,7 @@ abstract class MethodDeclTest(p: Parser): Parser by p {
             }
         """)
 
-        val meth = a.typeDecls[0].methods()[0]
+        val meth = a.classes[0].methods()[0]
         assertEquals("public < P > P foo(P p, String s, String ... args)  throws Exception { return p; }", meth.printTrimmed())
     }
 
@@ -56,7 +56,7 @@ abstract class MethodDeclTest(p: Parser): Parser by p {
             }
         """)
 
-        val meth = a.typeDecls[0].methods()[0]
+        val meth = a.classes[0].methods()[0]
         assertEquals("default int foo() { return 0; }", meth.printTrimmed())
     }
 
@@ -69,7 +69,7 @@ abstract class MethodDeclTest(p: Parser): Parser by p {
             }
         """)
 
-        val meth = a.typeDecls[0].methods()[0]
+        val meth = a.classes[0].methods()[0]
         assertEquals("public A() { }", meth.printTrimmed())
     }
 }

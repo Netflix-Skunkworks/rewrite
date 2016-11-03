@@ -25,6 +25,6 @@ class OracleJdkParserTest {
             |}
         """)
 
-        assertEquals("org.testng.annotations.Test", a.typeDecls[0].methods()[0].annotations[0].type.asClass()?.fullyQualifiedName)
+        assertEquals("org.testng.annotations.Test", a.classes[0].methods()[0].annotations[0].type.asClass()?.fullyQualifiedName)
     }
 }

@@ -20,10 +20,10 @@ abstract class FindInheritedFieldsTest(p: Parser): Parser by p {
 
         val b = parse("public class B extends A { }", a)
 
-        assertEquals("list", b.typeDecls[0].findInheritedFields(List::class.java).firstOrNull()?.name)
+        assertEquals("list", b.classes[0].findInheritedFields(List::class.java).firstOrNull()?.name)
 
         // the Set field is not considered to be inherited because it is private
-        val fields = b.typeDecls[0].findInheritedFields(Set::class.java)
+        val fields = b.classes[0].findInheritedFields(Set::class.java)
         assertTrue(fields.isEmpty())
     }
 
@@ -37,11 +37,11 @@ abstract class FindInheritedFieldsTest(p: Parser): Parser by p {
 
         val b = parse("public class B extends A { }", a)
 
-        val fields = b.typeDecls[0].findInheritedFields(String::class.java)
+        val fields = b.classes[0].findInheritedFields(String::class.java)
         assertEquals(1, fields.size)
         assertEquals("s", fields[0].name)
 
-        assertTrue(b.typeDecls[0].findInheritedFields(Set::class.java).isEmpty())
+        assertTrue(b.classes[0].findInheritedFields(Set::class.java).isEmpty())
     }
 }
 

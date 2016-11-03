@@ -58,7 +58,7 @@ abstract class NewArrayTest(p: Parser): Parser by p {
             }
         """)
 
-        val newArr = a.typeDecls[0].fields()[1].vars[0].initializer as Tr.NewArray
+        val newArr = a.classes[0].fields()[1].vars[0].initializer as Tr.NewArray
         assertEquals("new int [ ] [ ] { m, m, m }", newArr.printTrimmed())
     }
 
@@ -73,7 +73,7 @@ abstract class NewArrayTest(p: Parser): Parser by p {
         """
 
         val a = parse("""@Produces({"something"}) class A {}""", whichDependOn = produces)
-        val arr = a.typeDecls[0].annotations[0].args!!.args[0] as Tr.NewArray
+        val arr = a.classes[0].annotations[0].args!!.args[0] as Tr.NewArray
 
         assertNull(arr.typeExpr)
         assertEquals("""{"something"}""", arr.printTrimmed())

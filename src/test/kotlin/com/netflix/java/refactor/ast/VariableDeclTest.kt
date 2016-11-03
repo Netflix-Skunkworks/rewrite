@@ -100,7 +100,7 @@ abstract class VariableDeclTest(p: Parser): Parser by p {
 
         assertEquals("Integer m = 0, n = 0", a.fields()[0].printTrimmed())
 
-        val staticInit = a.typeDecls[0].body.statements[0] as Tr.Block<Statement>
+        val staticInit = a.classes[0].body.statements[0] as Tr.Block<Statement>
 
         val (localDecl, forLoop) = staticInit.statements.subList(0, 2)
         assertEquals("Integer[] m = { 0 }, n[] = { { 0 } }", localDecl.printTrimmed())

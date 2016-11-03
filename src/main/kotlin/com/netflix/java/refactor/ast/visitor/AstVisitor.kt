@@ -104,7 +104,7 @@ open class AstVisitor<R> {
     open fun visitCompilationUnit(cu: Tr.CompilationUnit): R = reduce(
             visit(cu.imports)
                     .andThen(cu.packageDecl)
-                    .andThen(cu.typeDecls),
+                    .andThen(cu.classes),
             visitEnd()
     )
 

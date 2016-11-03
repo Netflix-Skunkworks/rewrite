@@ -15,7 +15,7 @@ abstract class ClassDeclTest(p: Parser): Parser by p {
             class B {}
         """)
 
-        assertEquals(listOf("A", "B"), a.typeDecls.map { it.name.name }.sorted())
+        assertEquals(listOf("A", "B"), a.classes.map { it.name.name }.sorted())
     }
     
     @Test
@@ -27,7 +27,7 @@ abstract class ClassDeclTest(p: Parser): Parser by p {
             }
         """)
 
-        assertEquals(1, a.typeDecls[0].fields().size)
+        assertEquals(1, a.classes[0].fields().size)
     }
 
     @Test
@@ -38,7 +38,7 @@ abstract class ClassDeclTest(p: Parser): Parser by p {
             }
         """)
 
-        assertEquals(1, a.typeDecls[0].methods().size)
+        assertEquals(1, a.classes[0].methods().size)
     }
     
     @Test
@@ -46,7 +46,7 @@ abstract class ClassDeclTest(p: Parser): Parser by p {
         val b = "public interface B {}"
         val a = "public class A implements B {}"
         
-        assertEquals(1, parse(a, whichDependsOn = b).typeDecls[0].implements.size)
+        assertEquals(1, parse(a, whichDependsOn = b).classes[0].implements.size)
     }
 
     @Test
@@ -54,7 +54,7 @@ abstract class ClassDeclTest(p: Parser): Parser by p {
         val b = "public class B {}"
         val a = "public class A extends B {}"
 
-        val aClass = parse(a, whichDependsOn = b).typeDecls[0]
+        val aClass = parse(a, whichDependsOn = b).classes[0]
         assertNotNull(aClass.extends)
     }
 
@@ -62,26 +62,26 @@ abstract class ClassDeclTest(p: Parser): Parser by p {
     fun format() {
         val b = "public class B<T> {}"
         val a = "@Deprecated public class A < T > extends B < T > {}"
-        assertEquals(a, parse(a, whichDependsOn = b).typeDecls[0].printTrimmed())
+        assertEquals(a, parse(a, whichDependsOn = b).classes[0].printTrimmed())
     }
 
     @Test
     fun formatInterface() {
         val b = "public interface B {}"
         val a = "public interface A extends B {}"
-        assertEquals(a, parse(a, whichDependsOn = b).typeDecls[0].printTrimmed())
+        assertEquals(a, parse(a, whichDependsOn = b).classes[0].printTrimmed())
     }
 
     @Test
     fun formatAnnotation() {
         val a = "public @interface Produces { }"
-        assertEquals(a, parse(a).typeDecls[0].printTrimmed())
+        assertEquals(a, parse(a).classes[0].printTrimmed())
     }
 
     @Test
     fun trailingLastTypeDeclaration() {
         val a = parse("public class A {}/**/")
-        assertEquals("/**/", (a.typeDecls[0].formatting as Formatting.Reified).suffix)
+        assertEquals("/**/", (a.classes[0].formatting as Formatting.Reified).suffix)
     }
 
     @Test
@@ -97,20 +97,20 @@ abstract class ClassDeclTest(p: Parser): Parser by p {
 
         val a = parse(aSrc)
 
-        Assert.assertTrue(a.typeDecls[0].kind is Tr.ClassDecl.Kind.Enum)
-        assertEquals("ONE(1)", a.typeDecls[0].enumValues()[0].printTrimmed())
+        Assert.assertTrue(a.classes[0].kind is Tr.ClassDecl.Kind.Enum)
+        assertEquals("ONE(1)", a.classes[0].enumValues()[0].printTrimmed())
         assertEquals(aSrc, a.printTrimmed())
     }
 
     @Test
     fun enumWithoutParameters() {
         val aSrc = "public enum A { ONE, TWO }"
-        assertEquals(aSrc, parse(aSrc).typeDecls[0].printTrimmed())
+        assertEquals(aSrc, parse(aSrc).classes[0].printTrimmed())
     }
 
     @Test
     fun enumWithEmptyParameters() {
         val aSrc = "public enum A { ONE(), TWO() }"
-        assertEquals(aSrc, parse(aSrc).typeDecls[0].printTrimmed())
+        assertEquals(aSrc, parse(aSrc).classes[0].printTrimmed())
     }
 }

@@ -14,7 +14,7 @@ abstract class TypeCastTest(p: Parser) : Parser by p {
             }
         """)
 
-        val typeCast = a.typeDecls[0].fields()[0].vars[0].initializer as Tr.TypeCast
+        val typeCast = a.classes[0].fields()[0].vars[0].initializer as Tr.TypeCast
         assertEquals("""(Class<String>) Class.forName("java.lang.String")""",
                 typeCast.printTrimmed())
     }

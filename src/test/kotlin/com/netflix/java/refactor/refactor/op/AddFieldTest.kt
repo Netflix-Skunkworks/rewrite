@@ -14,7 +14,7 @@ abstract class AddFieldTest(p: Parser): Parser by p {
 //            |}
 //        """)
 //
-//        a.typeDecls[0].refactor().addField(List::class.java, "list", "new ArrayList<>()").fix()
+//        a.classes[0].refactor().addField(List::class.java, "list", "new ArrayList<>()").fix()
 //
 //        assertRefactored(a, """
 //            |import java.util.List;

@@ -16,7 +16,7 @@ abstract class BlockTest(p: Parser): Parser by p {
             }
         """)
         
-        assertEquals(1, a.typeDecls[0].methods()[0].body!!.statements.size)
+        assertEquals(1, a.classes[0].methods()[0].body!!.statements.size)
     }
 
     @Test
@@ -27,7 +27,7 @@ abstract class BlockTest(p: Parser): Parser by p {
             }
         """)
         
-        assertEquals("{  }", a.typeDecls[0].methods()[0].body!!.printTrimmed())
+        assertEquals("{  }", a.classes[0].methods()[0].body!!.printTrimmed())
     }
 
     @Test
@@ -38,6 +38,6 @@ abstract class BlockTest(p: Parser): Parser by p {
             }
         """)
 
-        assertEquals("static {}", a.typeDecls[0].body.statements[0].printTrimmed())
+        assertEquals("static {}", a.classes[0].body.statements[0].printTrimmed())
     }
 }

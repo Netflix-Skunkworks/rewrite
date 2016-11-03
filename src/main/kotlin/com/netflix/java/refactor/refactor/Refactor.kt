@@ -16,6 +16,10 @@ import java.util.*
 class Refactor(val cu: Tr.CompilationUnit) {
     private val ops = ArrayList<RefactorVisitor>()
 
+    // -------------
+    // Compilation Unit Refactoring
+    // -------------
+
     fun addImport(clazz: Class<*>, staticMethod: String? = null) = addImport(clazz.name, staticMethod)
 
     fun addImport(clazz: String, staticMethod: String? = null): Refactor {
@@ -30,6 +34,10 @@ class Refactor(val cu: Tr.CompilationUnit) {
         return this
     }
 
+    // -------------
+    // Class Declaration Refactoring
+    // -------------
+
     fun addField(target: Tr.ClassDecl, clazz: Class<*>, name: String, init: String?) = addField(target, clazz.name, name, init)
 
     fun addField(target: Tr.ClassDecl, clazz: Class<*>, name: String) = addField(target, clazz.name, name, null)
@@ -40,6 +48,10 @@ class Refactor(val cu: Tr.CompilationUnit) {
         ops.add(AddField(target, clazz, name, init))
         return this
     }
+
+    // -------------
+    // Field Refactoring
+    // -------------
 
     fun changeType(target: Tr.VariableDecls, toType: Class<*>): Refactor = changeType(target, toType.name)
 
@@ -61,10 +73,29 @@ class Refactor(val cu: Tr.CompilationUnit) {
         return this
     }
 
+    // -------------
+    // Method Refactoring
+    // -------------
+
     fun changeName(target: Tr.MethodInvocation, toName: String): Refactor {
         ops.add(ChangeMethodName(cu, target, toName))
         return this
     }
+
+    /**
+     * Change to a static method invocation on <code>toClass</code>
+     */
+    fun changeTarget(target: Tr.MethodInvocation, toClass: String): Refactor {
+        ops.add(ChangeMethodTargetToStatic(cu, target, toClass))
+        ops.add(AddImport(cu, toClass))
+        target.declaringType?.fullyQualifiedName?.let { ops.add(RemoveImport(cu, it)) }
+        return this
+    }
+
+    /**
+     * Change to a static method invocation on <code>toClass</code>
+     */
+    fun changeTarget(target: Tr.MethodInvocation, toClass: Class<*>) = changeTarget(target, toClass.name)
 
     /**
     * @return Transformed version of the AST after changes are applied

@@ -30,7 +30,7 @@ abstract class UnaryTest(p: Parser): Parser by p {
             }
         """)
 
-        val (prefix, postfix) = a.typeDecls[0].fields().subList(1, 3).map { it.vars[0].initializer as Tr.Unary }
+        val (prefix, postfix) = a.classes[0].fields().subList(1, 3).map { it.vars[0].initializer as Tr.Unary }
         assertEquals("++i", prefix.printTrimmed())
         assertEquals("i++", postfix.printTrimmed())
     }

@@ -145,7 +145,7 @@ class PrintVisitor : AstVisitor<String>("") {
     }
 
     override fun visitCompilationUnit(cu: Tr.CompilationUnit): String {
-        return cu.fmt("${visit(cu.packageDecl, ";")}${visit(cu.imports, ";", ";")}${visit(cu.typeDecls)}")
+        return cu.fmt("${visit(cu.packageDecl, ";")}${visit(cu.imports, ";", ";")}${visit(cu.classes)}")
     }
 
     override fun visitContinue(continueStatement: Tr.Continue): String {
