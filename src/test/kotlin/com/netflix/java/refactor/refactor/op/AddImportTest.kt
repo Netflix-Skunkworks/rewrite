@@ -3,6 +3,7 @@ package com.netflix.java.refactor.refactor.op
 import com.netflix.java.refactor.ast.assertRefactored
 import com.netflix.java.refactor.parse.OracleJdkParser
 import com.netflix.java.refactor.parse.Parser
+import com.netflix.java.refactor.refactor.Refactor
 import org.junit.Test
 
 abstract class AddImportTest(parser: Parser): Parser by parser {

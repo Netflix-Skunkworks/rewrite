@@ -113,17 +113,15 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
     }
 
     override fun visitClassDecl(classDecl: Tr.ClassDecl): Tree {
+        val annotations = classDecl.annotations.mapIfNecessary { visit(it) as Tr.Annotation }
+        val name = visit(classDecl.name) as Tr.Ident
         val extends = visit(classDecl.extends)
         val implements = classDecl.implements.mapIfNecessary { visit(it) as Tree }
+        val body = visit(classDecl.body) as Tr.Block<Tree>
 
-        val statements = classDecl.body.statements.mapIfNecessary { visit(it) as Tr.VariableDecls }
-        val body = if(statements !== classDecl.body.statements) {
-            classDecl.body.copy(statements = statements)
-        } else classDecl.body
-
-        return (if(body !== classDecl.body || implements !== classDecl.implements ||
-                extends !== classDecl.extends) {
-            classDecl.copy(body = body, implements = implements, extends = extends)
+        return (if(annotations !== classDecl.annotations || name !== classDecl.name || body !== classDecl.body ||
+                implements !== classDecl.implements || extends !== classDecl.extends) {
+            classDecl.copy(annotations = annotations, name = name, body = body, implements = implements, extends = extends)
         } else classDecl).transformIfNecessary(cursor())
     }
 
@@ -273,7 +271,7 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
     }
 
     override fun visitMethodInvocation(meth: Tr.MethodInvocation): Tree {
-        val methodSelect = visit(meth.select) as Expression
+        val methodSelect = visit(meth.select) as Expression?
 
         val args = meth.args.let {
             val args = it.args.mapIfNecessary { visit(it) as Expression }

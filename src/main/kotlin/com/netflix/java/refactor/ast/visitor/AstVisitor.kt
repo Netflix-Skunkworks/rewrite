@@ -28,9 +28,10 @@ open class AstVisitor<R> {
     }
 
     private val cursorStack = Stack<Tree>()
-    fun cursor(): Cursor = Cursor(cursorStack)
 
-    open fun visit(tree: Tree?): R =
+    fun cursor(): Cursor = Cursor(cursorStack.toList())
+
+    fun visit(tree: Tree?): R =
             if (tree != null) {
                 cursorStack.push(tree)
                 val t = tree.accept(this)

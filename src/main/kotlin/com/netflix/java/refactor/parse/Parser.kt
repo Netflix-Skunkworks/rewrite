@@ -1,6 +1,7 @@
 package com.netflix.java.refactor.parse
 
 import com.netflix.java.refactor.ast.Tr
+import com.netflix.java.refactor.ast.TypeCache
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path

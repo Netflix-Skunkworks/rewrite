@@ -2,6 +2,7 @@ package com.netflix.java.refactor.parse
 
 import com.netflix.java.refactor.ast.Formatting
 import com.netflix.java.refactor.ast.Tr
+import com.netflix.java.refactor.ast.TypeCache
 import com.sun.tools.javac.comp.Check
 import com.sun.tools.javac.comp.Enter
 import com.sun.tools.javac.main.JavaCompiler
@@ -25,6 +26,7 @@ import javax.tools.StandardLocation
  */
 class OracleJdkParser(classpath: List<Path>? = null) : AbstractParser(classpath) {
     val context = Context()
+    val typeCache = TypeCache.new()
 
     // Both of these must be declared before compiler, so that compiler doesn't attempt to register alternate
     // instances with context
@@ -69,6 +71,7 @@ class OracleJdkParser(classpath: List<Path>? = null) : AbstractParser(classpath)
         compilerLog.reset()
         pfm.flush()
         Check.instance(context).compiled.clear()
+        typeCache.reset()
     }
 
     override fun parse(sourceFiles: List<Path>): List<Tr.CompilationUnit> {
@@ -90,7 +93,8 @@ class OracleJdkParser(classpath: List<Path>? = null) : AbstractParser(classpath)
 
         return cus.map {
             val (path, cu) = it
-            toIntermediateAst(cu, path, path.toFile().readText())
+            logger.trace("Building AST for {}", path.toAbsolutePath().fileName)
+            OracleJdkParserVisitor(typeCache, path, path.toFile().readText()).scan(cu, Formatting.Reified.Empty) as Tr.CompilationUnit
         }
     }
 
@@ -101,10 +105,5 @@ class OracleJdkParser(classpath: List<Path>? = null) : AbstractParser(classpath)
         val enter = Enter.instance(context)
         val compilationUnits = com.sun.tools.javac.util.List.from(this.toTypedArray())
         enter.main(compilationUnits)
-    }
-
-    private fun toIntermediateAst(cu: JCTree.JCCompilationUnit, path: Path, source: String): Tr.CompilationUnit {
-        logger.trace("Building AST for {}", path.toAbsolutePath().fileName)
-        return OracleJdkParserVisitor(path, source).scan(cu, Formatting.Reified.Empty) as Tr.CompilationUnit
     }
 }

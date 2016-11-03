@@ -21,15 +21,13 @@ import javax.lang.model.element.Modifier
 import javax.lang.model.type.TypeKind
 import kotlin.properties.Delegates
 
-class OracleJdkParserVisitor(val path: Path, val source: String): TreeScanner<Tree, Formatting.Reified>() {
+class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val source: String): TreeScanner<Tree, Formatting.Reified>() {
     private typealias JdkTree = com.sun.source.tree.Tree
 
     private val WS_DELIM = { t: JdkTree -> sourceMatching("\\s+") }
     private val COMMA_DELIM = { t: JdkTree -> sourceBefore(",") }
     private val SEMI_DELIM = { t: JdkTree -> sourceBefore(";") }
     private val NO_DELIM = { t: JdkTree -> "" }
-
-    private val typeCache = TypeCache.new()
 
     private var endPosTable: EndPosTable by Delegates.notNull()
     private var cursor: Int = 0

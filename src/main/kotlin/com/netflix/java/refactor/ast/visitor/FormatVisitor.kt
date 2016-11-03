@@ -7,6 +7,8 @@ import com.netflix.java.refactor.ast.Tree
 /**
  * Only formatting for nodes that we can ADD so far
  * is supported.
+ *
+ * Emits a side-effect of mutating formatting on tree nodes as necessary
  */
 class FormatVisitor: AstVisitor<Tree?>({ it }) {
 
@@ -39,24 +41,25 @@ class FormatVisitor: AstVisitor<Tree?>({ it }) {
                     import.formatting = Formatting.Reified("\n")
                 }
             } else if(cu.packageDecl != null) {
-                import.prependPrefix("\n\n")
+                import.blankLinesBefore(2)
             } else {
                 import.formatting = Formatting.Reified.Empty
-                cu.typeDecls.firstOrNull()?.prependPrefix("\n\n")
+                cu.typeDecls.firstOrNull()?.blankLinesBefore(2)
             }
         }
 
         return super.visitImport(import)
     }
 
-    private fun Tree.prependPrefix(prefix: String) {
+    private fun Tree.blankLinesBefore(n: Int) {
         when(formatting) {
             is Formatting.Reified -> {
                 val reified = formatting as Formatting.Reified
+                val prefix = (1..Math.max(0, n - reified.prefix.takeWhile { it == '\n' }.length)).map { "\n" }.joinToString("")
                 reified.prefix = prefix + reified.prefix
             }
             is Formatting.Infer ->
-                formatting = Formatting.Reified(prefix)
+                formatting = Formatting.Reified((1..2).map { "\n" }.joinToString(""))
         }
     }
 }

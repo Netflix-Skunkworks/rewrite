@@ -2,15 +2,11 @@ package com.netflix.java.refactor.ast
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.netflix.java.refactor.ast.visitor.AstVisitor
-import com.netflix.java.refactor.ast.visitor.FormatVisitor
 import com.netflix.java.refactor.ast.visitor.PrintVisitor
-import com.netflix.java.refactor.ast.visitor.TransformVisitor
-import com.netflix.java.refactor.diff.JavaSourceDiff
 import com.netflix.java.refactor.parse.SourceFile
-import com.netflix.java.refactor.refactor.RefactorVisitor
-import com.netflix.java.refactor.refactor.op.AddField
-import com.netflix.java.refactor.refactor.op.AddImport
+import com.netflix.java.refactor.refactor.Refactor
 import com.netflix.java.refactor.search.*
+import groovy.lang.Closure
 import java.io.Serializable
 import java.lang.IllegalStateException
 import java.util.*
@@ -240,7 +236,7 @@ sealed class Tr : Serializable, Tree {
         fun findFields(clazz: String): List<Tr.VariableDecls> = FindFields(clazz).visit(this)
 
         /**
-         * Find fields defined up the type hierarchy
+         * Find fields defined up the type hierarchy, but do not include fields defined directly on this class
          */
         fun findInheritedFields(clazz: Class<*>): List<Type.Var> = FindInheritedFields(clazz.name).visit(this)
 
@@ -250,34 +246,13 @@ sealed class Tr : Serializable, Tree {
 
         fun hasType(clazz: Class<*>): Boolean = HasType(clazz.name).visit(this)
         fun hasType(clazz: String): Boolean = HasType(clazz).visit(this)
-
-        fun refactor(): RefactorTransaction = RefactorTransaction(this)
-
-        class RefactorTransaction(val clazz: Tr.ClassDecl) {
-            private val ops = ArrayList<RefactorVisitor>()
-
-            fun addField(clazz: Class<*>, name: String, init: String?) = addField(clazz.name, name, init)
-
-            fun addField(clazz: Class<*>, name: String) = addField(clazz.name, name, null)
-
-            fun addField(clazz: String, name: String) = addField(clazz, name, null)
-
-            fun addField(clazz: String, name: String, init: String?): RefactorTransaction {
-                ops.add(AddField(clazz, name, init))
-                return this
-            }
-
-            fun fix() {
-                TODO()
-            }
-        }
     }
 
     data class CompilationUnit(val source: SourceFile,
                                val packageDecl: Package?,
                                val imports: List<Import>,
                                val typeDecls: List<ClassDecl>,
-                               val cacheId: UUID,
+                               private val cacheId: UUID,
                                override var formatting: Formatting) : Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitCompilationUnit(this)
@@ -285,32 +260,25 @@ sealed class Tr : Serializable, Tree {
         fun hasImport(clazz: Class<*>): Boolean = HasImport(clazz.name).visit(this)
         fun hasImport(clazz: String): Boolean = HasImport(clazz).visit(this)
 
-        fun refactor() = RefactorTransaction(this)
+        fun hasType(clazz: Class<*>): Boolean = HasType(clazz.name).visit(this)
+        fun hasType(clazz: String): Boolean = HasType(clazz).visit(this)
 
-        class RefactorTransaction(val clazz: Tr.CompilationUnit) {
-            private val ops = ArrayList<RefactorVisitor>()
+        fun refactor() = Refactor(this)
 
-            fun addImport(clazz: Class<*>, staticMethod: String? = null) = addImport(clazz.name, staticMethod)
-
-            fun addImport(clazz: String, staticMethod: String? = null): RefactorTransaction {
-                ops.add(AddImport(clazz, staticMethod))
-                return this
-            }
-
-            fun fix(): CompilationUnit {
-                val fixed = TransformVisitor(ops.flatMap { it.visit(clazz) }).visit(clazz)
-                FormatVisitor().visit(fixed)
-                return fixed as CompilationUnit
-            }
+        fun refactor(ops: Refactor.() -> Unit): Refactor {
+            val r = refactor()
+            ops(r)
+            return r
         }
 
-        fun diff(body: Tr.CompilationUnit.() -> Unit): String {
-            val diff = JavaSourceDiff(this)
-            this.body()
-            return diff.gitStylePatch()
+        fun refactor(ops: Closure<Refactor>): Refactor {
+            val r = refactor()
+            ops.delegate = r
+            ops.call(r)
+            return r
         }
 
-        fun beginDiff() = JavaSourceDiff(this)
+        fun typeCache() = TypeCache.of(cacheId)
     }
 
     data class Continue(val label: Ident?,
@@ -476,6 +444,9 @@ sealed class Tr : Serializable, Tree {
             data class Static(override var formatting: Formatting) : Modifier()
             data class Final(override var formatting: Formatting) : Modifier()
         }
+
+        fun hasType(clazz: Class<*>): Boolean = HasType(clazz.name).visit(this)
+        fun hasType(clazz: String): Boolean = HasType(clazz).visit(this)
 
         data class Parameters(val params: List<Statement>, override var formatting: Formatting): Tr()
         data class Throws(val exceptions: List<NameTree>, override var formatting: Formatting): Tr()

@@ -18,4 +18,9 @@ data class TypeCache private constructor(val key: UUID) {
             return cache
         }
     }
+
+    fun reset() {
+        packagePool.clear()
+        classPool.clear()
+    }
 }

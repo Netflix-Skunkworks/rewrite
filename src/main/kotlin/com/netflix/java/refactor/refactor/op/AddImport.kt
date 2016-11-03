@@ -4,22 +4,12 @@ import com.netflix.java.refactor.ast.*
 import java.util.ArrayList
 import com.netflix.java.refactor.refactor.RefactorVisitor
 
-class AddImport(val clazz: String, val staticMethod: String? = null): RefactorVisitor() {
-    private val imports = ArrayList<Tr.Import>()
+class AddImport(val cu: Tr.CompilationUnit, val clazz: String, val staticMethod: String? = null): RefactorVisitor() {
     private var coveredByExistingImport = false
     private val packageComparator = PackageComparator()
-
-    private lateinit var cu: Tr.CompilationUnit
-    private val typeCache by lazy { TypeCache.of(cu.cacheId) }
-    private val classType by lazy { Type.Class.build(typeCache, clazz) }
-
-    override fun visitCompilationUnit(cu: Tr.CompilationUnit): List<AstTransform<*>> {
-        this.cu = cu
-        return super.visitCompilationUnit(cu)
-    }
+    private val classType = Type.Class.build(cu.typeCache(), clazz)
 
     override fun visitImport(import: Tr.Import): List<AstTransform<*>> {
-        imports.add(import)
         val importedType = import.qualid.name.name
 
         if (addingStaticImport()) {
@@ -43,8 +33,7 @@ class AddImport(val clazz: String, val staticMethod: String? = null): RefactorVi
             return emptyList()
 
         val lastPrior = lastPriorImport()
-        val classImportField = TreeBuilder.buildName(typeCache, clazz, Formatting.Reified(" ")) as Tr.FieldAccess
-        val cuCursor = Cursor(listOf(cu))
+        val classImportField = TreeBuilder.buildName(cu.typeCache(), clazz, Formatting.Reified(" ")) as Tr.FieldAccess
 
         val importStatementToAdd = if(addingStaticImport()) {
             Tr.Import(Tr.FieldAccess(classImportField, Tr.Ident(staticMethod!!, null, Formatting.Reified.Empty), null, Formatting.Reified.Empty), true, Formatting.Infer)
@@ -54,16 +43,20 @@ class AddImport(val clazz: String, val staticMethod: String? = null): RefactorVi
             emptyList()
         }
         else if(lastPrior == null) {
-            listOf(AstTransform(cuCursor, { cu: Tr.CompilationUnit -> cu.copy(imports = listOf(importStatementToAdd) + imports) }))
+            listOf(AstTransform<Tr.CompilationUnit>(cursor()) {
+                it.copy(imports = listOf(importStatementToAdd) + cu.imports)
+            })
         }
         else {
-            listOf(AstTransform(cuCursor, { cu: Tr.CompilationUnit -> cu.copy(imports =
-                imports.takeWhile { it !== lastPrior } + listOf(lastPrior, importStatementToAdd) + imports.takeLastWhile { it !== lastPrior }) }))
+            listOf(AstTransform<Tr.CompilationUnit>(cursor()) {
+                it.copy(imports = cu.imports.takeWhile { it !== lastPrior } + listOf(lastPrior, importStatementToAdd) +
+                        cu.imports.takeLastWhile { it !== lastPrior })
+            })
         }
     }
 
     fun lastPriorImport(): Tr.Import? {
-        return imports.lastOrNull { import ->
+        return cu.imports.lastOrNull { import ->
             // static imports go after all non-static imports
             if(addingStaticImport() && !import.static)
                 return@lastOrNull true
@@ -75,7 +68,7 @@ class AddImport(val clazz: String, val staticMethod: String? = null): RefactorVi
             val comp = packageComparator.compare(import.qualid.target.printTrimmed(),
                     if(addingStaticImport()) clazz else classType.packageOwner())
             if(comp == 0) {
-                if(import.qualid.name.toString().compareTo(if(addingStaticImport()) staticMethod!! else classType.className()) < 0) {
+                if(import.qualid.name.name < if(addingStaticImport()) staticMethod!! else classType.className()) {
                     true
                 }
                 else false
