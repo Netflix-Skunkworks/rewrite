@@ -50,6 +50,11 @@ class Refactor(val cu: Tr.CompilationUnit) {
         return this
     }
 
+    fun changeName(target: Tr.VariableDecls, toName: String): Refactor {
+        ops.add(ChangeFieldName(cu, target, toName))
+        return this
+    }
+
     fun delete(target: Tr.VariableDecls): Refactor {
         ops.add(DeleteField(cu, target))
         target.typeExpr.type?.asClass()?.let { ops.add(RemoveImport(cu, it.fullyQualifiedName)) }

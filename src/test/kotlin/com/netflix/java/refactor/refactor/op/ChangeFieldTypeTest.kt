@@ -30,29 +30,6 @@ abstract class ChangeFieldTypeTest(p: Parser): Parser by p {
             |}
         """)
     }
-
-//    @Test
-//    fun changeFieldName() {
-//        val a = parse("""
-//            |import java.util.List;
-//            |public class A {
-//            |   List collection = null;
-//            |}
-//        """)
-//
-//        a.refactor()
-//                .findFieldsOfType(List::class.java)
-//                    .changeName("list")
-//                    .done()
-//                .fix()
-//
-//        assertRefactored(a, """
-//            |import java.util.List;
-//            |public class A {
-//            |   List list = null;
-//            |}
-//        """)
-//    }
 }
 
 class OracleJdkChangeFieldTypeTest : ChangeFieldTypeTest(OracleJdkParser())
