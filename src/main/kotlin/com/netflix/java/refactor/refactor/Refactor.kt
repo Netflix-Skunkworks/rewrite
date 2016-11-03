@@ -61,6 +61,11 @@ class Refactor(val cu: Tr.CompilationUnit) {
         return this
     }
 
+    fun changeName(target: Tr.MethodInvocation, toName: String): Refactor {
+        ops.add(ChangeMethodName(cu, target, toName))
+        return this
+    }
+
     /**
     * @return Transformed version of the AST after changes are applied
     */

@@ -84,7 +84,7 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
     }
 
     override fun visitBlock(block: Tr.Block<Tree>): Tree {
-        val statements = block.statements.mapIfNecessary { visit(it) as Statement }
+        val statements = block.statements.mapIfNecessary { visit(it) as Tree }
 
         return (if(statements !== block.statements) {
             block.copy(statements = statements)
@@ -246,7 +246,7 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
     override fun visitLiteral(literal: Tr.Literal): Tree = literal.transformIfNecessary(cursor())
 
     override fun visitMethod(method: Tr.MethodDecl): Tree {
-        val params = method.params.params.mapIfNecessary { visit(it) as Tr.VariableDecls }
+        val params = method.params.params.mapIfNecessary { visit(it) as Statement }
 
         val throws = method.throws?.let {
             val exceptions = it.exceptions.mapIfNecessary { visit(it) as NameTree }
@@ -302,7 +302,12 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
 
     override fun visitNewArray(newArray: Tr.NewArray): Tree {
         val typeExpr = visit(newArray.typeExpr) as TypeTree
-        val dimensions = newArray.dimensions.mapIfNecessary { visit(it) as Tr.NewArray.Dimension }
+
+        val dimensions = newArray.dimensions.mapIfNecessary {
+            val size = visit(it.size) as Expression
+            if(it.size !== size) it.copy(size = size) else it
+        }
+
         val initializer = if(newArray.initializer != null) {
             val elements = newArray.initializer.elements.mapIfNecessary { visit(it) as Expression }
             if(elements != newArray.initializer.elements) {
@@ -321,7 +326,7 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
             val params = it.args.mapIfNecessary { visit(it) as Expression }
             if(it.args !== params) it.copy(params) else it
         }
-        val classBody = visit(newClass.classBody) as Tr.Block<*>
+        val classBody = visit(newClass.classBody) as Tr.Block<*>?
 
         return (if(clazz !== newClass.clazz || args !== newClass.args || classBody !== newClass.classBody) {
             newClass.copy(clazz = clazz, args = args, classBody = classBody)
