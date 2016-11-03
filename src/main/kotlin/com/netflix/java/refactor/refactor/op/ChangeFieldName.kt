@@ -7,7 +7,7 @@ import com.netflix.java.refactor.refactor.RefactorVisitor
 data class ChangeFieldName(val cu: Tr.CompilationUnit, val decls: Tr.VariableDecls, val name: String) : RefactorVisitor() {
 
     override fun visitMultiVariable(multiVariable: Tr.VariableDecls): List<AstTransform<*>> {
-        if(multiVariable === decls) {
+        if(multiVariable.id == decls.id) {
             assert(multiVariable.vars.size == 1) { "Refactor name is not supported on multi-variable declarations" }
 
             val v = multiVariable.vars.first()

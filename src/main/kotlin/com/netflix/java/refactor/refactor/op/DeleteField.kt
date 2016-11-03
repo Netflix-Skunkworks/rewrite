@@ -7,7 +7,7 @@ import com.netflix.java.refactor.refactor.RefactorVisitor
 data class DeleteField(val cu: Tr.CompilationUnit, val decls: Tr.VariableDecls) : RefactorVisitor() {
 
     override fun visitMultiVariable(multiVariable: Tr.VariableDecls): List<AstTransform<*>> =
-        if(multiVariable === decls) {
+        if(multiVariable.id == decls.id) {
             listOf(AstTransform<Tr.Block<*>>(cursor().parent()) {
                 it.copy(statements = it.statements - decls)
             })

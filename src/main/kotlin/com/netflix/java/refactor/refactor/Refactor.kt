@@ -92,6 +92,11 @@ class Refactor(val cu: Tr.CompilationUnit) {
         return this
     }
 
+    fun insertArgument(target: Tr.MethodInvocation, pos: Int, source: String): Refactor {
+        ops.add(InsertMethodArgument(cu, target, pos, source))
+        return this
+    }
+
     /**
      * Change to a static method invocation on <code>toClass</code>
      */

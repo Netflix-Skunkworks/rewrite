@@ -26,8 +26,9 @@ abstract class ChangeMethodNameTest(p: Parser): Parser by p {
         """
 
         val cu = parse(a, b)
+
         val fixed = cu.refactor {
-            cu.classes[0].findMethodCalls("B singleArg(String)").forEach {
+            cu.findMethodCalls("B singleArg(String)").forEach {
                 changeName(it, "bar")
             }
         }.fix()
@@ -54,7 +55,7 @@ abstract class ChangeMethodNameTest(p: Parser): Parser by p {
         val cu = parse(a, b)
 
         val fixed = cu.refactor {
-            cu.classes[0].findMethodCalls("B arrArg(String[])").forEach {
+            cu.findMethodCalls("B arrArg(String[])").forEach {
                 changeName(it, "bar")
             }
         }.fix()
@@ -81,7 +82,7 @@ abstract class ChangeMethodNameTest(p: Parser): Parser by p {
         val cu = parse(a, b)
 
         val fixed = cu.refactor {
-            cu.classes[0].findMethodCalls("B varargArg(String...)").forEach {
+            cu.findMethodCalls("B varargArg(String...)").forEach {
                 changeName(it, "bar")
             }
         }.fix()
@@ -90,6 +91,39 @@ abstract class ChangeMethodNameTest(p: Parser): Parser by p {
             |class A {
             |   public void test() {
             |       new B().bar("boo", "again");
+            |   }
+            |}
+        """)
+    }
+
+    @Test
+    fun refactorMethodNameWhenMatchingAgainstMethodWithNameThatIsAnAspectjToken() {
+        val b = """
+            |class B {
+            |   public void error() {}
+            |   public void foo() {}
+            |}
+        """
+
+        val a = """
+            |class A {
+            |   public void test() {
+            |       new B().error();
+            |   }
+            |}
+        """
+
+        val cu = parse(a, b)
+        val fixed = cu.refactor() {
+            cu.findMethodCalls("B error()").forEach {
+                changeName(it, "foo")
+            }
+        }.fix()
+
+        assertRefactored(fixed, """
+            |class A {
+            |   public void test() {
+            |       new B().foo();
             |   }
             |}
         """)
