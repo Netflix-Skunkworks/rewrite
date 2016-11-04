@@ -4,7 +4,7 @@ import com.netflix.java.refactor.ast.AstTransform
 import com.netflix.java.refactor.ast.Tr
 import com.netflix.java.refactor.refactor.RefactorVisitor
 
-data class ChangeFieldName(val cu: Tr.CompilationUnit, val decls: Tr.VariableDecls, val name: String) : RefactorVisitor() {
+data class ChangeFieldName(val decls: Tr.VariableDecls, val name: String) : RefactorVisitor() {
 
     override fun visitMultiVariable(multiVariable: Tr.VariableDecls): List<AstTransform<*>> {
         if(multiVariable.id == decls.id) {

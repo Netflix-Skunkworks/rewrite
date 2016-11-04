@@ -1,5 +1,6 @@
 package com.netflix.java.refactor.refactor
 
+import com.netflix.java.refactor.ast.Expression
 import com.netflix.java.refactor.ast.Tr
 import com.netflix.java.refactor.ast.asClass
 import com.netflix.java.refactor.ast.visitor.FormatVisitor
@@ -63,12 +64,12 @@ class Refactor(val cu: Tr.CompilationUnit) {
     }
 
     fun changeName(target: Tr.VariableDecls, toName: String): Refactor {
-        ops.add(ChangeFieldName(cu, target, toName))
+        ops.add(ChangeFieldName(target, toName))
         return this
     }
 
     fun delete(target: Tr.VariableDecls): Refactor {
-        ops.add(DeleteField(cu, target))
+        ops.add(DeleteField(target))
         target.typeExpr.type?.asClass()?.let { ops.add(RemoveImport(cu, it.fullyQualifiedName)) }
         return this
     }
@@ -78,7 +79,7 @@ class Refactor(val cu: Tr.CompilationUnit) {
     // -------------
 
     fun changeName(target: Tr.MethodInvocation, toName: String): Refactor {
-        ops.add(ChangeMethodName(cu, target, toName))
+        ops.add(ChangeMethodName(target, toName))
         return this
     }
 
@@ -94,6 +95,15 @@ class Refactor(val cu: Tr.CompilationUnit) {
 
     fun insertArgument(target: Tr.MethodInvocation, pos: Int, source: String): Refactor {
         ops.add(InsertMethodArgument(cu, target, pos, source))
+        return this
+    }
+
+    // -------------
+    // Expression Refactoring
+    // -------------
+
+    fun changeLiterals(target: Expression, transform: (Any?) -> Any?): Refactor {
+        ops.add(ChangeLiteralArgument(target, transform))
         return this
     }
 

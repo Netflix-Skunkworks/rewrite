@@ -84,7 +84,8 @@ sealed class Tr : Serializable, Tree {
                           override var formatting: Formatting,
                           override val id: String = id()) : Expression, Tr() {
 
-        override fun <R> accept(v: AstVisitor<R>): R = v.visitAnnotation(this)
+        override fun <R> accept(v: AstVisitor<R>): R =
+            v.reduce(v.visitAnnotation(this), v.visitExpression(this))
 
         data class Arguments(val args: List<Expression>, override var formatting: Formatting, 
                              override val id: String = id()): Tr()
@@ -96,7 +97,8 @@ sealed class Tr : Serializable, Tree {
                            override var formatting: Formatting,
                            override val id: String = id()) : Expression, Tr() {
 
-        override fun <R> accept(v: AstVisitor<R>): R = v.visitArrayAccess(this)
+        override fun <R> accept(v: AstVisitor<R>): R =
+                v.reduce(v.visitArrayAccess(this), v.visitExpression(this))
 
         data class Dimension(val index: Expression, override var formatting: Formatting,
                              override val id: String = id()): Tr()
@@ -121,7 +123,9 @@ sealed class Tr : Serializable, Tree {
                       override val type: Type?,
                       override var formatting: Formatting,
                       override val id: String = id()) : Expression, Statement, Tr() {
-        override fun <R> accept(v: AstVisitor<R>): R = v.visitAssign(this)
+
+        override fun <R> accept(v: AstVisitor<R>): R =
+                v.reduce(v.visitAssign(this), v.visitExpression(this))
     }
 
     data class AssignOp(val variable: Expression,
@@ -131,7 +135,8 @@ sealed class Tr : Serializable, Tree {
                         override var formatting: Formatting,
                         override val id: String = id()) : Expression, Statement, Tr() {
 
-        override fun <R> accept(v: AstVisitor<R>): R = v.visitAssignOp(this)
+        override fun <R> accept(v: AstVisitor<R>): R =
+                v.reduce(v.visitAssignOp(this), v.visitExpression(this))
 
         sealed class Operator: Tr() {
             // Arithmetic
@@ -158,7 +163,7 @@ sealed class Tr : Serializable, Tree {
                       override var formatting: Formatting,
                       override val id: String = id()) : Expression, Tr() {
 
-        override fun <R> accept(v: AstVisitor<R>): R = v.visitBinary(this)
+        override fun <R> accept(v: AstVisitor<R>): R = v.reduce(v.visitBinary(this), v.visitExpression(this))
 
         sealed class Operator: Tr() {
             // Arithmetic
@@ -334,7 +339,7 @@ sealed class Tr : Serializable, Tree {
 
     data class Empty(override var formatting: Formatting, override val id: String = id()) : Statement, Expression, TypeTree, NameTree, Tr() {
         override val type: Type? = null
-        override fun <R> accept(v: AstVisitor<R>): R = v.visitEmpty(this)
+        override fun <R> accept(v: AstVisitor<R>): R = v.reduce(v.visitEmpty(this), v.visitExpression(this))
     }
 
     data class EnumValue(val name: Ident,
@@ -352,7 +357,7 @@ sealed class Tr : Serializable, Tree {
                            override var formatting: Formatting,
                            override val id: String = id()) : Expression, NameTree, TypeTree, Tr() {
 
-        override fun <R> accept(v: AstVisitor<R>): R = v.visitFieldAccess(this)
+        override fun <R> accept(v: AstVisitor<R>): R = v.reduce(v.visitFieldAccess(this), v.visitExpression(this))
 
         /**
          * Make debugging a bit easier
@@ -392,7 +397,7 @@ sealed class Tr : Serializable, Tree {
                      override var formatting: Formatting,
                      override val id: String = id()) : Expression, NameTree, TypeTree, Tr() {
 
-        override fun <R> accept(v: AstVisitor<R>): R = v.visitIdentifier(this)
+        override fun <R> accept(v: AstVisitor<R>): R = v.reduce(v.visitIdentifier(this), v.visitExpression(this))
 
         /**
          * Make debugging a bit easier
@@ -432,7 +437,7 @@ sealed class Tr : Serializable, Tree {
                           override var formatting: Formatting,
                           override val id: String = id()) : Expression, Tr() {
 
-        override fun <R> accept(v: AstVisitor<R>): R = v.visitInstanceOf(this)
+        override fun <R> accept(v: AstVisitor<R>): R = v.reduce(v.visitInstanceOf(this), v.visitExpression(this))
     }
 
     data class Label(val label: Ident,
@@ -450,7 +455,7 @@ sealed class Tr : Serializable, Tree {
                       override var formatting: Formatting,
                       override val id: String = id()) : Expression, Tr() {
 
-        override fun <R> accept(v: AstVisitor<R>): R = v.visitLambda(this)
+        override fun <R> accept(v: AstVisitor<R>): R = v.reduce(v.visitLambda(this), v.visitExpression(this))
 
         data class Arrow(override var formatting: Formatting, override val id: String = id()): Tr()
     }
@@ -463,7 +468,7 @@ sealed class Tr : Serializable, Tree {
                        override var formatting: Formatting,
                        override val id: String = id()) : Expression, Tr() {
 
-        override fun <R> accept(v: AstVisitor<R>): R = v.visitLiteral(this)
+        override fun <R> accept(v: AstVisitor<R>): R = v.reduce(v.visitLiteral(this), v.visitExpression(this))
 
         /**
          * Primitive values sometimes contain a prefix and suffix that hold the special characters,
@@ -531,7 +536,8 @@ sealed class Tr : Serializable, Tree {
                                 override var formatting: Formatting,
                                 override val id: String = id()) : Expression, Statement, Tr() {
 
-        override fun <R> accept(v: AstVisitor<R>): R = v.visitMethodInvocation(this)
+        override fun <R> accept(v: AstVisitor<R>): R =
+                v.reduce(v.visitMethodInvocation(this), v.visitExpression(this))
 
         override val type = resolvedSignature?.returnType
 
@@ -562,7 +568,8 @@ sealed class Tr : Serializable, Tree {
                         override var formatting: Formatting,
                         override val id: String = id()) : Expression, Tr() {
 
-        override fun <R> accept(v: AstVisitor<R>): R = v.visitNewArray(this)
+        override fun <R> accept(v: AstVisitor<R>): R =
+                v.reduce(v.visitNewArray(this), v.visitExpression(this))
 
         data class Dimension(val size: Expression, override var formatting: Formatting,
                              override val id: String = id()): Tr()
@@ -578,7 +585,8 @@ sealed class Tr : Serializable, Tree {
                         override var formatting: Formatting,
                         override val id: String = id()) : Expression, Statement, Tr() {
 
-        override fun <R> accept(v: AstVisitor<R>): R = v.visitNewClass(this)
+        override fun <R> accept(v: AstVisitor<R>): R =
+                v.reduce(v.visitNewClass(this), v.visitExpression(this))
 
         data class Arguments(val args: List<Expression>, override var formatting: Formatting,
                              override val id: String = id()): Tr()
@@ -613,7 +621,8 @@ sealed class Tr : Serializable, Tree {
             else -> null
         }
 
-        override fun <R> accept(v: AstVisitor<R>): R = v.visitParentheses(this)
+        override fun <R> accept(v: AstVisitor<R>): R =
+                v.reduce(v.visitParentheses(this), v.visitExpression(this))
     }
 
     data class Primitive(val typeTag: Type.Tag,
@@ -621,7 +630,8 @@ sealed class Tr : Serializable, Tree {
                          override var formatting: Formatting,
                          override val id: String = id()) : Expression, TypeTree, Tr() {
 
-        override fun <R> accept(v: AstVisitor<R>): R = v.visitPrimitive(this)
+        override fun <R> accept(v: AstVisitor<R>): R =
+                v.reduce(v.visitPrimitive(this), v.visitExpression(this))
     }
 
     data class Return(val expr: Expression?,
@@ -654,7 +664,8 @@ sealed class Tr : Serializable, Tree {
                        override var formatting: Formatting,
                        override val id: String = id()) : Expression, Tr() {
 
-        override fun <R> accept(v: AstVisitor<R>): R = v.visitTernary(this)
+        override fun <R> accept(v: AstVisitor<R>): R =
+                v.reduce(v.visitTernary(this), v.visitExpression(this))
     }
 
     data class Throw(val exception: Expression,
@@ -687,7 +698,7 @@ sealed class Tr : Serializable, Tree {
 
         override val type = clazz.type
 
-        override fun <R> accept(v: AstVisitor<R>): R = v.visitTypeCast(this)
+        override fun <R> accept(v: AstVisitor<R>): R = v.reduce(v.visitTypeCast(this), v.visitExpression(this))
     }
 
     data class TypeParameter(val annotations: List<Annotation>,
@@ -714,7 +725,7 @@ sealed class Tr : Serializable, Tree {
                      override var formatting: Formatting,
                      override val id: String = id()) : Expression, Statement, Tr() {
 
-        override fun <R> accept(v: AstVisitor<R>): R = v.visitUnary(this)
+        override fun <R> accept(v: AstVisitor<R>): R = v.reduce(v.visitUnary(this), v.visitExpression(this))
 
         sealed class Operator: Tr() {
             // Arithmetic
@@ -736,7 +747,9 @@ sealed class Tr : Serializable, Tree {
     data class UnparsedSource(val source: String, override var formatting: Formatting,
                               override val id: String = id()): Expression, Statement, Tr() {
         override val type: Type? = null
-        override fun <R> accept(v: AstVisitor<R>): R = v.visitUnparsedSource(this)
+
+        override fun <R> accept(v: AstVisitor<R>): R =
+                v.reduce(v.visitUnparsedSource(this), v.visitExpression(this))
     }
 
     data class VariableDecls(

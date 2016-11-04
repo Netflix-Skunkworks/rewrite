@@ -1,6 +1,7 @@
 package com.netflix.java.refactor.ast.visitor
 
 import com.netflix.java.refactor.ast.Cursor
+import com.netflix.java.refactor.ast.Expression
 import com.netflix.java.refactor.ast.Tr
 import com.netflix.java.refactor.ast.Tree
 import java.util.*
@@ -122,6 +123,8 @@ open class AstVisitor<R> {
     open fun visitEnumValue(enum: Tr.EnumValue): R =
             visit(enum.name)
                     .andThen(enum.initializer?.args)
+
+    open fun visitExpression(expr: Expression): R = default(null)
 
     open fun visitFieldAccess(field: Tr.FieldAccess): R =
             visit(field.target)

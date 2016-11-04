@@ -6,38 +6,6 @@ import com.netflix.java.refactor.parse.Parser
 abstract class ChangeMethodInvocationTest(p: Parser): Parser by p {
 
 //    @Test
-//    fun transformStringArgument() {
-//        val a = """
-//            |class A {
-//            |   public void test() {
-//            |       String s = "bar";
-//            |       new B().singleArg("foo (%s)" + s + 0L);
-//            |   }
-//            |}
-//        """
-//
-//        val cu = parse(a, b)
-//        cu.refactor()
-//                .findMethodCalls("B singleArg(String)")
-//                    .changeArguments()
-//                        .arg(String::class.java)
-//                            .changeLiterals { s -> s.toString().replace("%s", "{}") }
-//                            .done()
-//                        .done()
-//                    .done()
-//                .fix()
-//
-//        assertRefactored(cu, """
-//            |class A {
-//            |   public void test() {
-//            |       String s = "bar";
-//            |       new B().singleArg("foo ({})" + s + 0L);
-//            |   }
-//            |}
-//        """)
-//    }
-//
-//    @Test
 //    fun refactorExplicitStaticToVariable() {
 //        val a = """
 //            |package a;
@@ -125,47 +93,6 @@ abstract class ChangeMethodInvocationTest(p: Parser): Parser by p {
 //            |   public void test() {
 //            |       a.foo();
 //            |   }
-//            |}
-//        """)
-//    }
-//
-//    @Test
-//    fun refactorLiteralStringWithEscapableCharacters() {
-//        val a = """
-//            |package a;
-//            |public class A {
-//            |    public void foo(String s) {}
-//            |}
-//        """
-//
-//        val b = """
-//            |import a.*;
-//            |public class B {
-//            |    A a;
-//            |    public void test() {
-//            |        a.foo("mystring '%s'");
-//            |    }
-//            |}
-//        """
-//
-//        val cu = parse(b, a)
-//        cu.refactor()
-//            .findMethodCalls("a.A foo(..)")
-//                .changeArguments()
-//                    .arg(String::class.java)
-//                        .changeLiterals { s -> s.toString().replace("%s", "{}") }
-//                        .done()
-//                    .done()
-//                .done()
-//            .fix()
-//
-//        assertRefactored(cu, """
-//            |import a.*;
-//            |public class B {
-//            |    A a;
-//            |    public void test() {
-//            |        a.foo("mystring '{}'");
-//            |    }
 //            |}
 //        """)
 //    }
