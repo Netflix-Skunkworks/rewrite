@@ -21,14 +21,20 @@ class Refactor(val cu: Tr.CompilationUnit) {
     // Compilation Unit Refactoring
     // -------------
 
-    fun addImport(clazz: Class<*>, staticMethod: String? = null) = addImport(clazz.name, staticMethod)
+    fun addImport(clazz: Class<*>, staticMethod: String? = null): Refactor {
+        addImport(clazz.name, staticMethod)
+        return this
+    }
 
     fun addImport(clazz: String, staticMethod: String? = null): Refactor {
         ops.add(AddImport(cu, clazz, staticMethod))
         return this
     }
 
-    fun removeImport(clazz: Class<*>) = removeImport(clazz.name)
+    fun removeImport(clazz: Class<*>): Refactor {
+        removeImport(clazz.name)
+        return this
+    }
 
     fun removeImport(clazz: String): Refactor {
         ops.add(RemoveImport(cu, clazz))
@@ -39,58 +45,74 @@ class Refactor(val cu: Tr.CompilationUnit) {
     // Class Declaration Refactoring
     // -------------
 
-    fun addField(target: Tr.ClassDecl, clazz: Class<*>, name: String, init: String?) = addField(target, clazz.name, name, init)
+    fun addField(target: Tr.ClassDecl, clazz: Class<*>, name: String, init: String?) {
+        addField(target, clazz.name, name, init)
+    }
 
-    fun addField(target: Tr.ClassDecl, clazz: Class<*>, name: String) = addField(target, clazz.name, name, null)
+    fun addField(target: Tr.ClassDecl, clazz: Class<*>, name: String) {
+        addField(target, clazz.name, name, null)
+    }
 
-    fun addField(target: Tr.ClassDecl, clazz: String, name: String) = addField(target, clazz, name, null)
+    fun addField(target: Tr.ClassDecl, clazz: String, name: String) {
+        addField(target, clazz, name, null)
+    }
 
-    fun addField(target: Tr.ClassDecl, clazz: String, name: String, init: String?): Refactor {
+    fun addField(target: Tr.ClassDecl, clazz: String, name: String, init: String?) {
         ops.add(AddField(target, clazz, name, init))
-        return this
     }
 
     // -------------
     // Field Refactoring
     // -------------
 
-    fun changeType(target: Tr.VariableDecls, toType: Class<*>): Refactor = changeType(target, toType.name)
+    fun changeType(target: Tr.VariableDecls, toType: Class<*>) {
+        changeType(target, toType.name)
+    }
 
-    fun changeType(target: Tr.VariableDecls, toType: String): Refactor {
+    fun changeType(target: Tr.VariableDecls, toType: String) {
         ops.add(ChangeFieldType(cu, target, toType))
         ops.add(AddImport(cu, toType))
         target.typeExpr.type?.asClass()?.let { ops.add(RemoveImport(cu, it.fullyQualifiedName)) }
-        return this
     }
 
-    fun changeName(target: Tr.VariableDecls, toName: String): Refactor {
+    fun changeName(target: Tr.VariableDecls, toName: String) {
         ops.add(ChangeFieldName(target, toName))
-        return this
     }
 
-    fun delete(target: Tr.VariableDecls): Refactor {
+    fun delete(target: Tr.VariableDecls) {
         ops.add(DeleteField(target))
         target.typeExpr.type?.asClass()?.let { ops.add(RemoveImport(cu, it.fullyQualifiedName)) }
-        return this
     }
 
     // -------------
     // Method Refactoring
     // -------------
 
-    fun changeName(target: Tr.MethodInvocation, toName: String): Refactor {
+    fun changeName(target: Tr.MethodInvocation, toName: String) {
         ops.add(ChangeMethodName(target, toName))
-        return this
     }
 
     /**
      * Change to a static method invocation on <code>toClass</code>
      */
-    fun changeTarget(target: Tr.MethodInvocation, toClass: String): Refactor {
+    fun changeTarget(target: Tr.MethodInvocation, toClass: String) {
         ops.add(ChangeMethodTargetToStatic(cu, target, toClass))
         ops.add(AddImport(cu, toClass))
         target.declaringType?.fullyQualifiedName?.let { ops.add(RemoveImport(cu, it)) }
-        return this
+    }
+
+    /**
+     * Change to a static method invocation on <code>toClass</code>
+     */
+    fun changeTarget(target: Tr.MethodInvocation, toClass: Class<*>) {
+        changeTarget(target, toClass.name)
+    }
+
+    fun changeTarget(target: Tr.MethodInvocation, namedVar: Tr.VariableDecls.NamedVar) {
+        ops.add(ChangeMethodTargetToVariable(target, namedVar))
+
+        // if the original is a static method invocation, the import on it's type may no longer be needed
+        target.declaringType?.fullyQualifiedName?.let { ops.add(RemoveImport(cu, it)) }
     }
 
     fun insertArgument(target: Tr.MethodInvocation, pos: Int, source: String): Refactor {
@@ -106,11 +128,6 @@ class Refactor(val cu: Tr.CompilationUnit) {
         ops.add(ChangeLiteralArgument(target, transform))
         return this
     }
-
-    /**
-     * Change to a static method invocation on <code>toClass</code>
-     */
-    fun changeTarget(target: Tr.MethodInvocation, toClass: Class<*>) = changeTarget(target, toClass.name)
 
     /**
     * @return Transformed version of the AST after changes are applied
