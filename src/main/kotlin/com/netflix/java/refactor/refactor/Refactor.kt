@@ -115,9 +115,14 @@ class Refactor(val cu: Tr.CompilationUnit) {
         target.declaringType?.fullyQualifiedName?.let { ops.add(RemoveImport(cu, it)) }
     }
 
-    fun insertArgument(target: Tr.MethodInvocation, pos: Int, source: String): Refactor {
+    fun insertArgument(target: Tr.MethodInvocation, pos: Int, source: String) {
         ops.add(InsertMethodArgument(cu, target, pos, source))
-        return this
+    }
+
+    fun reorderArguments(target: Tr.MethodInvocation, vararg byArgumentNames: String): ReorderMethodArguments {
+        val reorderOp = ReorderMethodArguments(target, *byArgumentNames)
+        ops.add(reorderOp)
+        return reorderOp
     }
 
     // -------------

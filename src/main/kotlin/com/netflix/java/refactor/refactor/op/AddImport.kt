@@ -44,12 +44,12 @@ class AddImport(val cu: Tr.CompilationUnit, val clazz: String, val staticMethod:
         }
         else if(lastPrior == null) {
             listOf(AstTransform<Tr.CompilationUnit>(cursor()) {
-                it.copy(imports = listOf(importStatementToAdd) + cu.imports)
+                copy(imports = listOf(importStatementToAdd) + cu.imports)
             })
         }
         else {
             listOf(AstTransform<Tr.CompilationUnit>(cursor()) {
-                it.copy(imports = cu.imports.takeWhile { it !== lastPrior } + listOf(lastPrior, importStatementToAdd) +
+                copy(imports = cu.imports.takeWhile { it !== lastPrior } + listOf(lastPrior, importStatementToAdd) +
                         cu.imports.takeLastWhile { it !== lastPrior })
             })
         }

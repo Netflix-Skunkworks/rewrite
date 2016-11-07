@@ -2,7 +2,6 @@ package com.netflix.java.refactor.parse
 
 import com.netflix.java.refactor.ast.*
 import com.netflix.java.refactor.ast.Tree
-import com.oracle.tools.packager.JreUtils.Rule.suffix
 import com.sun.source.tree.*
 import com.sun.source.util.TreeScanner
 import com.sun.tools.javac.code.Flags
@@ -460,18 +459,11 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
 
     override fun visitMethodInvocation(node: MethodInvocationTree, fmt: Formatting.Reified): Tree {
         val jcSelect = (node as JCTree.JCMethodInvocation).methodSelect
-        val methSymbol = when (jcSelect) {
-            null -> null
-            is JCTree.JCIdent -> jcSelect.sym
-            is JCTree.JCFieldAccess -> jcSelect.sym
-            else -> throw IllegalArgumentException("Unexpected method select type $this")
-        }
 
-        val jcMeth = node.meth
-        val select = when(jcMeth) {
-            is JCTree.JCFieldAccess -> jcMeth.selected.convert<Expression> { sourceBefore(".") }
+        val select = when(jcSelect) {
+            is JCTree.JCFieldAccess -> jcSelect.selected.convert<Expression> { sourceBefore(".") }
             is JCTree.JCIdent -> null
-            else -> throw IllegalStateException("Unexpected method select type ${jcMeth.javaClass}")
+            else -> throw IllegalStateException("Unexpected method select type ${jcSelect.javaClass}")
         }
 
         // generic type parameters can only exist on qualified targets
@@ -481,10 +473,10 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
             Tr.MethodInvocation.TypeParameters(genericParams, Formatting.Reified(genericPrefix))
         } else null
 
-        val name = when(jcMeth) {
-            is JCTree.JCFieldAccess ->  Tr.Ident(jcMeth.name.toString(), null, Formatting.Reified(sourceBefore(jcMeth.name.toString())))
-            is JCTree.JCIdent -> jcMeth.convert<Tr.Ident>()
-            else -> throw IllegalStateException("Unexpected method select type ${jcMeth.javaClass}")
+        val name = when(jcSelect) {
+            is JCTree.JCFieldAccess ->  Tr.Ident(jcSelect.name.toString(), null, Formatting.Reified(sourceBefore(jcSelect.name.toString())))
+            is JCTree.JCIdent -> jcSelect.convert<Tr.Ident>()
+            else -> throw IllegalStateException("Unexpected method select type ${jcSelect.javaClass}")
         }
 
         val argsPrefix = sourceBefore("(")
@@ -496,14 +488,35 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
                 },
                 Formatting.Reified(argsPrefix))
 
+        val genericSymbol = when (jcSelect) {
+            null -> null
+            is JCTree.JCIdent -> jcSelect.sym
+            is JCTree.JCFieldAccess -> jcSelect.sym
+            else -> throw IllegalArgumentException("Unexpected method select type $this")
+        } as Symbol.MethodSymbol?
+
+        val type = if(genericSymbol != null) {
+            fun signature(t: com.sun.tools.javac.code.Type) = Type.Method.Signature(
+                    (t as com.sun.tools.javac.code.Type.MethodType).restype?.type(),
+                    t.argtypes.map { it.type() }.filterNotNull()
+            )
+
+            val genericSignature = when (genericSymbol.type) {
+                is com.sun.tools.javac.code.Type.ForAll ->
+                    signature((genericSymbol.type as com.sun.tools.javac.code.Type.ForAll).qtype)
+                else -> signature(genericSymbol.type)
+            }
+
+            Type.Method(genericSignature, signature(jcSelect.type), genericSymbol.params().map { it.name.toString() })
+        } else null
+
         return Tr.MethodInvocation(
                 select,
                 typeParams,
                 name,
                 args,
-                methSymbol.type().asMethod(),
-                jcSelect?.type.type().asMethod(),
-                methSymbol?.owner?.type().asClass(),
+                genericSymbol?.owner?.type().asClass(),
+                type,
                 fmt
         )
     }
@@ -977,13 +990,6 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
                 Type.Class.build(typeCache, this.className(), fields, null)
             }
             is Symbol.PackageSymbol -> Type.Package.build(typeCache, this.fullname.toString())
-            is Symbol.MethodSymbol -> {
-                when (this.type) {
-                    is com.sun.tools.javac.code.Type.ForAll ->
-                        (this.type as com.sun.tools.javac.code.Type.ForAll).qtype.type(stack.plus(this))
-                    else -> this.type.type(stack.plus(this))
-                }
-            }
             is Symbol.VarSymbol -> Type.GenericTypeVariable(this.name.toString(), null)
             else -> null
         }
@@ -997,12 +1003,6 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
             is com.sun.tools.javac.code.Type.PackageType -> this.tsym.type(stack.plus(this))
             is com.sun.tools.javac.code.Type.ClassType -> {
                 this.tsym.type(stack.plus(this)).asClass()?.copy(supertype = supertype_field.type(stack.plus(this)).asClass())
-            }
-            is com.sun.tools.javac.code.Type.MethodType -> {
-                // in the case of generic method parameters or return type, the types here are concretized relative to the call site
-                val returnType = this.restype?.type(stack.plus(this))
-                val args = this.argtypes.map { it.type(stack.plus(this)) }.filterNotNull()
-                Type.Method(returnType, args)
             }
             is com.sun.tools.javac.code.Type.TypeVar -> Type.GenericTypeVariable(this.tsym.name.toString(), this.bound.type(stack.plus(this)).asClass())
             is com.sun.tools.javac.code.Type.JCPrimitiveType -> Type.Primitive(this.tag.tag())

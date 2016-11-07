@@ -19,7 +19,7 @@ class ChangeLiteralArgument(val expr: Expression, val transform: (Any?) -> Any?)
             val transformed = transform.invoke(literal.value)
             return if(transformed != literal.value) {
                 listOf(AstTransform<Tr.Literal>(this@ChangeLiteralArgument.cursor().parent() + cursor()) {
-                    it.copy(value = transformed)
+                    copy(value = transformed)
                 })
             } else emptyList()
         }

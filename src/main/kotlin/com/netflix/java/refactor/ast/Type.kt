@@ -67,7 +67,9 @@ sealed class Type(): Serializable {
         }
     }
     
-    data class Method(val returnType: Type?, val paramTypes: List<Type>): Type()
+    data class Method(val genericSignature: Signature, val resolvedSignature: Signature, val paramNames: List<String>?): Type() {
+        data class Signature(val returnType: Type?, val paramTypes: List<Type>)
+    }
    
     data class GenericTypeVariable(val fullyQualifiedName: String, val bound: Class?): Type()
     

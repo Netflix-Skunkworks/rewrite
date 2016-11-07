@@ -10,7 +10,7 @@ class ChangeMethodName(val meth: Tr.MethodInvocation, val name: String) : Refact
         if (meth.id == this.meth.id) {
             if(meth.name.name != name) {
                 return listOf(AstTransform<Tr.MethodInvocation>(cursor()) {
-                    it.copy(name = it.name.copy(name = name))
+                    copy(name = name.copy(name = this@ChangeMethodName.name))
                 })
             }
         }

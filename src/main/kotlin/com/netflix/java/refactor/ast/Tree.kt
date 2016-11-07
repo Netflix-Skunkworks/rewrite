@@ -528,20 +528,15 @@ sealed class Tr : Serializable, Tree {
                                 val typeParameters: TypeParameters?,
                                 val name: Ident,
                                 val args: Arguments,
-                                val genericSignature: Type.Method?,
-                                // in the case of generic signature parts, this concretizes
-                                // them relative to the call site
-                                val resolvedSignature: Type.Method?,
                                 val declaringType: Type.Class?,
+                                override val type: Type.Method?,
                                 override var formatting: Formatting,
                                 override val id: String = id()) : Expression, Statement, Tr() {
 
         override fun <R> accept(v: AstVisitor<R>): R =
                 v.reduce(v.visitMethodInvocation(this), v.visitExpression(this))
 
-        override val type = resolvedSignature?.returnType
-
-        fun returnType(): Type? = resolvedSignature?.returnType
+        fun returnType(): Type? = type?.resolvedSignature?.returnType
 
         fun firstMethodInChain(): MethodInvocation =
             if(select is MethodInvocation)

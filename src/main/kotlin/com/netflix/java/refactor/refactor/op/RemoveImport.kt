@@ -62,7 +62,7 @@ class RemoveImport(val cu: Tr.CompilationUnit, val clazz: String): RefactorVisit
             listOf(starImport!!.delete())
         } else if (starImport is Tr.Import && referencedTypes.size == 1) {
             listOf(AstTransform<Tr.CompilationUnit>(cursor()) {
-                it.copy(imports = it.imports.map {
+                copy(imports = imports.map {
                     if(it == starImport) {
                         val classImportField = TreeBuilder.buildName(cu.typeCache(), referencedTypes.first().fullyQualifiedName, Formatting.Reified(" ")) as Tr.FieldAccess
                         Tr.Import(classImportField, false, it.formatting)
@@ -86,5 +86,5 @@ class RemoveImport(val cu: Tr.CompilationUnit, val clazz: String): RefactorVisit
     }
 
     private fun Tr.Import.delete(): AstTransform<Tr.CompilationUnit> =
-        AstTransform(cursor()) { it.copy(imports = it.imports - this) }
+        AstTransform(cursor()) { copy(imports = imports - this@delete) }
 }

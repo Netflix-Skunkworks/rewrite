@@ -38,16 +38,12 @@ abstract class MethodInvocationTest(p: Parser) : Parser by p {
         assertEquals(listOf(Type.Tag.Int, Type.Tag.Int, Type.Tag.Int),
                 inv.args.args.filterIsInstance<Tr.Literal>().map { it.typeTag })
 
-        val effectParams = inv.resolvedSignature!!.paramTypes
+        val effectParams = inv.type!!.resolvedSignature.paramTypes
         assertEquals("java.lang.Integer", effectParams[0].asClass()?.fullyQualifiedName)
         assertTrue(effectParams[1].hasElementType("java.lang.Integer"))
 
-        // check assumptions about the target method
-        // notice how for non-generic method signatures, genericSignature and resolvedSignature match
-        val methType = inv.genericSignature!!
-        assertEquals("java.lang.Integer", methType.returnType.asClass()?.fullyQualifiedName)
-        assertEquals("java.lang.Integer", methType.paramTypes[0].asClass()?.fullyQualifiedName)
-        assertTrue(methType.paramTypes[1].hasElementType("java.lang.Integer"))
+        // for non-generic method signatures, resolvedSignature and genericSignature match
+        assertEquals(inv.type!!.resolvedSignature, inv.type!!.genericSignature)
 
         assertEquals("A", inv.declaringType?.fullyQualifiedName)
     }
@@ -60,13 +56,13 @@ abstract class MethodInvocationTest(p: Parser) : Parser by p {
             assertEquals(listOf(Type.Tag.Int, Type.Tag.Int, Type.Tag.Int),
                     test.args.args.filterIsInstance<Tr.Literal>().map { it.typeTag })
 
-            val effectiveParams = test.resolvedSignature!!.paramTypes
+            val effectiveParams = test.type!!.resolvedSignature.paramTypes
             assertEquals("java.lang.Integer", effectiveParams[0].asClass()?.fullyQualifiedName)
             assertTrue(effectiveParams[1].hasElementType("java.lang.Integer"))
 
             // check assumptions about the target method
             // notice how, in the case of generic arguments, the generics are concretized to match the call site
-            val methType = test.genericSignature!!
+            val methType = test.type!!.genericSignature
             assertEquals("T", methType.returnType.asGeneric()?.fullyQualifiedName)
             assertEquals("T", methType.paramTypes[0].asGeneric()?.fullyQualifiedName)
             assertTrue(methType.paramTypes[1].hasElementType("T"))
@@ -97,7 +93,7 @@ abstract class MethodInvocationTest(p: Parser) : Parser by p {
 
         val inv = a.fields()[0].vars[0].initializer as Tr.MethodInvocation
         assertEquals("A", inv.declaringType?.fullyQualifiedName)
-        assertNull(inv.resolvedSignature)
-        assertNull(inv.genericSignature)
+        assertNull(inv.type)
+        assertNull(inv.type)
     }
 }
