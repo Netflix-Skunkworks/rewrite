@@ -92,7 +92,7 @@ abstract class MethodInvocationTest(p: Parser) : Parser by p {
         """)
 
         val inv = a.fields()[0].vars[0].initializer as Tr.MethodInvocation
-        assertEquals("A", inv.declaringType?.fullyQualifiedName)
+        assertNull(inv.declaringType)
         assertNull(inv.type)
         assertNull(inv.type)
     }

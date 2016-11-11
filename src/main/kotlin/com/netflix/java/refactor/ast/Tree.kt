@@ -1,7 +1,5 @@
 package com.netflix.java.refactor.ast
 
-import com.fasterxml.jackson.annotation.JsonIgnore
-import com.google.common.io.BaseEncoding
 import com.netflix.java.refactor.ast.visitor.AstVisitor
 import com.netflix.java.refactor.ast.visitor.PrintVisitor
 import com.netflix.java.refactor.parse.SourceFile
@@ -74,7 +72,7 @@ sealed class Tr : Serializable, Tree {
         fun id(): String {
             val buffer = ByteArray(10)
             random.nextBytes(buffer)
-            return BaseEncoding.base64Url().omitPadding().encode(buffer)
+            return Base64.getEncoder().encodeToString(buffer)
         }
     }
     
@@ -109,7 +107,7 @@ sealed class Tr : Serializable, Tree {
                          override var formatting: Formatting,
                          override val id: String = id()): TypeTree, Tr() {
 
-        @JsonIgnore
+        @Transient
         override val type = elementType.type
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitArrayType(this)
@@ -597,7 +595,7 @@ sealed class Tr : Serializable, Tree {
                                  override var formatting: Formatting,
                                  override val id: String = id()): TypeTree, Tr() {
 
-        @JsonIgnore
+        @Transient
         override val type = clazz.type
 
         override fun <R> accept(v: AstVisitor<R>): R = v.visitParameterizedType(this)

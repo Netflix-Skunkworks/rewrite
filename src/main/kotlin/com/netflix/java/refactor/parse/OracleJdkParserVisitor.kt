@@ -493,7 +493,10 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
             is JCTree.JCIdent -> jcSelect.sym
             is JCTree.JCFieldAccess -> jcSelect.sym
             else -> throw IllegalArgumentException("Unexpected method select type $this")
-        } as Symbol.MethodSymbol?
+        }.let {
+            // if the symbol is not a method symbol, there is a parser error in play
+            if(it is Symbol.MethodSymbol) it else null
+        }
 
         val type = if(genericSymbol != null) {
             fun signature(t: com.sun.tools.javac.code.Type) = Type.Method.Signature(
