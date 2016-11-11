@@ -1,6 +1,7 @@
 package com.netflix.java.refactor.refactor
 
 import com.netflix.java.refactor.ast.Expression
+import com.netflix.java.refactor.ast.Formatting
 import com.netflix.java.refactor.ast.Tr
 import com.netflix.java.refactor.ast.asClass
 import com.netflix.java.refactor.ast.visitor.FormatVisitor
@@ -58,7 +59,9 @@ class Refactor(val cu: Tr.CompilationUnit) {
     }
 
     fun addField(target: Tr.ClassDecl, clazz: String, name: String, init: String?) {
-        ops.add(AddField(target, clazz, name, init))
+        ops.add(AddField(cu, listOf(Tr.VariableDecls.Modifier.Private(Formatting.Reified("", " "))),
+                target, clazz, name, init))
+        ops.add(AddImport(cu, clazz))
     }
 
     // -------------
