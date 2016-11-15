@@ -57,7 +57,7 @@ class TransformVisitor(val transformations: Iterable<AstTransform<*>>) : AstVisi
     }
 
     override fun visitAssign(assign: Tr.Assign): Tree {
-        val variable = visit(assign.variable) as NameTree
+        val variable = visit(assign.variable) as Expression
         val assignment = visit(assign.assignment) as Expression
 
         return (if(variable !== assign.variable || assignment !== assign.assignment) {

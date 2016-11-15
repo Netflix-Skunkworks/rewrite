@@ -89,7 +89,7 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
     }
 
     override fun visitAssignment(node: AssignmentTree, fmt: Formatting.Reified): Tree {
-        val variable = node.variable.convert<NameTree> { sourceBefore("=") }
+        val variable = node.variable.convert<Expression> { sourceBefore("=") }
         val assignment = node.expression.convert<Expression>()
         return Tr.Assign(variable, assignment, node.type(), fmt)
     }
@@ -555,9 +555,7 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
 
         val name = if(node.name.toString() == "<init>") {
             val owner = ((node as JCTree.JCMethodDecl).sym.owner as Symbol.ClassSymbol).name.toString()
-            val constructor = Tr.Ident(owner, null, Formatting.Reified(sourceBefore(owner)))
-            skip(owner)
-            constructor
+            Tr.Ident(owner, null, Formatting.Reified(sourceBefore(owner)))
         } else {
             Tr.Ident(node.name.toString(), null, Formatting.Reified(sourceBefore(node.name.toString())))
         }

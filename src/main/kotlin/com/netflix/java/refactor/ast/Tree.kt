@@ -115,7 +115,7 @@ sealed class Tr : Serializable, Tree {
                              override val id: String = id()): Tr()
     }
 
-    data class Assign(val variable: NameTree,
+    data class Assign(val variable: Expression,
                       val assignment: Expression,
                       override val type: Type?,
                       override var formatting: Formatting,
