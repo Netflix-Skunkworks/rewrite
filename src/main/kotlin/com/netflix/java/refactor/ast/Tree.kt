@@ -2,7 +2,6 @@ package com.netflix.java.refactor.ast
 
 import com.netflix.java.refactor.ast.visitor.AstVisitor
 import com.netflix.java.refactor.ast.visitor.PrintVisitor
-import com.netflix.java.refactor.parse.SourceFile
 import com.netflix.java.refactor.refactor.Refactor
 import com.netflix.java.refactor.search.*
 import groovy.lang.Closure
@@ -283,7 +282,7 @@ sealed class Tr : Serializable, Tree {
         fun hasType(clazz: String): Boolean = HasType(clazz).visit(this)
     }
 
-    data class CompilationUnit(val source: SourceFile,
+    data class CompilationUnit(val sourcePath: String,
                                val packageDecl: Package?,
                                val imports: List<Import>,
                                val classes: List<ClassDecl>,
@@ -510,6 +509,7 @@ sealed class Tr : Serializable, Tree {
             data class Abstract(override var formatting: Formatting, override val id: String = id()) : Modifier()
             data class Static(override var formatting: Formatting, override val id: String = id()) : Modifier()
             data class Final(override var formatting: Formatting, override val id: String = id()) : Modifier()
+            data class Synchronized(override var formatting: Formatting, override val id: String = id()) : Modifier()
         }
 
         fun hasType(clazz: Class<*>): Boolean = HasType(clazz.name).visit(this)

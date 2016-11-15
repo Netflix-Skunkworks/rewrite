@@ -152,7 +152,7 @@ class Refactor(val cu: Tr.CompilationUnit) {
     /**
      * @return Git-style patch diff representing the changes to this compilation unit
      */
-    fun diff() = InMemoryDiffEntry(cu.source.path, cu.print(), fix().print()).diff
+    fun diff() = InMemoryDiffEntry(cu.sourcePath, cu.print(), fix().print()).diff
 
     internal class InMemoryDiffEntry(filePath: String, old: String, new: String): DiffEntry() {
         private val repo = InMemoryRepository.Builder().build()

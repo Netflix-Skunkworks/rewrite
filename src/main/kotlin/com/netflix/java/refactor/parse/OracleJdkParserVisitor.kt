@@ -260,7 +260,7 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
         } else null
 
         return Tr.CompilationUnit(
-                SourceFile.fromText(path.toString(), source),
+                path.toString(),
                 packageDecl,
                 node.imports.convertAll(SEMI_DELIM, SEMI_DELIM),
                 node.typeDecls.filterIsInstance<JCTree.JCClassDecl>().convertAll(WS_DELIM, { source.substring(cursor) }),
@@ -539,6 +539,7 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
                 Modifier.ABSTRACT -> Tr.MethodDecl.Modifier.Abstract(modFormat)
                 Modifier.STATIC -> Tr.MethodDecl.Modifier.Static(modFormat)
                 Modifier.FINAL -> Tr.MethodDecl.Modifier.Final(modFormat)
+                Modifier.SYNCHRONIZED -> Tr.MethodDecl.Modifier.Synchronized(modFormat)
                 else -> throw IllegalArgumentException("Unexpected modifier $mod")
             }
         }
@@ -910,7 +911,7 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
             BoundKind.UNBOUND -> null
         }
 
-        return Tr.Wildcard(bound, node.inner.convert<NameTree>(), fmt)
+        return Tr.Wildcard(bound, node.inner.convertOrNull<NameTree>(), fmt)
     }
 
     /**

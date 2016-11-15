@@ -242,6 +242,7 @@ class PrintVisitor : AstVisitor<String>("") {
             is Tr.MethodDecl.Modifier.Abstract -> "abstract"
             is Tr.MethodDecl.Modifier.Static -> "static"
             is Tr.MethodDecl.Modifier.Final -> "final"
+            is Tr.MethodDecl.Modifier.Synchronized -> "synchronized"
         }) }
 
         val typeParams = method.typeParameters?.let { it.fmt("<${visit(it.params, ",")}>") } ?: ""
