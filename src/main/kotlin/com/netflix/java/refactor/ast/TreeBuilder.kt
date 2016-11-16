@@ -8,7 +8,7 @@ object TreeBuilder {
         val expr = parts.foldIndexed(Tr.Empty(Formatting.None) as Expression to "") { i, acc, part ->
             val (target, subpackage) = acc
             if (target is Tr.Empty) {
-                Tr.Ident(part, Type.Package.build(cache, part), Formatting.Reified.Empty) to part
+                Tr.Ident(part, Type.Package.build(cache, part), fmt) to part
             } else {
                 val fullName = "$subpackage.$part"
                 val partFmt = if (i == parts.size - 1) {

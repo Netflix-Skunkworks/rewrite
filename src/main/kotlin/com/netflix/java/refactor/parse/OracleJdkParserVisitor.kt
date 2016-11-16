@@ -764,10 +764,19 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
 
     override fun visitTypeParameter(node: TypeParameterTree, fmt: Formatting.Reified): Tree {
         val annotations = node.annotations.convertAll<Tr.Annotation>(NO_DELIM, NO_DELIM)
-        val name = TreeBuilder.buildName(typeCache, node.name.toString(), Formatting.Reified(sourceBefore(node.name.toString())))
 
-        // see https://docs.oracle.com/javase/tutorial/java/generics/bounded.html
-        val bounds = node.bounds.convertAll<Expression>({ sourceBefore("&") }, NO_DELIM)
+        val name = TreeBuilder.buildName(typeCache, node.name.toString(),
+                Formatting.Reified(sourceBefore(node.name.toString()), if(node.bounds.isNotEmpty()) sourceBefore("extends") else ""))
+
+        val bounds = if(node.bounds.isNotEmpty()) {
+            val firstPrefix = whitespace()
+
+            // see https://docs.oracle.com/javase/tutorial/java/generics/bounded.html
+            val bounds = node.bounds.convertAll<Expression>({ sourceBefore("&") }, NO_DELIM)
+            (bounds[0].formatting as Formatting.Reified).prefix = firstPrefix
+
+            bounds
+        } else emptyList()
 
         return Tr.TypeParameter(annotations, name, bounds, fmt)
     }

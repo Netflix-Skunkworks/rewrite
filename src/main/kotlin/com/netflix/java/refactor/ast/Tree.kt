@@ -593,7 +593,7 @@ sealed class Tr : Serializable, Tree {
     data class ParameterizedType(val clazz: NameTree,
                                  val typeArguments: TypeArguments?,
                                  override var formatting: Formatting,
-                                 override val id: String = id()): TypeTree, Tr() {
+                                 override val id: String = id()): TypeTree, Expression, Tr() {
 
         @Transient
         override val type = clazz.type
