@@ -61,4 +61,26 @@ abstract class IfTest(p: Parser): Parser by p {
             |}
         """.trimMargin(), iff.printTrimmed())
     }
+
+    @Test
+    fun singleLineIfElseStatements() {
+        val a = parse("""
+            public class A {
+                int n;
+                public void test() {
+                    if(n == 0) test();
+                    else if(n == 1) test();
+                    else test();
+                }
+            }
+        """)
+
+        assertEquals("""
+            |public void test() {
+            |    if(n == 0) test();
+            |    else if(n == 1) test();
+            |    else test();
+            |}
+        """.trimMargin(), a.classes[0].methods()[0].printTrimmed())
+    }
 }

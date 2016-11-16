@@ -173,7 +173,7 @@ class PrintVisitor : AstVisitor<String>("") {
 
     override fun visitForLoop(forLoop: Tr.ForLoop): String {
         val expr = forLoop.control.let { it.fmt("(${visit(it.init)};${visit(it.condition)};${visit(it.update)})") }
-        return forLoop.fmt("for$expr${visit(forLoop.body)}")
+        return forLoop.fmt("for$expr${visitStatement(forLoop.body)}")
     }
 
     override fun visitForEachLoop(forEachLoop: Tr.ForEachLoop): String {
@@ -405,7 +405,7 @@ class PrintVisitor : AstVisitor<String>("") {
     }
 
     override fun visitWhileLoop(whileLoop: Tr.WhileLoop): String {
-        return whileLoop.fmt("while${visit(whileLoop.condition)}${visit(whileLoop.body)}")
+        return whileLoop.fmt("while${visit(whileLoop.condition)}${visitStatement(whileLoop.body)}")
     }
 
     override fun visitWildcard(wildcard: Tr.Wildcard): String {

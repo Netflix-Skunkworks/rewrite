@@ -377,7 +377,7 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
 
         return Tr.ForLoop(
                 Tr.ForLoop.Control(init, condition, update, Formatting.Reified(ctrlPrefix)),
-                node.statement.convert(),
+                node.statement.convert(statementDelim),
                 fmt
         )
     }
@@ -391,11 +391,11 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
         skip("if")
 
         val ifPart = node.condition.convert<Tr.Parentheses<Expression>>()
-        val then = node.thenStatement.convert<Statement>()
+        val then = node.thenStatement.convert<Statement>(statementDelim)
 
         val elsePart = if(node.elseStatement is JCTree.JCStatement) {
             val elsePrefix = sourceBefore("else")
-            Tr.If.Else(node.elseStatement.convert<Statement>(), Formatting.Reified(elsePrefix))
+            Tr.If.Else(node.elseStatement.convert<Statement>(statementDelim), Formatting.Reified(elsePrefix))
         } else null
 
         return Tr.If(ifPart, then, elsePart, fmt)
@@ -898,7 +898,7 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
         skip("while")
         return Tr.WhileLoop(
                 node.condition.convert(),
-                node.statement.convert(),
+                node.statement.convert(statementDelim),
                 fmt
         )
     }
@@ -938,19 +938,19 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
     private fun <T: Tree> List<JdkTree>.convertAll(innerSuffix: (JdkTree) -> String, suffix: (JdkTree) -> String): List<T> =
             mapIndexed { i, tree -> tree.convert<T>(if (i == size - 1) suffix else innerSuffix) }
 
+    val statementDelim = { t: JdkTree ->
+        sourceBefore(when (t) {
+            is JCTree.JCThrow, is JCTree.JCBreak, is JCTree.JCAssert, is JCTree.JCContinue -> ";"
+            is JCTree.JCExpressionStatement, is JCTree.JCReturn, is JCTree.JCVariableDecl -> ";"
+            is JCTree.JCCase -> ":"
+            is JCTree.JCMethodDecl -> if (t.body == null) ";" else ""
+            else -> ""
+        })
+    }
+
     private fun List<JdkTree>?.convertBlockContents(): List<Tree> {
         if(this == null)
             return emptyList()
-
-        val statementDelim = { t: JdkTree ->
-            sourceBefore(when(t) {
-                is JCTree.JCThrow, is JCTree.JCBreak, is JCTree.JCAssert, is JCTree.JCContinue -> ";"
-                is JCTree.JCExpressionStatement, is JCTree.JCReturn, is JCTree.JCVariableDecl -> ";"
-                is JCTree.JCCase -> ":"
-                is JCTree.JCMethodDecl -> if(t.body == null) ";" else ""
-                else -> ""
-            })
-        }
 
         val groups = this.groupBy {
             // group multi-variable declarations together, other types of members will never have the same starting position

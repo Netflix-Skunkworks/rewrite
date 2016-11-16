@@ -29,4 +29,18 @@ abstract class WhileLoopTest(p: Parser): Parser by p {
     fun format() {
         assertEquals("while ( true ) { }", whileLoop.printTrimmed())
     }
+
+    @Test
+    fun statementTerminatorForSingleLineWhileLoops() {
+        val a = parse("""
+            public class A {
+                public void test() {
+                    while(true) test();
+                }
+            }
+        """)
+
+        val forLoop = a.classes[0].methods()[0].body!!.statements[0] as Tr.WhileLoop
+        assertEquals("while(true) test();", forLoop.printTrimmed())
+    }
 }

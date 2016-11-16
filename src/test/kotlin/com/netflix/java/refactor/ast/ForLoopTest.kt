@@ -99,4 +99,18 @@ abstract class ForLoopTest(p: Parser): Parser by p {
         val forLoop = a.classes[0].methods()[0].body!!.statements[1] as Tr.ForLoop
         assertEquals("for(; i < 10; i++) {}", forLoop.printTrimmed())
     }
+
+    @Test
+    fun statementTerminatorForSingleLineForLoops() {
+        val a = parse("""
+            public class A {
+                public void test() {
+                    for(;;) test();
+                }
+            }
+        """)
+
+        val forLoop = a.classes[0].methods()[0].body!!.statements[0] as Tr.ForLoop
+        assertEquals("for(;;) test();", forLoop.printTrimmed())
+    }
 }
