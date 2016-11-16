@@ -577,19 +577,9 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
         } else null
 
         val body = node.body.convertOrNull<Tr.Block<Statement>>()
+        val defaultValue = node.defaultValue.convertOrNull<Expression> { sourceBefore(";") }
 
-        return Tr.MethodDecl(
-                annotations,
-                modifiers,
-                typeParams,
-                returnType,
-                name,
-                params,
-                throws,
-                body,
-                node.defaultValue.convertOrNull { sourceBefore(";") },
-                fmt
-        )
+        return Tr.MethodDecl(annotations, modifiers, typeParams, returnType, name, params, throws, body, defaultValue, fmt)
     }
 
     override fun visitNewArray(node: NewArrayTree, fmt: Formatting.Reified): Tree {
@@ -957,6 +947,7 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
                 is JCTree.JCThrow, is JCTree.JCBreak, is JCTree.JCAssert, is JCTree.JCContinue -> ";"
                 is JCTree.JCExpressionStatement, is JCTree.JCReturn, is JCTree.JCVariableDecl -> ";"
                 is JCTree.JCCase -> ":"
+                is JCTree.JCMethodDecl -> if(t.body == null) ";" else ""
                 else -> ""
             })
         }

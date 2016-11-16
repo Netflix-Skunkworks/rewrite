@@ -35,6 +35,17 @@ abstract class MethodDeclTest(p: Parser): Parser by p {
         assertEquals(1, meth.body!!.statements.size)
         assertEquals("R", ((meth.returnTypeExpr as Tr.Ident).type as Type.GenericTypeVariable).fullyQualifiedName)
     }
+
+    @Test
+    fun interfaceMethodDecl() {
+        val aSrc = """
+            |public interface A {
+            |    String getName() ;
+            |}
+        """.trimMargin()
+
+        assertEquals(aSrc, parse(aSrc).printTrimmed())
+    }
     
     @Test
     fun format() {
