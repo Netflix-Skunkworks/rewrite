@@ -334,7 +334,7 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
 
         return Tr.ForEachLoop(
                 Tr.ForEachLoop.Control(variable, expression, Formatting.Reified(ctrlPrefix)),
-                node.statement.convert(),
+                node.statement.convert(statementDelim),
                 fmt
         )
     }
@@ -942,6 +942,7 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
         sourceBefore(when (t) {
             is JCTree.JCThrow, is JCTree.JCBreak, is JCTree.JCAssert, is JCTree.JCContinue -> ";"
             is JCTree.JCExpressionStatement, is JCTree.JCReturn, is JCTree.JCVariableDecl -> ";"
+            is JCTree.JCSkip -> ";"
             is JCTree.JCCase -> ":"
             is JCTree.JCMethodDecl -> if (t.body == null) ";" else ""
             else -> ""

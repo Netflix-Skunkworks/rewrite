@@ -29,4 +29,19 @@ abstract class ForEachLoopTest(p: Parser): Parser by p {
     fun format() {
         assertEquals("for(Integer n: new Integer[] { 0, 1 }) {\n}", forEachLoop.printTrimmed())
     }
+
+    @Test
+    fun statementTerminatorForSingleLineForLoops() {
+        val a = parse("""
+            public class A {
+                Integer[] n;
+                public void test() {
+                    for(Integer i : n) test();
+                }
+            }
+        """)
+
+        val forLoop = a.classes[0].methods()[0].body!!.statements[0] as Tr.ForEachLoop
+        assertEquals("for(Integer i : n) test();", forLoop.printTrimmed())
+    }
 }

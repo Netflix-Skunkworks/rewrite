@@ -24,6 +24,10 @@ abstract class EmptyTest(p: Parser): Parser by p {
 
     @Test
     fun format() {
-        assertEquals("", a.firstMethodStatement().printTrimmed())
+        assertEquals("""
+            |public void test() {
+            |    ;
+            |}
+        """.trimMargin(), a.classes[0].methods()[0].printTrimmed())
     }
 }
