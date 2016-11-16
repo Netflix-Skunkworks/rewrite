@@ -79,12 +79,6 @@ abstract class ClassDeclTest(p: Parser): Parser by p {
     }
 
     @Test
-    fun trailingLastTypeDeclaration() {
-        val a = parse("public class A {}/**/")
-        assertEquals("/**/", (a.classes[0].formatting as Formatting.Reified).suffix)
-    }
-
-    @Test
     fun enumWithParameters() {
         val aSrc = """
             |public enum A {
@@ -114,5 +108,14 @@ abstract class ClassDeclTest(p: Parser): Parser by p {
         val a = parse("public enum A { ONE ( ), TWO ( ) }")
         assertEquals("public enum A { ONE ( ), TWO ( ) }", a.classes[0].printTrimmed())
         assertEquals("ONE ( )", a.classes[0].enumValues()[0].printTrimmed())
+    }
+
+    /**
+     * Oracle JDK does NOT preserve the order of modifiers in its AST representation
+     */
+    @Test
+    fun modifierOrdering() {
+        val a = parse("public /* abstract */ final abstract class A {}")
+        assertEquals("public /* abstract */ final abstract class A {}", a.printTrimmed())
     }
 }

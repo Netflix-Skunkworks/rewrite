@@ -176,7 +176,7 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
     override fun visitClass(node: ClassTree, fmt: Formatting.Reified): Tree {
         val annotations = node.modifiers.annotations.convertAll<Tr.Annotation>(NO_DELIM, NO_DELIM)
 
-        val modifiers = node.modifiers.flags.mapIndexed { i, mod ->
+        val modifiers = node.modifiers.sortedFlags().mapIndexed { i, mod ->
             val modPrefix = whitespace()
             cursor += mod.name.length
             val modFormat = Formatting.Reified(modPrefix)
@@ -525,21 +525,23 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
         logger.trace("Visiting method {}", node.name)
 
         val annotations = node.modifiers.annotations.convertAll<Tr.Annotation>(NO_DELIM, NO_DELIM)
-        val modifiers = node.modifiers.flags.mapIndexed { i, mod ->
-            val modFormat = Formatting.Reified(whitespace())
-            cursor += mod.name.length
-            when(mod) {
-                Modifier.DEFAULT -> Tr.MethodDecl.Modifier.Default(modFormat)
-                Modifier.PUBLIC -> Tr.MethodDecl.Modifier.Public(modFormat)
-                Modifier.PROTECTED -> Tr.MethodDecl.Modifier.Protected(modFormat)
-                Modifier.PRIVATE -> Tr.MethodDecl.Modifier.Private(modFormat)
-                Modifier.ABSTRACT -> Tr.MethodDecl.Modifier.Abstract(modFormat)
-                Modifier.STATIC -> Tr.MethodDecl.Modifier.Static(modFormat)
-                Modifier.FINAL -> Tr.MethodDecl.Modifier.Final(modFormat)
-                Modifier.SYNCHRONIZED -> Tr.MethodDecl.Modifier.Synchronized(modFormat)
-                else -> throw IllegalArgumentException("Unexpected modifier $mod")
-            }
-        }
+
+        val modifiers = node.modifiers.sortedFlags()
+                .mapIndexed { i, mod ->
+                    val modFormat = Formatting.Reified(whitespace())
+                    cursor += mod.name.length
+                    when(mod) {
+                        Modifier.DEFAULT -> Tr.MethodDecl.Modifier.Default(modFormat)
+                        Modifier.PUBLIC -> Tr.MethodDecl.Modifier.Public(modFormat)
+                        Modifier.PROTECTED -> Tr.MethodDecl.Modifier.Protected(modFormat)
+                        Modifier.PRIVATE -> Tr.MethodDecl.Modifier.Private(modFormat)
+                        Modifier.ABSTRACT -> Tr.MethodDecl.Modifier.Abstract(modFormat)
+                        Modifier.STATIC -> Tr.MethodDecl.Modifier.Static(modFormat)
+                        Modifier.FINAL -> Tr.MethodDecl.Modifier.Final(modFormat)
+                        Modifier.SYNCHRONIZED -> Tr.MethodDecl.Modifier.Synchronized(modFormat)
+                        else -> throw IllegalArgumentException("Unexpected modifier $mod")
+                    }
+                }
 
         // see https://docs.oracle.com/javase/tutorial/java/generics/methods.html
         val typeParams = if(node.typeParameters.isNotEmpty()) {
@@ -822,8 +824,10 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
         val node = nodes[0] as JCTree.JCVariableDecl
         val annotations = node.modifiers.annotations.convertAll<Tr.Annotation>(NO_DELIM, NO_DELIM)
 
+        val vartype = node.vartype
+
         val modifiers = if((node.modifiers as JCTree.JCModifiers).pos >= 0) {
-            node.modifiers.getFlags().mapIndexed { i, mod ->
+            node.modifiers.sortedFlags().mapIndexed { i, mod ->
                 val modFormat = Formatting.Reified(whitespace())
                 cursor += mod.name.length
                 when (mod) {
@@ -842,7 +846,6 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
             emptyList() // these are implicit modifiers, like "final" on try-with-resources variable declarations
         }
 
-        val vartype = node.vartype
         val typeExpr = when(vartype) {
             is JCTree.JCArrayTypeTree -> {
                 // we'll capture the array dimensions in a bit, just convert the element type
@@ -1086,21 +1089,33 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
         var delimIndex = cursor
         var inMultiLineComment = false
         var inSingleLineComment = false
-        while(delimIndex < source.length) {
+        loop@while(delimIndex < source.length) {
             if(inSingleLineComment && source[delimIndex] == '\n') {
                 inSingleLineComment = false
             }
             else {
                 if(source.length > delimIndex + 1) {
                     when(source.substring(delimIndex, delimIndex + 2)) {
-                        "//" -> { inSingleLineComment = true; delimIndex++ }
-                        "/*" -> { inMultiLineComment = true; delimIndex++ }
-                        "*/" -> { inMultiLineComment = false; delimIndex++ }
+                        "//" -> {
+                            inSingleLineComment = true;
+                            delimIndex += 2
+                            continue@loop
+                        }
+                        "/*" -> {
+                            inMultiLineComment = true;
+                            delimIndex += 2
+                            continue@loop
+                        }
+                        "*/" -> {
+                            inMultiLineComment = false;
+                            delimIndex += 2
+                            continue@loop
+                        }
                     }
                 }
 
                 if(!inMultiLineComment && !inSingleLineComment) {
-                    if(source.substring(delimIndex, delimIndex + 1) != " ")
+                    if(!source.substring(delimIndex, delimIndex + 1)[0].isWhitespace())
                         break // found it!
                 }
             }
@@ -1154,5 +1169,44 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
                 all + f.first
             else all
         }
+    }
+
+    /**
+     * Modifiers in the order they appear in the source, which is not necessarily the same as the order in
+     * which they appear in the Oracle AST
+     */
+    private fun ModifiersTree.sortedFlags(): List<Modifier> {
+        if(flags.isEmpty())
+            return emptyList()
+
+        val modifiers = mutableListOf<Modifier>()
+
+        var i = cursor
+        var inComment = false
+        var word = ""
+        while(i < source.length) {
+            val c = source[i]
+            if(c == '/' && source.length > i + 1 && source[i + 1] == '*') {
+                inComment = true
+            }
+
+            if(inComment && c == '/' && source[i - 1] == '*') {
+                inComment = false
+            }
+            else if(!inComment) {
+                if(c.isWhitespace()) {
+                    if(word.isNotEmpty()) {
+                        this.flags.find { it.name.toLowerCase() == word }?.let { modifiers.add(it); word = "" } ?:
+                                break // this is the first non-modifier word we have encountered
+                    }
+                }
+                else {
+                    word += c
+                }
+            }
+            i++
+        }
+
+        return modifiers
     }
 }

@@ -106,4 +106,18 @@ abstract class VariableDeclTest(p: Parser): Parser by p {
         assertEquals("Integer[] m = { 0 }, n[] = { { 0 } }", localDecl.printTrimmed())
         assertEquals("for(int i = 0, j = 0; i < 1; i++) { }", forLoop.printTrimmed())
     }
+
+    /**
+     * Oracle JDK does NOT preserve the order of modifiers in its AST representation
+     */
+    @Test
+    fun modifierOrdering() {
+        val a = parse("""
+            public class A {
+                public /* static */ final static Integer n = 0;
+            }
+        """)
+
+        assertEquals("public /* static */ final static Integer n = 0", a.classes[0].fields()[0].printTrimmed())
+    }
 }
