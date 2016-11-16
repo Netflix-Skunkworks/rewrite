@@ -19,7 +19,21 @@ abstract class LiteralTest(p: Parser): Parser by p {
         assertEquals(Type.Tag.Int, literal.typeTag)
         assertEquals("0", literal.printTrimmed())
     }
-    
+
+    @Test
+    fun literalCharacter() {
+        val a = parse("""
+            public class A {
+                char c = 'a';
+            }
+        """)
+
+        val literal = a.fields()[0].vars[0].initializer as Tr.Literal
+        assertEquals('a', literal.value)
+        assertEquals(Type.Tag.Char, literal.typeTag)
+        assertEquals("'a'", literal.printTrimmed())
+    }
+
     @Test
     fun transformString() {
         val a = parse("""

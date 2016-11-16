@@ -438,9 +438,13 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
 
     override fun visitLiteral(node: LiteralTree, fmt: Formatting.Reified): Tree {
         cursor(node.endPos())
+        val typeTag = (node as JCTree.JCLiteral).typetag.tag()
         return Tr.Literal(
-                (node as JCTree.JCLiteral).typetag.tag(),
-                node.value,
+                typeTag,
+                when(typeTag) {
+                    Type.Tag.Char -> (node.value as Int).toChar()
+                    else -> node.value
+                },
                 source[node.endPos()-1].isUpperCase(),
                 node.type(),
                 fmt

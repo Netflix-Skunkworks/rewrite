@@ -219,7 +219,7 @@ class PrintVisitor : AstVisitor<String>("") {
                 else -> throw IllegalStateException("Boolean has unexpected value $v")
             }
             Type.Tag.Byte -> v.toString()
-            Type.Tag.Char -> v.toString()
+            Type.Tag.Char -> "'$v'"
             Type.Tag.Double -> "$v${suffix("d")}"
             Type.Tag.Float -> "$v${suffix("f")}"
             Type.Tag.Int -> v.toString()
