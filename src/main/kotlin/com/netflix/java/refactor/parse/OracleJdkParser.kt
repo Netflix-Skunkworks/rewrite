@@ -6,6 +6,7 @@ import com.netflix.java.refactor.ast.TypeCache
 import com.sun.tools.javac.comp.Check
 import com.sun.tools.javac.comp.Enter
 import com.sun.tools.javac.main.JavaCompiler
+import com.sun.tools.javac.main.Option
 import com.sun.tools.javac.nio.JavacPathFileManager
 import com.sun.tools.javac.tree.JCTree
 import com.sun.tools.javac.util.Context
@@ -52,6 +53,8 @@ class OracleJdkParser(classpath: List<Path>? = null) : AbstractParser(classpath)
         // otherwise the JavacParser will use EmptyEndPosTable, effectively setting -1 as the end position
         // for every tree element
         compiler.genEndPos = true
+        compiler.keepComments = true
+
         compilerLog.setWriters(PrintWriter(object : Writer() {
             override fun write(cbuf: CharArray, off: Int, len: Int) {
                 val log = String(cbuf.slice(off..(off + len - 1)).toCharArray())

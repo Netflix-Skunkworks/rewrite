@@ -104,13 +104,15 @@ abstract class ClassDeclTest(p: Parser): Parser by p {
 
     @Test
     fun enumWithoutParameters() {
-        val aSrc = "public enum A { ONE, TWO }"
-        assertEquals(aSrc, parse(aSrc).classes[0].printTrimmed())
+        val a = parse("public enum A { ONE, TWO }")
+        assertEquals("public enum A { ONE, TWO }", a.classes[0].printTrimmed())
+        assertEquals("ONE", a.classes[0].enumValues()[0].printTrimmed())
     }
 
     @Test
     fun enumWithEmptyParameters() {
-        val aSrc = "public enum A { ONE(), TWO() }"
-        assertEquals(aSrc, parse(aSrc).classes[0].printTrimmed())
+        val a = parse("public enum A { ONE ( ), TWO ( ) }")
+        assertEquals("public enum A { ONE ( ), TWO ( ) }", a.classes[0].printTrimmed())
+        assertEquals("ONE ( )", a.classes[0].enumValues()[0].printTrimmed())
     }
 }

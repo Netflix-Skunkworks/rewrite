@@ -4,12 +4,13 @@ import com.netflix.java.refactor.ast.*
 import com.netflix.java.refactor.ast.Tree
 import com.sun.source.tree.*
 import com.sun.source.util.TreeScanner
+import com.sun.tools.javac.code.BoundKind
 import com.sun.tools.javac.code.Flags
 import com.sun.tools.javac.code.Symbol
 import com.sun.tools.javac.code.TypeTag
+import com.sun.tools.javac.tree.DocCommentTable
 import com.sun.tools.javac.tree.EndPosTable
 import com.sun.tools.javac.tree.JCTree
-import com.sun.tools.javac.code.BoundKind
 import org.slf4j.LoggerFactory
 import java.lang.IllegalArgumentException
 import java.lang.IllegalStateException
@@ -18,17 +19,12 @@ import java.util.*
 import java.util.regex.Pattern
 import javax.lang.model.element.Modifier
 import javax.lang.model.type.TypeKind
-import kotlin.properties.Delegates
 
 class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val source: String): TreeScanner<Tree, Formatting.Reified>() {
     private typealias JdkTree = com.sun.source.tree.Tree
 
-    private val WS_DELIM = { t: JdkTree -> sourceMatching("\\s+") }
-    private val COMMA_DELIM = { t: JdkTree -> sourceBefore(",") }
-    private val SEMI_DELIM = { t: JdkTree -> sourceBefore(";") }
-    private val NO_DELIM = { t: JdkTree -> "" }
-
-    private var endPosTable: EndPosTable by Delegates.notNull()
+    private lateinit var endPosTable: EndPosTable
+    private lateinit var docTable: DocCommentTable
     private var cursor: Int = 0
 
     companion object {
@@ -97,7 +93,7 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
     override fun visitBinary(node: BinaryTree, fmt: Formatting.Reified): Tree {
         val left = node.leftOperand.convert<Expression>()
 
-        val opPrefix = Formatting.Reified(sourceMatching("\\s+"))
+        val opPrefix = Formatting.Reified(whitespace())
         val op = when ((node as JCTree.JCBinary).tag) {
             JCTree.Tag.PLUS -> { skip("+"); Tr.Binary.Operator.Addition(opPrefix) }
             JCTree.Tag.MINUS -> { skip("-"); Tr.Binary.Operator.Subtraction(opPrefix) }
@@ -181,7 +177,7 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
         val annotations = node.modifiers.annotations.convertAll<Tr.Annotation>(NO_DELIM, NO_DELIM)
 
         val modifiers = node.modifiers.flags.mapIndexed { i, mod ->
-            val modPrefix = sourceMatching("\\s+")
+            val modPrefix = whitespace()
             cursor += mod.name.length
             val modFormat = Formatting.Reified(modPrefix)
             when (mod) {
@@ -227,7 +223,7 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
                 .convertAll<Tree>(COMMA_DELIM, {
                     // this semicolon is required when there are non-value members, but can still
                     // be present when there are not
-                    sourceMatching("\\s*;").trimEnd(';')
+                    sourceBefore(";")
                 })
 
         val members = node.members
@@ -249,12 +245,13 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
 
     override fun visitCompilationUnit(node: CompilationUnitTree, fmt: Formatting.Reified): Tree {
         endPosTable = (node as JCTree.JCCompilationUnit).endPositions
+        docTable = node.docComments // TODO when we want to implement refactoring into doc comments as well, refer to this table by JCTree node
+        val prefix = source.substring(0, node.startPosition)
         cursor(node.startPosition)
 
         val packageDecl = if (node.packageName != null) {
-            val packagePrefix = source.substring(0, node.startPosition)
             skip("package")
-            val pkg = Tr.Package(node.packageName.convert(), Formatting.Reified(packagePrefix))
+            val pkg = Tr.Package(node.packageName.convert(), Formatting.Reified.Empty)
             skip(";")
             pkg
         } else null
@@ -263,16 +260,16 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
                 path.toString(),
                 packageDecl,
                 node.imports.convertAll(SEMI_DELIM, SEMI_DELIM),
-                node.typeDecls.filterIsInstance<JCTree.JCClassDecl>().convertAll(WS_DELIM, { source.substring(cursor) }),
+                node.typeDecls.filterIsInstance<JCTree.JCClassDecl>().convertAll(this::whitespace, NO_DELIM),
                 typeCache.key,
-                fmt
+                Formatting.Reified(prefix, source.substring(cursor))
         )
     }
 
     override fun visitCompoundAssignment(node: CompoundAssignmentTree, fmt: Formatting.Reified): Tree {
         val left = (node as JCTree.JCAssignOp).lhs.convert<Expression>()
 
-        val opPrefix = Formatting.Reified(sourceMatching("\\s+"))
+        val opPrefix = Formatting.Reified(whitespace())
         val op = when (node.tag) {
             JCTree.Tag.PLUS_ASG -> { skip("+="); Tr.AssignOp.Operator.Addition(opPrefix) }
             JCTree.Tag.MINUS_ASG -> { skip("-="); Tr.AssignOp.Operator.Subtraction(opPrefix) }
@@ -346,12 +343,12 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
         skip(node.name.toString())
         val name = Tr.Ident(node.name.toString(), node.type(), Formatting.Reified.Empty)
 
-        val initPrefix = sourceMatching("\\s*\\(")
-        val initializer = if(initPrefix.isNotEmpty()) {
-            val args = (node.initializer as JCTree.JCNewClass).args.convertAll<Expression>(COMMA_DELIM, { sourceBefore(")") })
+        val initializer = if(source[node.endPos()-1] == ')') {
+            val initPrefix = sourceBefore("(")
+            var args = (node.initializer as JCTree.JCNewClass).args.convertAll<Expression>(COMMA_DELIM, { sourceBefore(")") })
             if((node.initializer as JCTree.JCNewClass).args.isEmpty())
-                skip(")")
-            Tr.EnumValue.Arguments(args, Formatting.Reified(initPrefix.trimEnd('(')))
+                args = listOf(Tr.Empty(Formatting.Reified(sourceBefore(")"))))
+            Tr.EnumValue.Arguments(args, Formatting.Reified(initPrefix))
         } else null
 
         return Tr.EnumValue(name, initializer, fmt)
@@ -529,7 +526,7 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
 
         val annotations = node.modifiers.annotations.convertAll<Tr.Annotation>(NO_DELIM, NO_DELIM)
         val modifiers = node.modifiers.flags.mapIndexed { i, mod ->
-            val modFormat = Formatting.Reified(sourceMatching("\\s+"))
+            val modFormat = Formatting.Reified(whitespace())
             cursor += mod.name.length
             when(mod) {
                 Modifier.DEFAULT -> Tr.MethodDecl.Modifier.Default(modFormat)
@@ -827,7 +824,7 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
 
         val modifiers = if((node.modifiers as JCTree.JCModifiers).pos >= 0) {
             node.modifiers.getFlags().mapIndexed { i, mod ->
-                val modFormat = Formatting.Reified(sourceMatching("\\s+"))
+                val modFormat = Formatting.Reified(whitespace())
                 cursor += mod.name.length
                 when (mod) {
                     Modifier.PUBLIC -> Tr.VariableDecls.Modifier.Public(modFormat)
@@ -1042,10 +1039,37 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
 
     private fun JdkTree.endPos(): Int = (this as JCTree).getEndPosition(endPosTable)
 
+    /**
+     * @return source from <code>cursor</code> to next occurrence of <code>untilDelim</code>,
+     * and if not found in the remaining source, the empty String
+     */
     private fun sourceBefore(untilDelim: String): String {
-        val delimIndex = source.indexOf(untilDelim, startIndex = cursor)
-        if(delimIndex < 0) {
-            throw IllegalStateException("Expected to find a delimiter $untilDelim")
+        var delimIndex = cursor
+        var inMultiLineComment = false
+        var inSingleLineComment = false
+        while(delimIndex < source.length - untilDelim.length + 1) {
+            if(inSingleLineComment && source[delimIndex] == '\n') {
+                inSingleLineComment = false
+            }
+            else {
+                if(source.length - untilDelim.length > delimIndex + 1) {
+                    when(source.substring(delimIndex, delimIndex + 2)) {
+                        "//" -> { inSingleLineComment = true; delimIndex++ }
+                        "/*" -> { inMultiLineComment = true; delimIndex++ }
+                        "*/" -> { inMultiLineComment = false; delimIndex++ }
+                    }
+                }
+
+                if(!inMultiLineComment && !inSingleLineComment) {
+                    if(source.substring(delimIndex, delimIndex + untilDelim.length) == untilDelim)
+                        break // found it!
+                }
+            }
+            delimIndex++
+        }
+
+        if(delimIndex > source.length - untilDelim.length) {
+            return "" // unable to find this delimiter
         }
 
         val prefix = source.substring(cursor, delimIndex)
@@ -1053,15 +1077,39 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
         return prefix
     }
 
-    private fun sourceMatching(untilPattern: String): String {
-        val matcher = Pattern.compile("\\G$untilPattern").matcher(source)
-        return if(matcher.find(cursor)) {
-            cursor(matcher.end())
-            matcher.group()
+    private val SEMI_DELIM = { t: JdkTree -> sourceBefore(";") }
+    private val COMMA_DELIM = { t: JdkTree -> sourceBefore(",") }
+    private val NO_DELIM = { t: JdkTree -> "" }
+
+    @Suppress("UNUSED_PARAMETER")
+    private fun whitespace(t: JdkTree? = null): String {
+        var delimIndex = cursor
+        var inMultiLineComment = false
+        var inSingleLineComment = false
+        while(delimIndex < source.length) {
+            if(inSingleLineComment && source[delimIndex] == '\n') {
+                inSingleLineComment = false
+            }
+            else {
+                if(source.length > delimIndex + 1) {
+                    when(source.substring(delimIndex, delimIndex + 2)) {
+                        "//" -> { inSingleLineComment = true; delimIndex++ }
+                        "/*" -> { inMultiLineComment = true; delimIndex++ }
+                        "*/" -> { inMultiLineComment = false; delimIndex++ }
+                    }
+                }
+
+                if(!inMultiLineComment && !inSingleLineComment) {
+                    if(source.substring(delimIndex, delimIndex + 1) != " ")
+                        break // found it!
+                }
+            }
+            delimIndex++
         }
-        else {
-            ""
-        }
+
+        val prefix = source.substring(cursor, delimIndex)
+        cursor += prefix.length
+        return prefix
     }
 
     private fun skip(token: String?): String? {
