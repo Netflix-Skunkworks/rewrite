@@ -116,7 +116,7 @@ class PrintVisitor : AstVisitor<String>("") {
     }
 
     override fun visitClassDecl(classDecl: Tr.ClassDecl): String {
-        val typeParams = classDecl.typeParams?.let { it.fmt("<${visit(it.params)}>") } ?: ""
+        val typeParams = classDecl.typeParams?.let { it.fmt("<${visit(it.params, ",")}>") } ?: ""
 
         val modifiers = classDecl.modifiers.fold("") { s, mod ->
             s + mod.fmt(when(mod) {
@@ -143,7 +143,7 @@ class PrintVisitor : AstVisitor<String>("") {
         }
 
         return classDecl.fmt("${visit(classDecl.annotations)}$modifiers$kind${visit(classDecl.name)}$typeParams" +
-                "${visit(classDecl.extends)}${visit(classDecl.implements)}$body")
+                "${visit(classDecl.extends)}${visit(classDecl.implements, ",")}$body")
     }
 
     override fun visitCompilationUnit(cu: Tr.CompilationUnit): String {
@@ -221,7 +221,16 @@ class PrintVisitor : AstVisitor<String>("") {
                 else -> throw IllegalStateException("Boolean has unexpected value $v")
             }
             Type.Tag.Byte -> v.toString()
-            Type.Tag.Char -> "'$v'"
+            Type.Tag.Char -> {
+                val escaped = StringEscapeUtils.escapeJavaScript(v.toString())
+
+                // there are two differences between javascript escaping and character escaping
+                "'" + when(escaped) {
+                    "\\\"" -> "\""
+                    "\\/" -> "/"
+                    else -> escaped
+                } + "'"
+            }
             Type.Tag.Double -> "$v$suffix"
             Type.Tag.Float -> "$v$suffix"
             Type.Tag.Int -> v.toString()

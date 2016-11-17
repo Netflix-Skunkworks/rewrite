@@ -88,7 +88,7 @@ abstract class LiteralTest(p: Parser): Parser by p {
     }
 
     @Test
-    fun format() {
+    fun variationInSuffixCasing() {
         val a = parse("""
             public class A {
                 Long l = 0l;
@@ -103,7 +103,7 @@ abstract class LiteralTest(p: Parser): Parser by p {
     }
 
     @Test
-    fun formatEscapedString() {
+    fun escapedString() {
         val a = parse("""
             public class A {
                 String s = "\"";
@@ -112,5 +112,17 @@ abstract class LiteralTest(p: Parser): Parser by p {
 
         val s = a.fields()[0].vars[0].initializer as Tr.Literal
         assertEquals("\"\\\"\"", s.printTrimmed())
+    }
+
+    @Test
+    fun escapedCharacter() {
+        val a = parse("""
+            public class A {
+                char c = '\'';
+            }
+        """)
+
+        val s = a.fields()[0].vars[0].initializer as Tr.Literal
+        assertEquals("'\\''", s.printTrimmed())
     }
 }
