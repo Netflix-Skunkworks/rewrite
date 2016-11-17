@@ -118,4 +118,20 @@ abstract class ClassDeclTest(p: Parser): Parser by p {
         val a = parse("public /* abstract */ final abstract class A {}")
         assertEquals("public /* abstract */ final abstract class A {}", a.printTrimmed())
     }
+
+    @Test
+    fun innerClass() {
+        val aSrc = """
+            |public class A {
+            |    public enum B {
+            |        ONE,
+            |        TWO
+            |    }
+            |
+            |    private B b;
+            |}
+        """.trimMargin()
+
+        assertEquals(aSrc, parse(aSrc).printTrimmed())
+    }
 }

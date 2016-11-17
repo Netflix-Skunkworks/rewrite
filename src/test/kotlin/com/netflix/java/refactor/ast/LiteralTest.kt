@@ -35,6 +35,24 @@ abstract class LiteralTest(p: Parser): Parser by p {
     }
 
     @Test
+    fun literalNumerics() {
+        val a = parse("""
+            public class A {
+                double d1 = 1.0d;
+                double d2 = 1.0;
+                long l1 = 1L;
+                long l2 = 1;
+            }
+        """)
+
+        val (d1, d2, l1, l2) = a.fields(0..3).map { it.vars[0].initializer as Tr.Literal }
+        assertEquals("1.0d", d1.printTrimmed())
+        assertEquals("1.0", d2.printTrimmed())
+        assertEquals("1L", l1.printTrimmed())
+        assertEquals("1", l2.printTrimmed())
+    }
+
+    @Test
     fun transformString() {
         val a = parse("""
             public class A {

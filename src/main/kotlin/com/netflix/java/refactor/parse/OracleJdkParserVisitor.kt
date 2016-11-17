@@ -223,7 +223,7 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
                 .convertAll<Tree>(COMMA_DELIM, {
                     // this semicolon is required when there are non-value members, but can still
                     // be present when there are not
-                    sourceBefore(";")
+                    sourceBefore(";", stop = '}')
                 })
 
         val members = node.members
@@ -439,13 +439,22 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
     override fun visitLiteral(node: LiteralTree, fmt: Formatting.Reified): Tree {
         cursor(node.endPos())
         val typeTag = (node as JCTree.JCLiteral).typetag.tag()
+
+        val potentialSuffix = source[node.endPos()-1]
+        val suffix = when(typeTag) {
+            Type.Tag.Double -> if(potentialSuffix.toLowerCase() == 'd') potentialSuffix else null
+            Type.Tag.Long -> if(potentialSuffix.toLowerCase() == 'l') potentialSuffix else null
+            Type.Tag.Float -> if(potentialSuffix.toLowerCase() == 'f') potentialSuffix else null
+            else -> null
+        }
+
         return Tr.Literal(
                 typeTag,
                 when(typeTag) {
                     Type.Tag.Char -> (node.value as Int).toChar()
                     else -> node.value
                 },
-                source[node.endPos()-1].isUpperCase(),
+                suffix,
                 node.type(),
                 fmt
         )
@@ -1048,10 +1057,11 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
     private fun JdkTree.endPos(): Int = (this as JCTree).getEndPosition(endPosTable)
 
     /**
-     * @return source from <code>cursor</code> to next occurrence of <code>untilDelim</code>,
-     * and if not found in the remaining source, the empty String
+     * @return Source from <code>cursor</code> to next occurrence of <code>untilDelim</code>,
+     * and if not found in the remaining source, the empty String. If <code>stop</code> is reached before
+     * <code>untilDelim</code> return the empty String.
      */
-    private fun sourceBefore(untilDelim: String): String {
+    private fun sourceBefore(untilDelim: String, stop: Char? = null): String {
         var delimIndex = cursor
         var inMultiLineComment = false
         var inSingleLineComment = false
@@ -1069,6 +1079,9 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
                 }
 
                 if(!inMultiLineComment && !inSingleLineComment) {
+                    if(source[delimIndex] == stop)
+                        return "" // reached stop word before finding the delimiter
+
                     if(source.substring(delimIndex, delimIndex + untilDelim.length) == untilDelim)
                         break // found it!
                 }
