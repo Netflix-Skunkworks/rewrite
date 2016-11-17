@@ -50,6 +50,18 @@ abstract class NewArrayTest(p: Parser): Parser by p {
     }
 
     @Test
+    fun formatWithEmptyDimension() {
+        val a = parse("""
+            public class A {
+                int[][] n = new int [ 0 ] [ ];
+            }
+        """)
+
+        val newArr = a.fields()[0].vars[0].initializer as Tr.NewArray
+        assertEquals("new int [ 0 ] [ ]", newArr.printTrimmed())
+    }
+
+    @Test
     fun formatWithInitializers() {
         val a = parse("""
             public class A {

@@ -603,16 +603,16 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
                 val dimensionPrefix = sourceBefore("[")
                 Tr.NewArray.Dimension(dim.convert { sourceBefore("]") }, Formatting.Reified(dimensionPrefix,
                         if(i == node.dimensions.size - 1 && node.initializers != null) sourceBefore("}") else ""))
-            }
+            }.toMutableList()
         } else {
-            val matcher = Pattern.compile("\\G(\\s*)\\[(\\s*)\\]").matcher(source)
-            val dimensions = ArrayList<Tr.NewArray.Dimension>()
-            while(matcher.find(cursor)) {
-                cursor(matcher.end())
-                val ws = Tr.Empty(Formatting.Reified(matcher.group(2)))
-                dimensions.add(Tr.NewArray.Dimension(ws, Formatting.Reified(matcher.group(1))))
-            }
-            dimensions
+            mutableListOf()
+        }
+
+        val matcher = Pattern.compile("\\G(\\s*)\\[(\\s*)\\]").matcher(source)
+        while(matcher.find(cursor)) {
+            cursor(matcher.end())
+            val ws = Tr.Empty(Formatting.Reified(matcher.group(2)))
+            dimensions.add(Tr.NewArray.Dimension(ws, Formatting.Reified(matcher.group(1))))
         }
 
         val initializer = if(node.initializers != null) {
