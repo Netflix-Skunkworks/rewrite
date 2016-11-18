@@ -154,12 +154,13 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
         return Tr.Break(label, fmt)
     }
 
+    @Suppress("UNCHECKED_CAST")
     override fun visitCase(node: CaseTree, fmt: Formatting.Reified): Tree {
         val pattern = node.expression.convertOrNull<Expression> { sourceBefore(":") } ?:
             Tr.Ident(skip("default")!!, null, Formatting.Reified(sourceBefore(":")))
         return Tr.Case(
                 pattern,
-                node.statements.convertAll(SEMI_DELIM, SEMI_DELIM),
+                node.statements.convertBlockContents() as List<Statement>,
                 fmt
         )
     }
@@ -451,21 +452,14 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
         cursor(node.endPos())
         val typeTag = (node as JCTree.JCLiteral).typetag.tag()
 
-        val potentialSuffix = source[node.endPos()-1]
-        val suffix = when(typeTag) {
-            Type.Tag.Double -> if(potentialSuffix.toLowerCase() == 'd') potentialSuffix else null
-            Type.Tag.Long -> if(potentialSuffix.toLowerCase() == 'l') potentialSuffix else null
-            Type.Tag.Float -> if(potentialSuffix.toLowerCase() == 'f') potentialSuffix else null
-            else -> null
-        }
-
         return Tr.Literal(
                 typeTag,
                 when(typeTag) {
                     Type.Tag.Char -> (node.value as Int).toChar()
+                    Type.Tag.Boolean -> if((node.value as Int) == 0) false else true
                     else -> node.value
                 },
-                suffix,
+                source.substring(node.startPosition, node.endPos()),
                 node.type(),
                 fmt
         )

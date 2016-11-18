@@ -87,4 +87,25 @@ abstract class SwitchTest(p: Parser): Parser by p {
         assertTrue(switch.selector.tree is Tr.Ident)
         assertEquals(0, switch.cases.statements.size)
     }
+
+    @Test
+    fun multipleCases() {
+        val aSrc = """
+            |public class A {
+            |    int n;
+            |    public void test() {
+            |        switch(n) {
+            |        case 0: {
+            |           break;
+            |        }
+            |        case 1: {
+            |           break;
+            |        }
+            |        }
+            |    }
+            |}
+        """.trimMargin()
+
+        assertEquals(aSrc, parse(aSrc).printTrimmed())
+    }
 }

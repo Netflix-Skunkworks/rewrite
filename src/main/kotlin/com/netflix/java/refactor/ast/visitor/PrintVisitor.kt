@@ -209,37 +209,7 @@ class PrintVisitor : AstVisitor<String>("") {
     }
 
     override fun visitLiteral(literal: Tr.Literal): String {
-        val v = literal.value
-        val suffix = literal.suffix ?: ""
-
-        return literal.fmt(when(literal.typeTag) {
-            Type.Tag.Boolean -> when(v) {
-                0 -> "false"
-                1 -> "true"
-                else -> throw IllegalStateException("Boolean has unexpected value $v")
-            }
-            Type.Tag.Byte -> v.toString()
-            Type.Tag.Char -> {
-                val escaped = StringEscapeUtils.escapeJavaScript(v.toString())
-
-                // there are two differences between javascript escaping and character escaping
-                "'" + when(escaped) {
-                    "\\\"" -> "\""
-                    "\\/" -> "/"
-                    else -> escaped
-                } + "'"
-            }
-            Type.Tag.Double -> "$v$suffix"
-            Type.Tag.Float -> "$v$suffix"
-            Type.Tag.Int -> v.toString()
-            Type.Tag.Long -> "$v$suffix"
-            Type.Tag.Short -> v.toString()
-            Type.Tag.Void -> v.toString()
-            Type.Tag.String -> "\"${StringEscapeUtils.escapeJava(v.toString())}\""
-            Type.Tag.None -> ""
-            Type.Tag.Wildcard -> "*"
-            Type.Tag.Null -> "null"
-        })
+        return literal.fmt(literal.valueSource)
     }
 
     override fun visitMethod(method: Tr.MethodDecl): String {

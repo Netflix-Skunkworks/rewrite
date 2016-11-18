@@ -467,7 +467,7 @@ sealed class Tr : Serializable, Tree {
 
     data class Literal(val typeTag: Type.Tag,
                        val value: Any?,
-                       val suffix: Char?,
+                       val valueSource: String,
                        override val type: Type?,
                        override var formatting: Formatting,
                        override val id: String = id()) : Expression, Tr() {

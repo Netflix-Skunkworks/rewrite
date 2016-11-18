@@ -7,8 +7,9 @@ import org.junit.Test
 
 abstract class ChangeLiteralArgumentTest(p: Parser): Parser by p {
 
-    private val b: String = """
-        |class B {
+    val b: String = """
+        |package b;
+        |public class B {
         |   public void singleArg(String s) {}
         |}
     """
@@ -16,6 +17,7 @@ abstract class ChangeLiteralArgumentTest(p: Parser): Parser by p {
     @Test
     fun changeStringLiteralArgument() {
         val a = """
+            |import b.*;
             |class A {
             |   public void test() {
             |       String s = "bar";
@@ -26,12 +28,13 @@ abstract class ChangeLiteralArgumentTest(p: Parser): Parser by p {
 
         val cu = parse(a, b)
         val fixed = cu.refactor() {
-            cu.findMethodCalls("B singleArg(String)").forEach {
+            cu.findMethodCalls("b.B singleArg(String)").forEach {
                 changeLiterals(it.args.args[0]) { s -> s?.toString()?.replace("%s", "{}") ?: s }
             }
         }.fix()
 
         assertRefactored(fixed, """
+            |import b.*;
             |class A {
             |   public void test() {
             |       String s = "bar";
@@ -44,35 +47,28 @@ abstract class ChangeLiteralArgumentTest(p: Parser): Parser by p {
     @Test
     fun changeStringLiteralArgumentWithEscapableCharacters() {
         val a = """
-            |package a;
+            |import b.*;
             |public class A {
-            |    public void foo(String s) {}
-            |}
-        """
-
-        val b = """
-            |import a.*;
-            |public class B {
-            |    A a;
+            |    B b;
             |    public void test() {
-            |        a.foo("mystring '%s'");
+            |        b.singleArg("mystring '%s'");
             |    }
             |}
         """
 
-        val cu = parse(b, a)
+        val cu = parse(a, b)
         val fixed = cu.refactor {
-            cu.findMethodCalls("a.A foo(..)").forEach {
+            cu.findMethodCalls("b.B singleArg(..)").forEach {
                 changeLiterals(it.args.args[0]) { s -> s?.toString()?.replace("%s", "{}") ?: s }
             }
         }.fix()
 
         assertRefactored(fixed, """
-            |import a.*;
-            |public class B {
-            |    A a;
+            |import b.*;
+            |public class A {
+            |    B b;
             |    public void test() {
-            |        a.foo("mystring '{}'");
+            |        b.singleArg("mystring '{}'");
             |    }
             |}
         """)

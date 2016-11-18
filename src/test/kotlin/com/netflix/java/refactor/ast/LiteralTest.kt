@@ -53,6 +53,56 @@ abstract class LiteralTest(p: Parser): Parser by p {
     }
 
     @Test
+    fun literalOctal() {
+        val a = parse("""
+            public class A {
+                long l = 01L;
+                byte b = 01;
+                short s = 01;
+                int i = 01;
+                double d = 01;
+                float f = 01;
+            }
+        """)
+
+        a.fields(0..5).map { it.vars[0].initializer as Tr.Literal }.forEach {
+            assertEquals("expected octal notation for ${it.typeTag}", "01", it.printTrimmed().trimEnd('L'))
+        }
+    }
+
+    @Test
+    fun literalBinary() {
+        val a = parse("""
+            public class A {
+                long l = 0b10L;
+                byte b = 0b10;
+                short s = 0b10;
+                int i = 0b10;
+            }
+        """)
+
+        a.fields(0..3).map { it.vars[0].initializer as Tr.Literal }.forEach {
+            assertEquals("expected binary notation for ${it.typeTag}", "0b10", it.printTrimmed().trimEnd('L'))
+        }
+    }
+
+    @Test
+    fun literalHex() {
+        val a = parse("""
+            public class A {
+                long l = 0xA0L;
+                byte b = 0xA0;
+                short s = 0xA0;
+                int i = 0xA0;
+            }
+        """)
+
+        a.fields(0..3).map { it.vars[0].initializer as Tr.Literal }.forEach {
+            assertEquals("expected hex notation for ${it.typeTag}", "0xA0", it.printTrimmed().trimEnd('L'))
+        }
+    }
+
+    @Test
     fun transformString() {
         val a = parse("""
             public class A {

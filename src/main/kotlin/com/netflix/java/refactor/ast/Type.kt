@@ -31,7 +31,9 @@ sealed class Type(): Serializable {
                                          override val owner: Type?,
                                          var members: List<Var>,
                                          var supertype: Class?): TypeWithOwner() {
-        
+
+        override fun toString(): String = fullyQualifiedName
+
         fun isCyclicRef() = this == Cyclic
 
         fun className() =
