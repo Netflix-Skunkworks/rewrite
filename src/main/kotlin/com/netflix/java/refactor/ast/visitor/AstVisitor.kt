@@ -124,6 +124,9 @@ open class AstVisitor<R> {
             visit(enum.name)
                     .andThen(enum.initializer?.args)
 
+    open fun visitEnumValueSet(enums: Tr.EnumValueSet): R =
+            visit(enums.enums)
+
     open fun visitExpression(expr: Expression): R = default(null)
 
     open fun visitFieldAccess(field: Tr.FieldAccess): R =

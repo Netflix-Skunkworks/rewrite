@@ -10,9 +10,7 @@ abstract class DoWhileLoopTest(p: Parser): Parser by p {
     val a by lazy {
         parse("""
             |public class A {
-            |    public void test() {
-            |        do { } while ( true );
-            |    }
+            |    public void test() { do { } while ( true ) ; }
             |}
         """)
     }
@@ -27,6 +25,6 @@ abstract class DoWhileLoopTest(p: Parser): Parser by p {
 
     @Test
     fun format() {
-        assertEquals("do { } while ( true )", whileLoop.printTrimmed())
+        assertEquals("{ do { } while ( true ) ; }", a.classes[0].methods()[0].body!!.printTrimmed())
     }
 }

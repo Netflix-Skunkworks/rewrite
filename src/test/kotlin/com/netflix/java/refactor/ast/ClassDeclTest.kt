@@ -92,7 +92,7 @@ abstract class ClassDeclTest(p: Parser): Parser by p {
         val a = parse(aSrc)
 
         Assert.assertTrue(a.classes[0].kind is Tr.ClassDecl.Kind.Enum)
-        assertEquals("ONE(1)", a.classes[0].enumValues()[0].printTrimmed())
+        assertEquals("ONE(1),\nTWO(2);", a.classes[0].enumValues()?.printTrimmed())
         assertEquals(aSrc, a.printTrimmed())
     }
 
@@ -100,14 +100,20 @@ abstract class ClassDeclTest(p: Parser): Parser by p {
     fun enumWithoutParameters() {
         val a = parse("public enum A { ONE, TWO }")
         assertEquals("public enum A { ONE, TWO }", a.classes[0].printTrimmed())
-        assertEquals("ONE", a.classes[0].enumValues()[0].printTrimmed())
+        assertEquals("ONE, TWO", a.classes[0].enumValues()?.printTrimmed())
+    }
+
+    @Test
+    fun enumUnnecessarilyTerminatedWithSemicolon() {
+        val a = parse("public enum A { ONE ; }")
+        assertEquals("{ ONE ; }", a.classes[0].body.printTrimmed())
     }
 
     @Test
     fun enumWithEmptyParameters() {
         val a = parse("public enum A { ONE ( ), TWO ( ) }")
         assertEquals("public enum A { ONE ( ), TWO ( ) }", a.classes[0].printTrimmed())
-        assertEquals("ONE ( )", a.classes[0].enumValues()[0].printTrimmed())
+        assertEquals("ONE ( ), TWO ( )", a.classes[0].enumValues()?.printTrimmed())
     }
 
     /**

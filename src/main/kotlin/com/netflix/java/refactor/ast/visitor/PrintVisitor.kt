@@ -20,7 +20,7 @@ class PrintVisitor : AstVisitor<String>("") {
         return visit(statement) + when(statement) {
             is Tr.Assign, is Tr.AssignOp, is Tr.Break, is Tr.Continue, is Tr.MethodInvocation -> ";"
             is Tr.NewClass, is Tr.Return, is Tr.Throw, is Tr.Unary, is Tr.VariableDecls -> ";"
-            is Tr.Empty -> ";"
+            is Tr.DoWhileLoop, is Tr.Empty -> ";"
             is Tr.Label -> ":"
             is Tr.MethodDecl -> if(statement.body == null) ";" else ""
             else -> ""
@@ -136,14 +136,8 @@ class PrintVisitor : AstVisitor<String>("") {
             is Tr.ClassDecl.Kind.Annotation -> "@interface"
         })
 
-        val body = classDecl.body.let {
-            val members = it.statements.filter { it !is Tr.EnumValue }
-            val enumValues = visit(classDecl.enumValues(), ",", if(members.isNotEmpty()) ";" else "")
-            it.fmt("{$enumValues${visitStatements(members)}${it.endOfBlockSuffix}}")
-        }
-
         return classDecl.fmt("${visit(classDecl.annotations)}$modifiers$kind${visit(classDecl.name)}$typeParams" +
-                "${visit(classDecl.extends)}${visit(classDecl.implements, ",")}$body")
+                "${visit(classDecl.extends)}${visit(classDecl.implements, ",")}${visit(classDecl.body)}")
     }
 
     override fun visitCompilationUnit(cu: Tr.CompilationUnit): String {
@@ -166,6 +160,10 @@ class PrintVisitor : AstVisitor<String>("") {
         } else ""
 
         return enum.fmt("${visit(enum.name)}$initializer")
+    }
+
+    override fun visitEnumValueSet(enums: Tr.EnumValueSet): String {
+        return enums.fmt(visit(enums.enums, ",")) + if(enums.terminatedWithSemicolon) ";" else ""
     }
 
     override fun visitFieldAccess(field: Tr.FieldAccess): String {

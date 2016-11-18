@@ -104,7 +104,7 @@ sealed class Tr : Serializable, Tree {
     data class ArrayType(val elementType: TypeTree,
                          val dimensions: List<Dimension>,
                          override var formatting: Formatting,
-                         override val id: String = id()): TypeTree, Tr() {
+                         override val id: String = id()): TypeTree, Expression, Tr() {
 
         @Transient
         override val type = elementType.type
@@ -241,7 +241,7 @@ sealed class Tr : Serializable, Tree {
         /**
          * Values will always occur before any fields, constructors, or methods
          */
-        fun enumValues(): List<EnumValue> = body.statements.filterIsInstance<EnumValue>()
+        fun enumValues(): EnumValueSet? = body.statements.find { it is EnumValueSet } as EnumValueSet?
 
         fun fields(): List<VariableDecls> = body.statements.filterIsInstance<VariableDecls>()
         fun methods(): List<MethodDecl> = body.statements.filterIsInstance<MethodDecl>()
@@ -346,6 +346,14 @@ sealed class Tr : Serializable, Tree {
         override fun <R> accept(v: AstVisitor<R>): R = v.visitEnumValue(this)
 
         data class Arguments(val args: List<Expression>, override var formatting: Formatting, override val id: String = id()): Tr()
+    }
+
+    data class EnumValueSet(val enums: List<EnumValue>,
+                            val terminatedWithSemicolon: Boolean,
+                            override var formatting: Formatting,
+                            override val id: String = id()): Statement, Tr() {
+
+        override fun <R> accept(v: AstVisitor<R>): R = v.visitEnumValueSet(this)
     }
 
     data class FieldAccess(val target: Expression,

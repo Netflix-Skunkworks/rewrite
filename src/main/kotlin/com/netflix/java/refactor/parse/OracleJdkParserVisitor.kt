@@ -19,6 +19,7 @@ import java.util.*
 import java.util.regex.Pattern
 import javax.lang.model.element.Modifier
 import javax.lang.model.type.TypeKind
+import kotlin.properties.Delegates
 
 class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val source: String): TreeScanner<Tree, Formatting.Reified>() {
     private typealias JdkTree = com.sun.source.tree.Tree
@@ -217,16 +218,26 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
         val bodyPrefix = sourceBefore("{")
 
         // enum values are required by the grammar to occur before any ordinary field, constructor, or method members
-        val enumValues = node.members
+
+        val jcEnums = node.members
                 .filterIsInstance<JCTree.JCVariableDecl>()
                 .filter { it.modifiers.hasFlag(Flags.ENUM) }
-                .convertAll<Tree>(COMMA_DELIM, {
+
+        val enumSet = if(jcEnums.isNotEmpty()) {
+            var semicolonPresent = false
+
+            val enumValues = jcEnums
+                .convertAll<Tr.EnumValue>(COMMA_DELIM, {
                     // this semicolon is required when there are non-value members, but can still
                     // be present when there are not
-                    sourceBefore(";", stop = '}')
+                    semicolonPresent = positionOfNext(";", stop = '}') > 0
+                    if (semicolonPresent) sourceBefore(";", stop = '}') else ""
                 })
 
-        val members = node.members
+            Tr.EnumValueSet(enumValues, semicolonPresent, Formatting.Reified.Empty)
+        } else null
+
+        val members = listOf(enumSet).filterNotNull() + node.members
                 // we don't care about the compiler-inserted default constructor,
                 // since it will never be subject to refactoring
                 .filter {
@@ -238,7 +249,7 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
                 }
                 .convertBlockContents()
 
-        val body = Tr.Block<Tree>(null, enumValues + members, Formatting.Reified(bodyPrefix), sourceBefore("}"))
+        val body = Tr.Block<Tree>(null, members, Formatting.Reified(bodyPrefix), sourceBefore("}"))
 
         return Tr.ClassDecl(annotations, modifiers, kind, name, typeParams, extends, implements, body, node.type(), fmt)
     }
@@ -951,7 +962,7 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
         sourceBefore(when (t) {
             is JCTree.JCThrow, is JCTree.JCBreak, is JCTree.JCAssert, is JCTree.JCContinue -> ";"
             is JCTree.JCExpressionStatement, is JCTree.JCReturn, is JCTree.JCVariableDecl -> ";"
-            is JCTree.JCSkip -> ";"
+            is JCTree.JCDoWhileLoop, is JCTree.JCSkip -> ";"
             is JCTree.JCCase -> ":"
             is JCTree.JCMethodDecl -> if (t.body == null) ";" else ""
             else -> ""
@@ -1062,6 +1073,17 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
      * <code>untilDelim</code> return the empty String.
      */
     private fun sourceBefore(untilDelim: String, stop: Char? = null): String {
+        val delimIndex = positionOfNext(untilDelim, stop)
+        if(delimIndex < 0) {
+            return "" // unable to find this delimiter
+        }
+
+        val prefix = source.substring(cursor, delimIndex)
+        cursor += prefix.length + untilDelim.length // advance past the delimiter
+        return prefix
+    }
+
+    private fun positionOfNext(untilDelim: String, stop: Char? = null): Int {
         var delimIndex = cursor
         var inMultiLineComment = false
         var inSingleLineComment = false
@@ -1080,7 +1102,7 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
 
                 if(!inMultiLineComment && !inSingleLineComment) {
                     if(source[delimIndex] == stop)
-                        return "" // reached stop word before finding the delimiter
+                        return -1 // reached stop word before finding the delimiter
 
                     if(source.substring(delimIndex, delimIndex + untilDelim.length) == untilDelim)
                         break // found it!
@@ -1089,13 +1111,7 @@ class OracleJdkParserVisitor(val typeCache: TypeCache, val path: Path, val sourc
             delimIndex++
         }
 
-        if(delimIndex > source.length - untilDelim.length) {
-            return "" // unable to find this delimiter
-        }
-
-        val prefix = source.substring(cursor, delimIndex)
-        cursor += prefix.length + untilDelim.length // advance past the delimiter
-        return prefix
+        return if(delimIndex > source.length - untilDelim.length) -1 else delimIndex
     }
 
     private val SEMI_DELIM = { t: JdkTree -> sourceBefore(";") }

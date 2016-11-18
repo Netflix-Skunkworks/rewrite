@@ -78,9 +78,9 @@ class OracleJdkParser(classpath: List<Path>? = null) : AbstractParser(classpath)
     }
 
     override fun parse(sourceFiles: List<Path>): List<Tr.CompilationUnit> {
-        if (filteredClasspath != null) { // override classpath
+        if (classpath != null) { // override classpath
             assert(context.get(JavaFileManager::class.java) === pfm)
-            pfm.setLocation(StandardLocation.CLASS_PATH, filteredClasspath)
+            pfm.setLocation(StandardLocation.CLASS_PATH, classpath)
         }
 
         val fileObjects = pfm.getJavaFileObjects(*filterSourceFiles(sourceFiles).toTypedArray())
