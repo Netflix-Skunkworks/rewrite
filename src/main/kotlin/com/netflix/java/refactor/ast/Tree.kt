@@ -8,6 +8,8 @@ import groovy.lang.Closure
 import java.io.Serializable
 import java.lang.IllegalStateException
 import java.util.*
+import java.util.function.Consumer
+import java.util.function.Function
 import java.util.regex.Pattern
 
 interface Tree {
@@ -305,6 +307,12 @@ sealed class Tr : Serializable, Tree {
         fun refactor(ops: Refactor.() -> Unit): Refactor {
             val r = refactor()
             ops(r)
+            return r
+        }
+
+        fun refactor(ops: Consumer<Refactor>): Refactor {
+            val r = refactor()
+            ops.accept(r)
             return r
         }
 

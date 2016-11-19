@@ -37,6 +37,9 @@ repositories {
 antlr4.output = new File('src/main/java/com/netflix/java/refactor/aspectj')
 antlr4.extraArgs = ['-package', 'com.netflix.java.refactor.aspectj']
 
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
 configurations {
     compile.extendsFrom antlr4
     compile.extendsFrom compileShaded

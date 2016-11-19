@@ -33,17 +33,19 @@ class MethodMatcher(signature: String) {
 
     fun matches(meth: Tr.MethodInvocation): Boolean {
         val targetType = meth.declaringType?.fullyQualifiedName ?: return false
+        val resolvedSignaturePattern = (meth.type ?: return false).resolvedSignature.paramTypes.map { type ->
+            fun typePattern(type: Type): String? = when (type) {
+                is Type.Primitive -> type.typeTag.name.toLowerCase()
+                is Type.Class -> type.fullyQualifiedName
+                is Type.Array -> typePattern(type.elemType) + "[]"
+                else -> null
+            }
+            typePattern(type) ?: false
+        }.joinToString(",")
+
         return targetTypePattern.matches(targetType) &&
                 methodNamePattern.matches(meth.name.name) &&
-                meth.type is Type.Method &&
-                argumentPattern.matches(meth.type.resolvedSignature.paramTypes.map { type ->
-                    fun typePattern(type: Type): String? = when(type) {
-                        is Type.Class -> type.fullyQualifiedName
-                        is Type.Array -> typePattern(type.elemType) + "[]"
-                        else -> null
-                    }
-                    typePattern(type) ?: false
-                }.joinToString(","))
+                argumentPattern.matches(resolvedSignaturePattern)
     }
 }
 
