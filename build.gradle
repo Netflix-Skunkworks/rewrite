@@ -11,10 +11,7 @@ buildscript {
 plugins {
     id 'com.dorongold.task-tree' version '1.2.2'
     id 'me.champeau.gradle.antlr4' version '0.1'
-    id 'com.gradle.plugin-publish' version '0.9.4'
-    id 'java-gradle-plugin'
     id 'com.github.johnrengelman.shadow' version '1.2.3'
-    id 'nebula.plugin-plugin' version '4.24.0'
 }
 
 apply plugin: 'nebula.kotlin'
@@ -22,13 +19,6 @@ apply plugin: 'nebula.kotlin'
 group = 'com.netflix.devinsight'
 
 description 'Pluggable and distributed refactoring tool for Java source code'
-
-contacts {
-    'jkschneider@gmail.com' {
-        moniker 'Jon Schneider'
-        github 'jkschneider'
-    }
-}
 
 repositories {
     mavenCentral()
@@ -58,26 +48,6 @@ dependencies {
     testCompile 'junit:junit:4.+'
     testCompile 'org.ow2.asm:asm:latest.release'
     testCompile 'org.ow2.asm:asm-util:latest.release'
-}
-
-pluginBundle {
-    website = 'https://github.com/nebula-plugins/java-source-refactor'
-    vcsUrl = 'https://github.com/nebula-plugins/java-source-refactor.git'
-    description = 'Pluggable and distributed refactoring tool for Java source code'
-
-    plugins {
-        sourceRefactor {
-            id = 'nebula.source-refactor'
-            displayName = 'Distributed source refactoring plugin'
-            description = 'Pluggable and distributed refactoring tool for Java source code'
-            tags = ['nebula', 'lint']
-        }
-    }
-
-    mavenCoordinates {
-        groupId = 'com.netflix.devinsight'
-        artifactId = 'java-source-refactor'
-    }
 }
 
 tasks.withType(Javadoc) {
