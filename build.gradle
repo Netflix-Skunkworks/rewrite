@@ -9,6 +9,7 @@ buildscript {
 }
 
 plugins {
+    id 'com.dorongold.task-tree' version '1.2.2'
     id 'me.champeau.gradle.antlr4' version '0.1'
     id 'com.gradle.plugin-publish' version '0.9.4'
     id 'java-gradle-plugin'

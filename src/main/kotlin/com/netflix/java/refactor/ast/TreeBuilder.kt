@@ -8,11 +8,11 @@ object TreeBuilder {
         val expr = parts.foldIndexed(Tr.Empty(Formatting.None) as Expression to "") { i, acc, part ->
             val (target, subpackage) = acc
             if (target is Tr.Empty) {
-                Tr.Ident(part, Type.Package.build(cache, part), fmt) to part
+                Tr.Ident(part, Type.Package.build(cache, part), Formatting.Reified.Empty) to part
             } else {
                 val fullName = "$subpackage.$part"
                 val partFmt = if (i == parts.size - 1) {
-                    fmt
+                    Formatting.Reified.Empty
                 } else {
                     Formatting.Reified("", "\\s*[^\\s]+(\\s*)".toRegex().matchEntire(part)!!.groupValues[1])
                 }
@@ -27,7 +27,10 @@ object TreeBuilder {
             }
         }
 
-        return expr.first as NameTree
+        val outerExpr = expr.first as NameTree
+        outerExpr.formatting = fmt
+
+        return outerExpr
     }
 
     fun buildField(cache: TypeCache, modifiers: List<Tr.VariableDecls.Modifier>, clazz: String, name: String, init: Expression?) {
