@@ -9,7 +9,7 @@ buildscript {
 }
 
 plugins {
-    id 'com.dorongold.task-tree' version '1.2.2'
+    id 'nebula.netflixoss' version '3.5.2'
     id 'me.champeau.gradle.antlr4' version '0.1'
     id 'com.github.johnrengelman.shadow' version '1.2.3'
 }
@@ -23,6 +23,10 @@ description 'Pluggable and distributed refactoring tool for Java source code'
 repositories {
     mavenCentral()
     maven { url "http://repository.jetbrains.com/all" }
+}
+
+license {
+    ignoreFailures = true
 }
 
 antlr4.output = new File('src/main/java/com/netflix/java/refactor/aspectj')
