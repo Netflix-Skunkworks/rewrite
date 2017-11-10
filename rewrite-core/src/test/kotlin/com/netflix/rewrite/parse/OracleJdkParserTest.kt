@@ -17,8 +17,6 @@ package com.netflix.rewrite.parse
 
 import com.netflix.rewrite.ast.Type
 import com.netflix.rewrite.ast.asClass
-import com.netflix.rewrite.ast.hasElementType
-import org.eclipse.jgit.lib.ObjectChecker.type
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
